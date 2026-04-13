@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="components/paint-first.css">
+    <title>Lending Ledger — Portal</title>
+    <link rel="icon" type="image/x-icon" href="Logo.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="components/sidebar.css">
+    <link rel="stylesheet" href="components/app-header.css">
+    <link rel="stylesheet" href="components/dashboard-canvas.css">
+    <link rel="stylesheet" href="components/portal-loans-canvas.css">
+    <link rel="stylesheet" href="components/portal-analytics.css">
+    <link rel="stylesheet" href="components/portal-clients.css">
+    <link rel="stylesheet" href="components/portal-loan-request.css">
+    <link rel="stylesheet" href="components/portal-settings.css">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+        html { height: 100%; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f9f9ff 0%, #ffffff 100%);
+            color: #000e24;
+            overflow-x: hidden;
+            overflow-y: auto;
+            width: 100%;
+            min-height: 100%;
+            min-height: 100dvh;
+        }
+        .titlebar {
+            -webkit-app-region: drag;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 8px;
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width, 256px);
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(196, 198, 208, 0.3);
+        }
+        .titlebar .window-controls { display: flex; margin-right: -8px; }
+        .titlebar button {
+            -webkit-app-region: no-drag;
+            cursor: default;
+            width: 46px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #515f74;
+            transition: background 0.1s;
+        }
+        .titlebar button:hover { background: rgba(0, 0, 0, 0.05); }
+        .titlebar button.close:hover { background: #e81123; color: white; }
+        .main-content {
+            padding: 118px clamp(16px, 4vw, 32px) 32px;
+            min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
+        }
+        .portal-welcome {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: clamp(24px, 4vw, 40px);
+            max-width: 42rem;
+            box-shadow: 0 32px 64px -16px rgba(0, 14, 36, 0.06);
+        }
+        .portal-welcome h1 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: clamp(1.35rem, 3vw, 1.75rem);
+            margin-bottom: 12px;
+        }
+        .portal-welcome p {
+            color: #515f74;
+            line-height: 1.55;
+            margin-bottom: 16px;
+        }
+        .portal-welcome a {
+            color: #000e24;
+            font-weight: 600;
+        }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        @media (max-width: 900px) {
+            .titlebar { left: 0; }
+            .main-content {
+                padding-top: 118px;
+                padding-left: clamp(12px, 3vw, 16px);
+                padding-right: clamp(12px, 3vw, 16px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="titlebar">
+        <div class="window-controls">
+            <button id="min-btn" type="button" aria-label="Minimizar">
+                <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="5" width="10" height="1" fill="currentColor"/></svg>
+            </button>
+            <button id="max-btn" type="button" aria-label="Maximizar">
+                <svg id="max-icon" width="12" height="12" viewBox="0 0 12 12" style="display: block;"><rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+                <svg id="restore-icon" width="12" height="12" viewBox="0 0 12 12" style="display: none;"><rect x="1" y="3" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1"/><polyline points="3 3 3 1 11 1 11 9" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+            </button>
+            <button id="close-btn" type="button" class="close" aria-label="Cerrar">
+                <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <header class="app-header" data-node-id="1:280" aria-label="Barra superior">
+        <div class="app-header__search-wrap">
+            <span class="app-header__search-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+                </svg>
+            </span>
+            <input type="search" class="app-header__search" id="app-header-search" placeholder="Buscar préstamos, clientes o solicitudes…" autocomplete="off" aria-label="Buscar en el portal">
+        </div>
+        <div class="app-header__actions">
+            <div class="app-header__icon-btns">
+                <button type="button" class="app-header__icon-btn" aria-label="Notificaciones">
+                    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 2C5.2 2 3 4.2 3 7v4l-2 2v1h14v-1l-2-2V7c0-2.8-2.2-5-5-5z"/>
+                        <path d="M5.5 16a2.5 2.5 0 005 0"/>
+                    </svg>
+                </button>
+                <button type="button" class="app-header__icon-btn" aria-label="Mensajes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+                    </svg>
+                </button>
+                <button type="button" class="app-header__icon-btn" aria-label="Cartera">
+                    <svg width="19" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 6l2-3h16l2 3"/>
+                        <rect x="2" y="6" width="20" height="14" rx="2"/>
+                        <path d="M2 10h20"/>
+                        <path d="M16 14h.01"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="app-header__divider" aria-hidden="true"></div>
+            <div class="app-header__user">
+                <div class="app-header__user-text">
+                    <span class="app-header__user-name" id="app-header-user-name">Portal</span>
+                    <span class="app-header__user-meta" id="app-header-user-meta">Lending Ledger</span>
+                </div>
+                <div class="app-header__avatar" id="app-header-avatar" aria-hidden="true">LL</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div id="portal-main" class="portal-main-root"></div>
+    </div>
+
+    <script src="components/auth-roles.js"></script>
+    <script src="components/sidebar.js"></script>
+    <script>
+        const PORTAL_VIEWS = new Set(['dashboard', 'loans', 'analytics', 'clients', 'loan-request', 'settings'])
+        const PORTAL_FRAGMENTS = {
+            dashboard: 'fragments/empresa-dashboard-inner.html',
+            loans: 'fragments/portal-loans-inner.html',
+            analytics: 'fragments/portal-analytics-inner.html',
+            clients: 'fragments/portal-clients-inner.html',
+            'loan-request': 'fragments/portal-loan-request-inner.html',
+            settings: 'fragments/portal-settings-inner.html'
+        }
+        const PORTAL_TITLES = {
+            dashboard: 'Lending Ledger — Portal',
+            loans: 'Lending Ledger — Préstamos',
+            analytics: 'Lending Ledger — Análisis',
+            clients: 'Lending Ledger — Clientes',
+            'loan-request': 'Lending Ledger — Nueva solicitud',
+            settings: 'Lending Ledger — Configuración'
+        }
+
+        function getInitialPortalView () {
+            try {
+                let v = new URL(window.location.href).searchParams.get('view')
+                if (v === 'documents') v = 'loan-request'
+                if (v && PORTAL_VIEWS.has(v)) return v
+            } catch (_) {}
+            return 'dashboard'
+        }
+
+        function portalNavigate (pageId) {
+            void loadPortalView(pageId, { pushState: true })
+        }
+
+        function initialsFromName (name) {
+            const parts = name.trim().split(/\s+/).filter(Boolean)
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            return name.slice(0, 2).toUpperCase() || 'LL'
+        }
+
+        let portalSidebar = null
+        let portalUserEmail = ''
+        let portalCurrentView = 'dashboard'
+        const nexoPortalProfile = { email: '', displayName: '', company: '', roleLine: '' }
+
+        function readProfilePrefs () {
+            try {
+                return JSON.parse(localStorage.getItem('nexo_ui_profile') || '{}')
+            } catch (_) {
+                return {}
+            }
+        }
+
+        function writeProfilePrefs (partial) {
+            try {
+                const cur = readProfilePrefs()
+                localStorage.setItem('nexo_ui_profile', JSON.stringify({ ...cur, ...partial }))
+            } catch (_) {}
+        }
+
+        function readOrgPrefs () {
+            try {
+                return JSON.parse(localStorage.getItem('nexo_ui_org') || '{}')
+            } catch (_) {
+                return {}
+            }
+        }
+
+        function writeOrgPrefs (partial) {
+            try {
+                const cur = readOrgPrefs()
+                localStorage.setItem('nexo_ui_org', JSON.stringify({ ...cur, ...partial }))
+            } catch (_) {}
+        }
+
+        function hydrateSettingsView () {
+            const root = document.getElementById('portal-main')
+            if (!root || !root.querySelector('.settings-canvas')) return
+            const prefs = readProfilePrefs()
+            const org = readOrgPrefs()
+            const setVal = (sel, v) => {
+                const el = root.querySelector(sel)
+                if (!el || v === undefined || v === null) return
+                el.value = String(v)
+            }
+            setVal('#settings-field-email', nexoPortalProfile.email)
+            setVal('#settings-field-name', prefs.display_name != null && prefs.display_name !== '' ? prefs.display_name : nexoPortalProfile.displayName)
+            setVal('#settings-field-role', prefs.job_title != null && prefs.job_title !== '' ? prefs.job_title : nexoPortalProfile.roleLine)
+            setVal('#settings-field-phone', prefs.phone ?? '')
+            setVal('#settings-field-locale', prefs.locale || 'es')
+            setVal('#settings-field-tz', prefs.timezone || 'America/Bogota')
+            setVal('#settings-field-bio', prefs.bio ?? '')
+            setVal('#settings-org-legal', org.org_legal_name != null && org.org_legal_name !== '' ? org.org_legal_name : nexoPortalProfile.company)
+            setVal('#settings-org-trade', org.org_trade_name ?? '')
+            setVal('#settings-org-slug', org.org_slug ?? '')
+            setVal('#settings-org-sector', org.org_sector ?? '')
+            setVal('#settings-org-web', org.org_website ?? '')
+            setVal('#settings-org-support', org.org_support_email ?? '')
+            setVal('#settings-org-address', org.org_address ?? '')
+            setVal('#settings-dpo-email', org.dpo_email ?? '')
+
+            const setCb = (formSel, name, defaultChecked) => {
+                const el = root.querySelector(`${formSel} [name="${name}"]`)
+                if (!el || el.type !== 'checkbox' || el.disabled) return
+                const v = prefs[name]
+                el.checked = v === undefined ? defaultChecked : Boolean(v)
+            }
+            setCb('#settings-form-notify', 'notif_email_payments', true)
+            setCb('#settings-form-notify', 'notif_email_applications', true)
+            setCb('#settings-form-notify', 'notif_email_digest', true)
+            setCb('#settings-form-notify', 'notif_inapp', true)
+            setCb('#settings-form-notify', 'notif_kyc', false)
+            setVal('#settings-digest-day', prefs.digest_weekday || '1')
+            setVal('#settings-digest-hour', prefs.digest_hour || '8')
+
+            const density = prefs.ui_density || 'comfortable'
+            root.querySelectorAll('#settings-form-appearance input[name="ui_density"]').forEach((inp) => {
+                inp.checked = inp.value === density
+            })
+            const accent = prefs.ui_accent || 'navy'
+            root.querySelectorAll('#settings-form-appearance input[name="ui_accent"]').forEach((inp) => {
+                inp.checked = inp.value === accent
+            })
+            setCb('#settings-form-appearance', 'ui_animations', true)
+            setCb('#settings-form-appearance', 'ui_reduce_motion', false)
+
+            setVal('#settings-session-timeout', prefs.session_timeout_min || '30')
+
+            setVal('#settings-retention-audit', org.retention_audit_months || '12')
+            setVal('#settings-retention-docs', org.retention_docs_months || '36')
+
+            setCb('#settings-form-advanced', 'debug_verbose', false)
+            setVal('#settings-log-level', prefs.client_log_level || 'warn')
+        }
+
+        function saveLoanRequestDraft () {
+            const form = document.getElementById('loan-request-form')
+            if (!form) return
+            const obj = {}
+            const fd = new FormData(form)
+            fd.forEach((val, key) => { obj[key] = val })
+            form.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+                if (cb.name) obj[cb.name] = cb.checked
+            })
+            try {
+                localStorage.setItem('nexo_loan_request_draft', JSON.stringify(obj))
+            } catch (_) {}
+            alert('Borrador guardado en este equipo.')
+        }
+
+        function hydrateLoanRequestDraft () {
+            const form = document.getElementById('loan-request-form')
+            if (!form) return
+            let draft
+            try {
+                draft = JSON.parse(localStorage.getItem('nexo_loan_request_draft') || 'null')
+            } catch (_) {
+                draft = null
+            }
+            if (!draft || typeof draft !== 'object') return
+            Object.keys(draft).forEach((k) => {
+                const el = form.elements.namedItem(k)
+                const v = draft[k]
+                if (!el) return
+                if (el instanceof RadioNodeList) {
+                    Array.from(el).forEach((r) => { r.checked = r.value === String(v) })
+                } else if (el.type === 'checkbox') {
+                    el.checked = v === true || v === '1' || v === 1 || v === 'on'
+                } else {
+                    el.value = v == null ? '' : String(v)
+                }
+            })
+        }
+
+        function ensurePortalMainDelegation () {
+            const root = document.getElementById('portal-main')
+            if (!root || root._nexoDelegated) return
+            root._nexoDelegated = true
+
+            root.addEventListener('click', (e) => {
+                const portalNav = e.target.closest('[data-portal-view]')
+                if (portalNav && root.contains(portalNav)) {
+                    e.preventDefault()
+                    const vid = portalNav.getAttribute('data-portal-view')
+                    if (vid && PORTAL_VIEWS.has(vid)) {
+                        if (portalSidebar) portalSidebar.setActiveNavOnly(vid)
+                        void loadPortalView(vid, { pushState: true })
+                    }
+                    return
+                }
+                const saveDraftBtn = e.target.closest('[data-loan-save-draft]')
+                if (saveDraftBtn && root.contains(saveDraftBtn)) {
+                    e.preventDefault()
+                    saveLoanRequestDraft()
+                    return
+                }
+                const settingsTab = e.target.closest('[data-settings-tab]')
+                if (settingsTab && root.contains(settingsTab)) {
+                    e.preventDefault()
+                    const pid = settingsTab.getAttribute('data-settings-tab')
+                    root.querySelectorAll('[data-settings-tab]').forEach((btn) => {
+                        const on = btn === settingsTab
+                        btn.classList.toggle('is-active', on)
+                        btn.setAttribute('aria-selected', on ? 'true' : 'false')
+                    })
+                    root.querySelectorAll('[data-settings-panel]').forEach((panel) => {
+                        panel.hidden = panel.getAttribute('data-settings-panel') !== pid
+                    })
+                    return
+                }
+                const resetFormBtn = e.target.closest('[data-settings-reset-form]')
+                if (resetFormBtn && root.contains(resetFormBtn)) {
+                    e.preventDefault()
+                    const fid = resetFormBtn.getAttribute('data-settings-reset-form')
+                    document.getElementById(fid)?.reset()
+                    hydrateSettingsView()
+                    return
+                }
+                const clearCacheBtn = e.target.closest('[data-settings-clear-cache]')
+                if (clearCacheBtn && root.contains(clearCacheBtn)) {
+                    e.preventDefault()
+                    if (!confirm('¿Eliminar preferencias locales guardadas en este equipo (perfil e institución)?')) return
+                    try {
+                        localStorage.removeItem('nexo_ui_profile')
+                        localStorage.removeItem('nexo_ui_org')
+                    } catch (_) {}
+                    alert('Preferencias locales eliminadas.')
+                    hydrateSettingsView()
+                    return
+                }
+                const exportJsonBtn = e.target.closest('[data-settings-export-json]')
+                if (exportJsonBtn && root.contains(exportJsonBtn)) {
+                    e.preventDefault()
+                    const blob = new Blob([JSON.stringify({
+                        export: 'nexo_portal_config',
+                        generated_at: new Date().toISOString(),
+                        profile: readProfilePrefs(),
+                        org: readOrgPrefs()
+                    }, null, 2)], { type: 'application/json' })
+                    const a = document.createElement('a')
+                    a.href = URL.createObjectURL(blob)
+                    a.download = 'nexo-config-export.json'
+                    a.click()
+                    URL.revokeObjectURL(a.href)
+                    return
+                }
+                if (e.target.closest('[data-go-loans]')) {
+                    e.preventDefault()
+                    if (portalSidebar) portalSidebar.setActiveNavOnly('loans')
+                    void loadPortalView('loans', { pushState: true })
+                    return
+                }
+                const pbtn = e.target.closest('.period-toggle__btn')
+                if (pbtn && root.contains(pbtn)) {
+                    root.querySelectorAll('.period-toggle__btn').forEach((b) => b.classList.remove('is-active'))
+                    pbtn.classList.add('is-active')
+                    return
+                }
+                const ap = e.target.closest('.analytics-period__btn')
+                if (ap && root.contains(ap)) {
+                    root.querySelectorAll('.analytics-period__btn').forEach((b) => b.classList.remove('is-active'))
+                    ap.classList.add('is-active')
+                }
+            })
+
+            root.addEventListener('submit', (e) => {
+                const form = e.target
+                if (form.id === 'loan-request-form') {
+                    e.preventDefault()
+                    if (!form.checkValidity()) {
+                        form.reportValidity()
+                        return
+                    }
+                    const fd = new FormData(form)
+                    const payload = Object.fromEntries(fd.entries())
+                    form.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+                        if (cb.name) payload[cb.name] = cb.checked ? (cb.value || 'on') : ''
+                    })
+                    console.info('[Nexo] Solicitud de préstamo', payload)
+                    try {
+                        localStorage.removeItem('nexo_loan_request_draft')
+                    } catch (_) {}
+                    alert('Solicitud registrada en modo demostración. Revisa la consola para el detalle; al conectar el backend aquí se creará el expediente real.')
+                    form.reset()
+                    return
+                }
+                if (!form.id || !form.id.startsWith('settings-form-')) return
+                e.preventDefault()
+                if (!form.checkValidity()) {
+                    form.reportValidity()
+                    return
+                }
+                if (form.id === 'settings-form-security') {
+                    const p1 = form.querySelector('[name="password_new"]')?.value || ''
+                    const p2 = form.querySelector('[name="password_confirm"]')?.value || ''
+                    if (p1 !== p2) {
+                        alert('Las contraseñas nuevas no coinciden.')
+                        return
+                    }
+                    if (p1 && p1.length < 8) {
+                        alert('La nueva contraseña debe tener al menos 8 caracteres.')
+                        return
+                    }
+                }
+                const fd = new FormData(form)
+                const payload = Object.fromEntries(fd.entries())
+                console.info('[Nexo] Configuración', form.id, payload)
+                if (form.id === 'settings-form-profile') {
+                    writeProfilePrefs({
+                        display_name: payload.display_name,
+                        job_title: payload.job_title,
+                        phone: payload.phone,
+                        locale: payload.locale,
+                        timezone: payload.timezone,
+                        bio: payload.bio
+                    })
+                }
+                if (form.id === 'settings-form-org') writeOrgPrefs(payload)
+                if (form.id === 'settings-form-notify') {
+                    writeProfilePrefs({
+                        notif_email_payments: !!form.querySelector('[name="notif_email_payments"]')?.checked,
+                        notif_email_applications: !!form.querySelector('[name="notif_email_applications"]')?.checked,
+                        notif_email_digest: !!form.querySelector('[name="notif_email_digest"]')?.checked,
+                        notif_inapp: !!form.querySelector('[name="notif_inapp"]')?.checked,
+                        notif_kyc: !!form.querySelector('[name="notif_kyc"]')?.checked,
+                        digest_weekday: payload.digest_weekday,
+                        digest_hour: payload.digest_hour
+                    })
+                }
+                if (form.id === 'settings-form-appearance') {
+                    writeProfilePrefs({
+                        ui_density: form.querySelector('input[name="ui_density"]:checked')?.value || 'comfortable',
+                        ui_accent: form.querySelector('input[name="ui_accent"]:checked')?.value || 'navy',
+                        ui_animations: !!form.querySelector('[name="ui_animations"]')?.checked,
+                        ui_reduce_motion: !!form.querySelector('[name="ui_reduce_motion"]')?.checked
+                    })
+                }
+                if (form.id === 'settings-form-security') {
+                    writeProfilePrefs({ session_timeout_min: payload.session_timeout_min })
+                }
+                if (form.id === 'settings-form-advanced') {
+                    writeProfilePrefs({
+                        debug_verbose: !!form.querySelector('[name="debug_verbose"]')?.checked,
+                        client_log_level: payload.client_log_level
+                    })
+                }
+                if (form.id === 'settings-form-data-retention') {
+                    writeOrgPrefs({
+                        retention_audit_months: payload.retention_audit_months,
+                        retention_docs_months: payload.retention_docs_months
+                    })
+                }
+                if (form.id === 'settings-form-privacy') writeOrgPrefs({ dpo_email: payload.dpo_email })
+                alert('Cambios guardados (demostración local). Revisa la consola para el detalle.')
+                if (form.id === 'settings-form-security') {
+                    ;['password_current', 'password_new', 'password_confirm'].forEach((n) => {
+                        const i = form.querySelector(`[name="${n}"]`)
+                        if (i) i.value = ''
+                    })
+                }
+            })
+        }
+
+        async function loadPortalView (pageId, { pushState = true } = {}) {
+            const url = PORTAL_FRAGMENTS[pageId]
+            if (!url) return
+            const main = document.getElementById('portal-main')
+            if (!main) return
+
+            portalCurrentView = pageId
+            try {
+                const res = await fetch(url, { cache: 'no-store' })
+                if (!res.ok) throw new Error(String(res.status))
+                main.innerHTML = await res.text()
+            } catch (e) {
+                console.warn(e)
+                main.innerHTML = '<p style="padding:24px;color:#515f74;font-family:Inter,sans-serif;">No se pudo cargar este módulo. Comprueba que los archivos en <code>fragments/</code> existan.</p>'
+                return
+            }
+
+            document.title = PORTAL_TITLES[pageId] || PORTAL_TITLES.dashboard
+
+            if (pushState) {
+                try {
+                    const u = new URL(window.location.href)
+                    u.searchParams.set('view', pageId)
+                    history.pushState({ view: pageId }, '', u.toString())
+                } catch (err) {
+                    console.warn('[portal] pushState', err)
+                }
+            }
+
+            ensurePortalMainDelegation()
+
+            if (pageId === 'settings') hydrateSettingsView()
+            if (pageId === 'loan-request') hydrateLoanRequestDraft()
+
+            const dashboardLike = pageId === 'dashboard'
+            if (dashboardLike) {
+                const sessionLine = document.getElementById('portal-session')
+                if (sessionLine && portalUserEmail) {
+                    sessionLine.textContent = `Sesión como ${portalUserEmail}`
+                    sessionLine.hidden = false
+                }
+            }
+        }
+
+        window.addEventListener('popstate', () => {
+            if (!portalSidebar) return
+            const v = getInitialPortalView()
+            portalSidebar.setActiveNavOnly(v)
+            void loadPortalView(v, { pushState: false })
+        })
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const initialView = getInitialPortalView()
+
+            portalSidebar = new Sidebar({
+                variant: 'portal',
+                activePage: initialView,
+                portalProfile: {
+                    name: 'Marcus Thorne',
+                    role: 'Analista senior — underwriting',
+                    initials: 'MT'
+                },
+                onNavigate: portalNavigate
+            })
+
+            if (!window.electronAPI) return
+            const result = await window.electronAPI.auth.getCurrentUser()
+            if (!result.success || !result.user) {
+                window.location.href = 'index.html'
+                return
+            }
+            const u = result.user
+            if (window.NexoAuth.isSuperAdmin(u)) {
+                window.location.href = 'dashboard.html'
+                return
+            }
+            const p = window.NexoAuth.profile(u)
+            const display = p.name || p.full_name || (u.email ? u.email.split('@')[0] : '') || 'Usuario'
+            const roleLine = p.job_title || p.title || p.company || 'Usuario del portal'
+            portalUserEmail = u.email || ''
+            nexoPortalProfile.email = portalUserEmail
+            nexoPortalProfile.displayName = display
+            nexoPortalProfile.company = p.company || ''
+            nexoPortalProfile.roleLine = roleLine
+
+            portalSidebar.updatePortalProfile({
+                name: display,
+                role: roleLine,
+                initials: initialsFromName(display)
+            })
+
+            const nameEl = document.getElementById('app-header-user-name')
+            const metaEl = document.getElementById('app-header-user-meta')
+            const av = document.getElementById('app-header-avatar')
+            if (nameEl) nameEl.textContent = display
+            if (metaEl) metaEl.textContent = p.company || 'Lending Ledger'
+            if (av) {
+                av.textContent = initialsFromName(display)
+                av.removeAttribute('aria-hidden')
+                av.setAttribute('aria-label', 'Avatar')
+            }
+
+            await loadPortalView(initialView, { pushState: false })
+        })
+
+        const updateMaximizeIcon = (isMaximized) => {
+            const maxIcon = document.getElementById('max-icon')
+            const restoreIcon = document.getElementById('restore-icon')
+            const maxBtn = document.getElementById('max-btn')
+            if (!maxIcon || !restoreIcon || !maxBtn) return
+            if (isMaximized) {
+                maxIcon.style.display = 'none'
+                restoreIcon.style.display = 'block'
+                maxBtn.setAttribute('aria-label', 'Restaurar')
+            } else {
+                maxIcon.style.display = 'block'
+                restoreIcon.style.display = 'none'
+                maxBtn.setAttribute('aria-label', 'Maximizar')
+            }
+        }
+
+        if (window.electronAPI) {
+            window.electronAPI.onWindowMaximized(updateMaximizeIcon)
+            document.getElementById('min-btn').addEventListener('click', () => window.electronAPI.minimize())
+            document.getElementById('max-btn').addEventListener('click', () => window.electronAPI.maximize())
+            document.getElementById('close-btn').addEventListener('click', () => window.electronAPI.close())
+        }
+    </script>
+</body>
+</html>

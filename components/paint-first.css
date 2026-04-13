@@ -1,0 +1,8 @@
+/**
+ * Primer pintado: mismo tono base que el gradiente del portal (#f9f9ff).
+ * Reduce el destello blanco al navegar entre HTML distintos (carga completa).
+ */
+html,
+body {
+    background-color: #f9f9ff;
+}

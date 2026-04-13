@@ -2,12 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Nexo - Dashboard</title>
+    <link rel="stylesheet" href="components/paint-first.css">
+    <title>Nexo — Super Admin</title>
     <link rel="icon" type="image/x-icon" href="Logo.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="components/sidebar.css">
+    <link rel="stylesheet" href="components/app-header.css">
+    <link rel="stylesheet" href="components/admin-console.css">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
         * {
@@ -15,6 +18,10 @@
             padding: 0;
             box-sizing: border-box;
             outline: none;
+        }
+
+        html {
+            height: 100%;
         }
 
         :root {
@@ -46,6 +53,10 @@
             background: linear-gradient(135deg, var(--surface-low) 0%, var(--surface-lowest) 100%);
             color: var(--text-primary);
             overflow-x: hidden;
+            overflow-y: auto;
+            width: 100%;
+            min-height: 100%;
+            min-height: 100dvh;
         }
 
         /* Titlebar */
@@ -60,7 +71,7 @@
             padding: 0 8px;
             position: fixed;
             top: 0;
-            left: 256px;
+            left: var(--sidebar-width, 256px);
             right: 0;
             z-index: 1000;
             border-bottom: 1px solid rgba(196, 198, 208, 0.3);
@@ -95,177 +106,24 @@
             color: white;
         }
 
-        /* Main Content */
+        /* Main Content — debajo de titlebar (32px) + app-header (~78px) */
         .main-content {
-            padding: 80px 32px 32px 32px;
+            padding: 118px clamp(16px, 4vw, 32px) 32px;
             min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
         }
 
-        .page-header {
-            margin-bottom: 32px;
-        }
-
-        .page-title {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 800;
-            font-size: 36px;
-            line-height: 44px;
-            letter-spacing: -0.9px;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .page-subtitle {
-            font-family: 'Inter', sans-serif;
-            font-weight: 400;
-            font-size: 16px;
-            line-height: 24px;
-            color: var(--text-secondary);
-        }
-
-        /* Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-            position: relative;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            background: rgba(255, 255, 255, 0);
-            border-radius: 8px;
-            box-shadow: var(--shadow-card);
-            z-index: -1;
-        }
-
-        .card-title {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            margin-bottom: 16px;
-        }
-
-        .card-value {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 800;
-            font-size: 32px;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .card-change {
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            color: var(--tertiary-on);
-        }
-
-        .card-change.positive {
-            color: var(--tertiary-on);
-        }
-
-        .card-change.negative {
-            color: #e81123;
-        }
-
-        /* Table Section */
-        .table-section {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 700;
-            font-size: 20px;
-            color: var(--text-primary);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: var(--text-secondary);
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid rgba(196, 198, 208, 0.3);
-        }
-
-        td {
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            color: var(--text-primary);
-            padding: 16px 12px;
-            border-bottom: 1px solid rgba(196, 198, 208, 0.1);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-badge.active {
-            background: rgba(133, 248, 196, 0.2);
-            color: var(--tertiary-on);
-        }
-
-        .status-badge.pending {
-            background: rgba(255, 185, 0, 0.2);
-            color: #92400e;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
+        /* Responsive (mismo corte que sidebar.css: 900px) */
+        @media (max-width: 900px) {
             .titlebar {
                 left: 0;
             }
 
             .main-content {
-                padding: 80px 16px 16px 16px;
-            }
-
-            .cards-grid {
-                grid-template-columns: 1fr;
+                padding-top: 118px;
+                padding-left: clamp(12px, 3vw, 16px);
+                padding-right: clamp(12px, 3vw, 16px);
             }
         }
     </style>
@@ -296,100 +154,226 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- App header (Figma: Header - TopAppBar, node 1:280) -->
+    <header class="app-header" data-node-id="1:280" aria-label="Barra superior">
+        <div class="app-header__search-wrap">
+            <span class="app-header__search-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+            </span>
+            <input
+                type="search"
+                class="app-header__search"
+                id="app-header-search"
+                placeholder="Buscar administradores, empresas o roles..."
+                autocomplete="off"
+                aria-label="Buscar administradores, empresas o roles"
+            >
+        </div>
+        <div class="app-header__actions">
+            <div class="app-header__icon-btns">
+                <button type="button" class="app-header__icon-btn" id="app-header-notifications" aria-label="Notificaciones">
+                    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 2C5.2 2 3 4.2 3 7v4l-2 2v1h14v-1l-2-2V7c0-2.8-2.2-5-5-5z"/>
+                        <path d="M5.5 16a2.5 2.5 0 005 0"/>
+                    </svg>
+                </button>
+                <button type="button" class="app-header__icon-btn" id="app-header-messages" aria-label="Mensajes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+                    </svg>
+                </button>
+                <button type="button" class="app-header__icon-btn" id="app-header-wallet" aria-label="Cartera">
+                    <svg width="19" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 6l2-3h16l2 3"/>
+                        <rect x="2" y="6" width="20" height="14" rx="2"/>
+                        <path d="M2 10h20"/>
+                        <path d="M16 14h.01"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="app-header__divider" aria-hidden="true"></div>
+            <div class="app-header__user">
+                <div class="app-header__user-text">
+                    <span class="app-header__user-name" id="app-header-user-name">Super Admin</span>
+                    <span class="app-header__user-meta" id="app-header-user-meta">Nexo Intelligence</span>
+                </div>
+                <div class="app-header__avatar" id="app-header-avatar" aria-hidden="true">NX</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Super admin: operaciones plataforma (no vista cartera empresa) -->
     <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1 class="page-title">Dashboard</h1>
-            <p class="page-subtitle">Bienvenido al Sistema de Confianza Nexo</p>
-        </div>
+        <main class="admin-console" aria-label="Panel super administrador">
+            <header class="admin-console__head">
+                <div>
+                    <span class="admin-console__badge">Super admin</span>
+                    <h1 class="admin-console__title">Operaciones NEXO</h1>
+                    <p class="admin-console__lead">Gestión multi-tenant: empresas registradas, usuarios de la plataforma y configuración global. La cartera institucional la ven los usuarios con rol empresa en el portal.</p>
+                    <p class="admin-console__session" id="admin-console-session" hidden></p>
+                </div>
+            </header>
 
-        <!-- Stats Cards -->
-        <div class="cards-grid">
-            <div class="card">
-                <div class="card-title">Usuarios Activos</div>
-                <div class="card-value">2,847</div>
-                <div class="card-change positive">↑ 12% vs mes anterior</div>
-            </div>
+            <section class="admin-kpi-grid" aria-label="Métricas de plataforma">
+                <article class="admin-kpi">
+                    <div class="admin-kpi__label">Empresas (tenants)</div>
+                    <div class="admin-kpi__value">—</div>
+                    <div class="admin-kpi__meta admin-kpi__meta--ok">Conecta nexo_tenants / InsForge DB</div>
+                </article>
+                <article class="admin-kpi">
+                    <div class="admin-kpi__label">Usuarios con rol empresa</div>
+                    <div class="admin-kpi__value">—</div>
+                    <div class="admin-kpi__meta">Desde nexo_profiles</div>
+                </article>
+                <article class="admin-kpi">
+                    <div class="admin-kpi__label">Super admins</div>
+                    <div class="admin-kpi__value">1</div>
+                    <div class="admin-kpi__meta">Incluye esta sesión</div>
+                </article>
+                <article class="admin-kpi">
+                    <div class="admin-kpi__label">Estado API</div>
+                    <div class="admin-kpi__value" style="font-size: 20px;">OK</div>
+                    <div class="admin-kpi__meta admin-kpi__meta--ok">Backend InsForge</div>
+                </article>
+            </section>
 
-            <div class="card">
-                <div class="card-title">Empresas Registradas</div>
-                <div class="card-value">156</div>
-                <div class="card-change positive">↑ 8 nuevas esta semana</div>
+            <div class="admin-layout">
+                <div class="admin-panel">
+                    <h2 class="admin-panel__title">Acciones de plataforma</h2>
+                    <div class="admin-actions">
+                        <button type="button" class="admin-action-btn" data-admin-nav="companies">
+                            Gestionar empresas
+                            <span>Altas, suspensión y datos de tenant</span>
+                        </button>
+                        <button type="button" class="admin-action-btn" data-admin-nav="users">
+                            Usuarios y roles
+                            <span>Perfiles, app_role y acceso al portal</span>
+                        </button>
+                        <button type="button" class="admin-action-btn" data-admin-nav="payments">
+                            Pagos y facturación
+                            <span>Próximamente</span>
+                        </button>
+                        <button type="button" class="admin-action-btn" data-admin-nav="settings">
+                            Configuración global
+                            <span>Auth, límites y entorno</span>
+                        </button>
+                    </div>
+                    <p class="admin-note">Las secciones del menú lateral enlazarán a pantallas dedicadas cuando estén implementadas; este panel sustituye la vista de cartera que corresponde solo al portal empresa.</p>
+                </div>
+                <div>
+                    <div class="admin-panel" style="margin-bottom: 16px;">
+                        <h2 class="admin-panel__title">Actividad reciente (plataforma)</h2>
+                        <div class="admin-feed">
+                            <div class="admin-feed__item">
+                                <div class="admin-feed__title">Nuevo registro empresa</div>
+                                <div class="admin-feed__meta">Demo · hace 2 h · app_role empresa</div>
+                            </div>
+                            <div class="admin-feed__item">
+                                <div class="admin-feed__title">Super admin conectado</div>
+                                <div class="admin-feed__meta">Sesión iniciada vía email/contraseña</div>
+                            </div>
+                            <div class="admin-feed__item">
+                                <div class="admin-feed__title">Esquema multi-tenant</div>
+                                <div class="admin-feed__meta">Tablas nexo_tenants, nexo_profiles, nexo_tenant_members</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-panel">
+                        <h2 class="admin-panel__title">Últimas empresas (demo)</h2>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Organización</th>
+                                        <th>Slug</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Acme Capital S.A.</td>
+                                        <td>acme-capital</td>
+                                        <td><span class="admin-pill admin-pill--ok">Activa</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Inmobiliaria del Este</td>
+                                        <td>este-sa</td>
+                                        <td><span class="admin-pill admin-pill--pending">Onboarding</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="card">
-                <div class="card-title">Pagos Procesados</div>
-                <div class="card-value">$1.2M</div>
-                <div class="card-change positive">↑ 23% vs mes anterior</div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">Tasa de Aprobación</div>
-                <div class="card-value">94.2%</div>
-                <div class="card-change negative">↓ 2% vs mes anterior</div>
-            </div>
-        </div>
-
-        <!-- Recent Activity Table -->
-        <div class="table-section">
-            <div class="section-header">
-                <h2 class="section-title">Actividad Reciente</h2>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Empresa</th>
-                        <th>Acción</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Juan Pérez</td>
-                        <td>TechCorp SA</td>
-                        <td>Nuevo registro</td>
-                        <td>Hace 2 horas</td>
-                        <td><span class="status-badge active">Activo</span></td>
-                    </tr>
-                    <tr>
-                        <td>María García</td>
-                        <td>Finanzas Global</td>
-                        <td>Solicitud de préstamo</td>
-                        <td>Hace 4 horas</td>
-                        <td><span class="status-badge pending">Pendiente</span></td>
-                    </tr>
-                    <tr>
-                        <td>Carlos López</td>
-                        <td>Inversiones ABC</td>
-                        <td>Actualización de perfil</td>
-                        <td>Hace 6 horas</td>
-                        <td><span class="status-badge active">Activo</span></td>
-                    </tr>
-                    <tr>
-                        <td>Ana Martínez</td>
-                        <td>StartUp Tech</td>
-                        <td>Pago completado</td>
-                        <td>Hace 8 horas</td>
-                        <td><span class="status-badge active">Activo</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        </main>
     </div>
 
     <!-- Scripts -->
+    <script src="components/auth-roles.js"></script>
     <script src="components/sidebar.js"></script>
     <script>
-        // Initialize Sidebar
+        function initialsFromName (name) {
+            const parts = name.trim().split(/\s+/).filter(Boolean)
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            return name.slice(0, 2).toUpperCase() || 'NX'
+        }
+
+        function applyAppHeaderUser (user) {
+            const p = window.NexoAuth.profile(user)
+            const display =
+                p.name ||
+                p.full_name ||
+                (user.email ? user.email.split('@')[0] : '') ||
+                'Usuario'
+            const org = p.company || 'Operaciones NEXO'
+            const nameEl = document.getElementById('app-header-user-name')
+            const metaEl = document.getElementById('app-header-user-meta')
+            const avatarEl = document.getElementById('app-header-avatar')
+            if (nameEl) nameEl.textContent = display
+            if (metaEl) metaEl.textContent = org
+            if (avatarEl) {
+                avatarEl.textContent = initialsFromName(display)
+                avatarEl.setAttribute('aria-label', `Avatar de ${display}`)
+                avatarEl.removeAttribute('aria-hidden')
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!window.electronAPI) return
+            const result = await window.electronAPI.auth.getCurrentUser()
+            if (!result.success || !result.user) {
+                window.location.href = 'index.html'
+                return
+            }
+            if (!window.NexoAuth.isSuperAdmin(result.user)) {
+                window.location.href = 'portal.html'
+                return
+            }
+            applyAppHeaderUser(result.user)
+            const sessionLine = document.getElementById('admin-console-session')
+            if (sessionLine && result.user.email) {
+                sessionLine.textContent = `Sesión super admin · ${result.user.email}`
+                sessionLine.hidden = false
+            }
+        })
+
+        document.querySelectorAll('[data-admin-nav]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-admin-nav')
+                console.log('[super-admin] acción:', id)
+            })
+        })
+
+        // Sidebar super admin (operaciones NEXO)
         const sidebar = new Sidebar({
+            variant: 'admin',
             activePage: 'dashboard',
             onNavigate: (pageId) => {
-                console.log('Navegando a:', pageId);
-                // Implement navigation logic here
-                // For example: window.location.href = `${pageId}.html`;
+                console.log('Navegando a:', pageId)
             }
         });
 

@@ -1,38 +1,64 @@
 /**
- * Sidebar Component - Shared Navigation
- * Implements the Nexo sidebar navigation with Spanish localization
+ * Sidebar — variantes:
+ * - admin: panel super admin (NEXO, navegación operativa)
+ * - portal: cliente SaaS / portal institucional (Figma 1:1281)
  */
 
 class Sidebar {
-    constructor(options = {}) {
-        this.container = options.container || document.body;
-        this.activePage = options.activePage || 'dashboard';
-        this.onNavigate = options.onNavigate || this.defaultNavigation;
-        this.pages = [
+    constructor (options = {}) {
+        this.container = options.container || document.body
+        this.variant = options.variant === 'portal' ? 'portal' : 'admin'
+        this.activePage = options.activePage || 'dashboard'
+        this.onNavigate = options.onNavigate || this.defaultNavigation
+        this.portalProfile = options.portalProfile || {
+            name: 'Usuario',
+            role: 'Institución',
+            initials: 'NX'
+        }
+
+        this.adminPages = [
             { id: 'dashboard', label: 'Dashboard', icon: this.getDashboardIcon() },
             { id: 'companies', label: 'Empresas', icon: this.getCompaniesIcon() },
             { id: 'users', label: 'Usuarios', icon: this.getUsersIcon() },
             { id: 'payments', label: 'Pagos', icon: this.getPaymentsIcon() },
             { id: 'analytics', label: 'Analíticas', icon: this.getAnalyticsIcon() },
             { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon() }
-        ];
-        this.footerLinks = [
+        ]
+
+        this.portalPages = [
+            { id: 'dashboard', label: 'Dashboard', icon: this.getDashboardIcon() },
+            { id: 'loans', label: 'Préstamos', icon: this.getLoansIcon() },
+            { id: 'analytics', label: 'Análisis', icon: this.getAnalyticsIcon() },
+            { id: 'clients', label: 'Clientes', icon: this.getClientsIcon() },
+            { id: 'loan-request', label: 'Nuevo préstamo', icon: this.getNewLoanIcon() },
+            { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon() }
+        ]
+
+        this.adminFooterLinks = [
             { id: 'support', label: 'Soporte', icon: this.getSupportIcon() },
             { id: 'signout', label: 'Cerrar Sesión', icon: this.getSignOutIcon() }
-        ];
+        ]
 
-        this.init();
+        this.init()
     }
 
-    init() {
-        this.render();
-        this.attachEvents();
+    init () {
+        this.render()
+        this.attachEvents()
     }
 
-    render() {
+    render () {
+        if (this.variant === 'portal') {
+            this.renderPortal()
+        } else {
+            this.renderAdmin()
+        }
+        this.adjustMainContent()
+    }
+
+    renderAdmin () {
         const sidebarHTML = `
-            <aside class="sidebar" id="sidebar">
-                <!-- Header -->
+            <aside class="sidebar sidebar--admin" id="sidebar" data-sidebar-variant="admin">
                 <div class="sidebar-header">
                     <a href="index.html" class="sidebar-logo">
                         <div class="sidebar-logo-icon">
@@ -45,13 +71,14 @@ class Sidebar {
                     </a>
                 </div>
 
-                <!-- Navigation -->
                 <nav class="sidebar-nav">
-                    ${this.pages.map(page => `
+                    ${this.adminPages.map(page => `
                         <button
+                            type="button"
                             class="sidebar-link ${page.id === this.activePage ? 'active' : ''}"
                             data-page="${page.id}"
                             aria-label="${page.label}"
+                            aria-current="${page.id === this.activePage ? 'page' : 'false'}"
                         >
                             ${page.icon}
                             <span>${page.label}</span>
@@ -59,10 +86,10 @@ class Sidebar {
                     `).join('')}
                 </nav>
 
-                <!-- Footer -->
                 <div class="sidebar-footer">
-                    ${this.footerLinks.map(link => `
+                    ${this.adminFooterLinks.map(link => `
                         <button
+                            type="button"
                             class="sidebar-link"
                             data-action="${link.id}"
                             aria-label="${link.label}"
@@ -74,8 +101,7 @@ class Sidebar {
                 </div>
             </aside>
 
-            <!-- Mobile Toggle -->
-            <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">
+            <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Abrir o cerrar menú">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="3" y1="12" x2="21" y2="12"/>
                     <line x1="3" y1="6" x2="21" y2="6"/>
@@ -83,185 +109,304 @@ class Sidebar {
                 </svg>
             </button>
 
-            <!-- Overlay -->
-            <div class="sidebar-overlay" id="sidebar-overlay"></div>
-        `;
-
-        this.container.insertAdjacentHTML('afterbegin', sidebarHTML);
-        this.adjustMainContent();
+            <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+        `
+        this.container.insertAdjacentHTML('afterbegin', sidebarHTML)
     }
 
-    attachEvents() {
-        // Navigation clicks
-        document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+    renderPortal () {
+        const { name, role, initials } = this.portalProfile
+        const sidebarHTML = `
+            <aside class="sidebar sidebar--portal" id="sidebar" data-node-id="1:1281" data-sidebar-variant="portal">
+                <div class="sidebar-portal-head">
+                    <div class="sidebar-portal-brand">
+                        <div class="sidebar-portal-title">Lending Ledger</div>
+                        <div class="sidebar-portal-tagline">Portal institucional</div>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav sidebar-nav--portal">
+                    ${this.portalPages.map(page => `
+                        <button
+                            type="button"
+                            class="sidebar-link sidebar-link--portal ${page.id === this.activePage ? 'active' : ''}"
+                            data-page="${page.id}"
+                            aria-label="${page.label}"
+                            aria-current="${page.id === this.activePage ? 'page' : 'false'}"
+                        >
+                            ${page.icon}
+                            <span>${page.label}</span>
+                        </button>
+                    `).join('')}
+                </nav>
+
+                <div class="sidebar-portal-footer">
+                    <div class="sidebar-portal-profile">
+                        <div class="sidebar-portal-avatar" id="portal-avatar" aria-hidden="true">${initials}</div>
+                        <div class="sidebar-portal-user">
+                            <span class="sidebar-portal-name" id="portal-user-name">${name}</span>
+                            <span class="sidebar-portal-role" id="portal-user-role">${role}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="sidebar-portal-signout" data-action="signout">
+                        Cerrar sesión
+                    </button>
+                </div>
+            </aside>
+
+            <button type="button" class="sidebar-toggle sidebar-toggle--portal" id="sidebar-toggle" aria-label="Abrir o cerrar menú">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+
+            <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+        `
+        this.container.insertAdjacentHTML('afterbegin', sidebarHTML)
+    }
+
+    attachEvents () {
+        document.querySelectorAll('#sidebar .sidebar-link[data-page]').forEach(link => {
             link.addEventListener('click', (e) => {
-                const pageId = e.currentTarget.dataset.page;
-                this.navigate(pageId);
-            });
-        });
+                const pageId = e.currentTarget.dataset.page
+                this.navigate(pageId)
+            })
+        })
 
-        // Footer action clicks
-        document.querySelectorAll('.sidebar-link[data-action]').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const action = e.currentTarget.dataset.action;
-                this.handleAction(action);
-            });
-        });
+        document.querySelectorAll('#sidebar [data-action]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const action = e.currentTarget.dataset.action
+                this.handleAction(action)
+            })
+        })
 
-        // Mobile toggle
-        const toggle = document.getElementById('sidebar-toggle');
-        const overlay = document.getElementById('sidebar-overlay');
-        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebar-toggle')
+        const overlay = document.getElementById('sidebar-overlay')
+        const sidebar = document.getElementById('sidebar')
 
-        if (toggle) {
+        if (toggle && sidebar) {
             toggle.addEventListener('click', () => {
-                sidebar.classList.toggle('open');
-                overlay.classList.toggle('show');
-            });
+                sidebar.classList.toggle('open')
+                overlay.classList.toggle('show')
+            })
         }
 
-        if (overlay) {
+        if (overlay && sidebar) {
             overlay.addEventListener('click', () => {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('show');
-            });
+                sidebar.classList.remove('open')
+                overlay.classList.remove('show')
+            })
         }
     }
 
-    navigate(pageId) {
-        // Update active state
-        document.querySelectorAll('.sidebar-link').forEach(link => {
-            link.classList.remove('active');
-        });
+    /**
+     * Solo marca el ítem activo (p. ej. historial popstate o navegación SPA sin recargar).
+     */
+    setActiveNavOnly (pageId) {
+        document.querySelectorAll('#sidebar .sidebar-link[data-page]').forEach(link => {
+            link.classList.remove('active')
+            link.setAttribute('aria-current', 'false')
+        })
 
-        const activeLink = document.querySelector(`[data-page="${pageId}"]`);
+        const activeLink = document.querySelector(`#sidebar [data-page="${pageId}"]`)
         if (activeLink) {
-            activeLink.classList.add('active');
+            activeLink.classList.add('active')
+            activeLink.setAttribute('aria-current', 'page')
         }
 
-        // Call navigation handler
-        this.onNavigate(pageId);
-
-        // Close mobile menu
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (sidebar) sidebar.classList.remove('open');
-        if (overlay) overlay.classList.remove('show');
+        this.activePage = pageId
     }
 
-    handleAction(action) {
-        switch(action) {
+    navigate (pageId) {
+        this.setActiveNavOnly(pageId)
+        this.onNavigate(pageId)
+
+        const sidebar = document.getElementById('sidebar')
+        const overlay = document.getElementById('sidebar-overlay')
+        if (sidebar) sidebar.classList.remove('open')
+        if (overlay) overlay.classList.remove('show')
+    }
+
+    updatePortalProfile ({ name, role, initials }) {
+        if (name != null) {
+            const el = document.getElementById('portal-user-name')
+            if (el) el.textContent = name
+        }
+        if (role != null) {
+            const el = document.getElementById('portal-user-role')
+            if (el) el.textContent = role
+        }
+        if (initials != null) {
+            const el = document.getElementById('portal-avatar')
+            if (el) el.textContent = initials
+        }
+    }
+
+    handleAction (action) {
+        switch (action) {
             case 'support':
-                console.log('Abrir soporte');
-                // TODO: Implementar soporte
-                break;
+                console.log('Abrir soporte')
+                break
             case 'signout':
-                if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                    // Clear session and redirect to login
-                    localStorage.removeItem('userSession');
-                    window.location.href = 'index.html';
-                }
-                break;
+                void this.signOut()
+                break
         }
     }
 
-    defaultNavigation(pageId) {
-        console.log('Navegando a:', pageId);
-        // Default navigation - can be overridden
+    async signOut () {
+        if (!confirm('¿Cerrar sesión?')) return
+        try {
+            if (typeof window !== 'undefined' && window.electronAPI?.auth?.signOut) {
+                const r = await window.electronAPI.auth.signOut()
+                if (r && r.success === false) console.warn('[signOut]', r.error)
+            }
+        } catch (e) {
+            console.warn('[signOut]', e)
+        }
+        try {
+            localStorage.removeItem('userSession')
+            localStorage.removeItem('user')
+        } catch (_) {}
+        window.location.href = 'index.html'
     }
 
-    adjustMainContent() {
-        // Add margin to main content if it exists
-        const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.querySelector('.content');
+    defaultNavigation (pageId) {
+        console.log('Navegando a:', pageId)
+    }
+
+    adjustMainContent () {
+        const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.querySelector('.content')
         if (mainContent && !mainContent.classList.contains('main-content-with-sidebar')) {
-            mainContent.classList.add('main-content-with-sidebar');
+            mainContent.classList.add('main-content-with-sidebar')
         }
     }
 
-    // SVG Icons
-    getDashboardIcon() {
+    getDashboardIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7"/>
                 <rect x="14" y="3" width="7" height="7"/>
                 <rect x="14" y="14" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/>
             </svg>
-        `;
+        `
     }
 
-    getCompaniesIcon() {
+    getLoansIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 21h18"/>
-                <rect x="5" y="7" width="4" height="14"/>
-                <rect x="10" y="3" width="4" height="18"/>
-                <rect x="15" y="10" width="4" height="11"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
             </svg>
-        `;
+        `
     }
 
-    getUsersIcon() {
+    getClientsIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-        `;
+        `
     }
 
-    getPaymentsIcon() {
+    getDocumentsIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+        `
+    }
+
+    getNewLoanIcon () {
+        return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+        `
+    }
+
+    getCompaniesIcon () {
+        return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M3 21h18"/>
+                <rect x="5" y="7" width="4" height="14"/>
+                <rect x="10" y="3" width="4" height="18"/>
+                <rect x="15" y="10" width="4" height="11"/>
+            </svg>
+        `
+    }
+
+    getUsersIcon () {
+        return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        `
+    }
+
+    getPaymentsIcon () {
+        return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                 <line x1="1" y1="10" x2="23" y2="10"/>
             </svg>
-        `;
+        `
     }
 
-    getAnalyticsIcon() {
+    getAnalyticsIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <line x1="18" y1="20" x2="18" y2="10"/>
                 <line x1="12" y1="20" x2="12" y2="4"/>
                 <line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
-        `;
+        `
     }
 
-    getSettingsIcon() {
+    getSettingsIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
-        `;
+        `
     }
 
-    getSupportIcon() {
+    getSupportIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-        `;
+        `
     }
 
-    getSignOutIcon() {
+    getSignOutIcon () {
         return `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16,17 21,12 16,7"/>
                 <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-        `;
+        `
     }
 }
 
-// Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Sidebar;
+    module.exports = Sidebar
 }

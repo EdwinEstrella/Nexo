@@ -2,12 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="components/paint-first.css">
     <title>Nexo - Registrarse</title>
     <link rel="icon" type="image/x-icon" href="Logo.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://nexo.azokia.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;">
     <style>
         * {
             margin: 0;
@@ -46,14 +47,21 @@
             --shadow-button: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
 
+        html {
+            height: 100%;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: linear-gradient(135deg, var(--surface-low) 0%, var(--surface-lowest) 100%);
             color: var(--text-primary);
-            overflow: hidden;
-            height: 100vh;
+            min-height: 100%;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
 
         /* Titlebar */
@@ -100,15 +108,17 @@
             color: white;
         }
 
-        /* Main Content */
+        /* Main Content — flex-start para formulario largo y scroll vertical */
         .main-content {
-            flex: 1;
+            flex: 1 1 auto;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            padding: 40px 24px;
+            padding: clamp(16px, 5vw, 40px) clamp(16px, 4vw, 24px);
             position: relative;
+            overflow-x: hidden;
             overflow-y: auto;
+            min-height: 0;
         }
 
         /* Background Effects */
@@ -158,9 +168,10 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 8px;
-            padding: 41px;
+            padding: clamp(24px, 6vw, 41px);
             position: relative;
             box-shadow: var(--shadow-card);
+            max-width: 100%;
         }
 
         .card-container::before {
@@ -196,19 +207,20 @@
         .heading {
             font-family: 'Manrope', sans-serif;
             font-weight: 800;
-            font-size: 30px;
-            line-height: 36px;
+            font-size: clamp(1.375rem, 4vw, 1.875rem);
+            line-height: 1.2;
             letter-spacing: -0.75px;
             color: var(--text-primary);
             text-align: center;
             margin-bottom: 8px;
+            word-wrap: break-word;
         }
 
         .subheading {
             font-family: 'Inter', sans-serif;
             font-weight: 400;
-            font-size: 16px;
-            line-height: 24px;
+            font-size: clamp(0.875rem, 2.5vw, 1rem);
+            line-height: 1.5;
             color: var(--text-secondary);
             text-align: center;
             margin-bottom: 32px;
@@ -667,6 +679,7 @@
         </div>
     </div>
 
+    <script src="components/auth-roles.js"></script>
     <script>
         // Update maximize/restore icon
         const updateMaximizeIcon = (isMaximized) => {
@@ -687,6 +700,13 @@
 
         // Listen for window state changes
         window.electronAPI.onWindowMaximized(updateMaximizeIcon)
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const result = await window.electronAPI.auth.getCurrentUser()
+            if (result.success && result.user) {
+                window.location.href = window.NexoAuth.homePath(result.user)
+            }
+        })
 
         // Window controls
         document.getElementById('min-btn').addEventListener('click', () => {
@@ -773,15 +793,6 @@
             }
         })
 
-        // Esperar a que authService esté disponible
-        let authService = null
-
-        // Escuchar cuando el servicio de autenticación esté listo
-        window.addEventListener('authServiceReady', () => {
-            authService = window.authService
-            console.log('AuthService está listo')
-        })
-
         // Form validation
         const showError = (message) => {
             const errorEl = document.getElementById('register-error')
@@ -842,7 +853,7 @@
                 return
             }
 
-            // Validación de contraseña
+            // Validación de contraseña (mínimo 6 según configuración de InsForge)
             if (password.length < 6) {
                 showError('La contraseña debe tener al menos 6 caracteres')
                 return
@@ -861,29 +872,19 @@
             submitBtn.textContent = 'Creando cuenta...'
 
             try {
-                // Usar el servicio de autenticación de InsForge
-                if (!authService) {
-                    showError('Cargando servicio de autenticación... Por favor espera')
-                    return
-                }
-
-                const result = await authService.signUp({
-                    email,
-                    password,
-                    name,
-                    company
-                })
+                // Usar el API de autenticación expuesto por contextBridge
+                const result = await window.electronAPI.auth.signUp(email, password, name, company)
 
                 if (result.success) {
                     console.log('Registro exitoso:', result.data)
-                    showSuccess('¡Cuenta creada con éxito! Revisa tu correo para verificar tu cuenta.')
-                    document.getElementById('register-form').reset()
-                    document.getElementById('password-strength').classList.remove('show')
 
-                    // Redirigir al login después de 3 segundos
-                    setTimeout(() => {
-                        window.location.href = 'index.html'
-                    }, 3000)
+                    const fresh = await window.electronAPI.auth.getCurrentUser()
+                    const user = fresh.success && fresh.user ? fresh.user : result.data?.user
+                    if (user) {
+                        localStorage.setItem('user', JSON.stringify(user))
+                    }
+
+                    window.location.href = window.NexoAuth.homePath(user)
                 } else {
                     showError(result.error || 'Error al crear cuenta')
                 }
@@ -897,6 +898,5 @@
             }
         })
     </script>
-    <script type="module" src="auth-loader.js"></script>
 </body>
 </html>

@@ -1,0 +1,193 @@
+/* App top bar — Figma node 1:280 (Header - TopAppBar) */
+.app-header {
+    position: fixed;
+    top: 32px;
+    left: var(--sidebar-width, 256px);
+    right: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    row-gap: 8px;
+    flex-wrap: wrap;
+    min-height: 56px;
+    padding: 10px clamp(12px, 3vw, 32px) 12px;
+    border-bottom: 1px solid rgba(196, 198, 208, 0.25);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(180deg, rgb(248, 250, 252) 0%, rgba(248, 250, 252, 0) 100%),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.88) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.app-header__search-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.app-header__search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-header__search {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    background: #dee8ff;
+    padding: 9px 16px 10px 40px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #000e24);
+    -webkit-app-region: no-drag;
+}
+
+.app-header__search::placeholder {
+    color: #94a3b8;
+}
+
+.app-header__search:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 14, 36, 0.08);
+}
+
+.app-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-shrink: 0;
+    -webkit-app-region: no-drag;
+}
+
+.app-header__icon-btns {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-header__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.app-header__icon-btn:hover {
+    background: rgba(0, 14, 36, 0.06);
+    color: #000e24;
+}
+
+.app-header__icon-btn svg {
+    display: block;
+}
+
+.app-header__divider {
+    width: 1px;
+    height: 32px;
+    background: #e2e8f0;
+    margin: 0 8px;
+}
+
+.app-header__user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-header__user-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 0;
+}
+
+.app-header__user-name {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 16px;
+    color: #000e24;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.app-header__user-meta {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 15px;
+    color: #515f74;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.app-header__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 2px solid #d6e3ff;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #dee8ff 0%, #cfdaf2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #000e24;
+}
+
+.app-header__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 900px) {
+    .app-header {
+        left: 0;
+        padding-left: 16px;
+        padding-right: 16px;
+        gap: 12px;
+    }
+
+    .app-header__search {
+        font-size: 13px;
+    }
+
+    .app-header__icon-btns {
+        gap: 8px;
+    }
+
+    .app-header__user-text {
+        display: none;
+    }
+}

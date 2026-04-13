@@ -1,0 +1,277 @@
+<div class="dashboard-canvas" data-node-id="1:979" data-view="empresa-cartera">
+    <header class="dashboard-canvas__head">
+        <div class="dashboard-canvas__titles">
+            <h1 class="page-title">Resumen de cartera</h1>
+            <p class="page-lead">Rendimiento de la cartera y métricas de riesgo institucional (octubre 2023).</p>
+            <p class="page-session" id="portal-session" hidden></p>
+        </div>
+        <div class="period-toggle" role="group" aria-label="Periodo">
+            <button type="button" class="period-toggle__btn is-active" data-period="monthly">Mensual</button>
+            <button type="button" class="period-toggle__btn" data-period="quarterly">Trimestral</button>
+            <button type="button" class="period-toggle__btn" data-period="yearly">Anual</button>
+        </div>
+    </header>
+
+    <section class="kpi-grid" aria-label="Indicadores clave">
+        <article class="kpi-card">
+            <div class="kpi-card__glow" aria-hidden="true"></div>
+            <div class="kpi-card__row">
+                <span class="kpi-card__label">Valor total de cartera</span>
+                <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
+                    <path d="M9 9v0M9 12v0M9 15v0"/>
+                </svg>
+            </div>
+            <div class="kpi-card__value">RD$45.8M</div>
+            <div class="kpi-card__meta kpi-card__meta--success">
+                <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l3-3 2 2 3-4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+                +4.2% respecto al mes anterior
+            </div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-card__row">
+                <span class="kpi-card__label">Préstamos activos</span>
+                <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                </svg>
+            </div>
+            <div class="kpi-card__value">284</div>
+            <div class="kpi-card__meta kpi-card__meta--muted">12 en espera de firma final</div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-card__row">
+                <span class="kpi-card__label">Tasa de mora</span>
+                <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M10.29 3.86L1.82 18a1 1 0 00.86 1.5h18.64a1 1 0 00.86-1.5L13.71 3.86a1 1 0 00-1.72 0zM12 9v4M12 17h.01"/>
+                </svg>
+            </div>
+            <div class="kpi-card__value kpi-card__value--danger">2.4%</div>
+            <div class="kpi-card__meta kpi-card__meta--danger">+0.3% umbral crítico</div>
+        </article>
+        <article class="kpi-card">
+            <div class="kpi-card__row">
+                <span class="kpi-card__label">Solicitudes pendientes</span>
+                <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="kpi-card__value">18</div>
+            <div class="kpi-card__meta kpi-card__meta--success">RD$3.2M en pipeline (DOP)</div>
+        </article>
+    </section>
+
+    <div class="dashboard-layout">
+        <div class="dashboard-col-main">
+            <section class="dash-card" aria-labelledby="chart-title">
+                <div class="dash-card__head">
+                    <div>
+                        <h2 class="dash-card__title" id="chart-title">Distribución de préstamos</h2>
+                        <p class="dash-card__subtitle">Calidad de activos por estado</p>
+                    </div>
+                    <div class="chart-legend">
+                        <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--current"></span> Al día</span>
+                        <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--late"></span> Atraso</span>
+                        <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--default"></span> Incumplimiento</span>
+                    </div>
+                </div>
+                <div class="chart-bars" role="img" aria-label="Distribución por trimestre: barras apiladas simuladas">
+                    <div class="chart-q">
+                        <div class="chart-stack">
+                            <div class="chart-seg chart-seg--default" style="flex: 18 0 0"></div>
+                            <div class="chart-seg chart-seg--late" style="flex: 27 0 0"></div>
+                            <div class="chart-seg chart-seg--current" style="flex: 55 0 0"></div>
+                        </div>
+                        <span class="chart-label">Q1 2023</span>
+                    </div>
+                    <div class="chart-q">
+                        <div class="chart-stack">
+                            <div class="chart-seg chart-seg--default" style="flex: 15 0 0"></div>
+                            <div class="chart-seg chart-seg--late" style="flex: 28 0 0"></div>
+                            <div class="chart-seg chart-seg--current" style="flex: 57 0 0"></div>
+                        </div>
+                        <span class="chart-label">Q2 2023</span>
+                    </div>
+                    <div class="chart-q">
+                        <div class="chart-stack">
+                            <div class="chart-seg chart-seg--default" style="flex: 14 0 0"></div>
+                            <div class="chart-seg chart-seg--late" style="flex: 24 0 0"></div>
+                            <div class="chart-seg chart-seg--current" style="flex: 62 0 0"></div>
+                        </div>
+                        <span class="chart-label">Q3 2023</span>
+                    </div>
+                    <div class="chart-q">
+                        <div class="chart-stack">
+                            <div class="chart-seg chart-seg--default" style="flex: 12 0 0"></div>
+                            <div class="chart-seg chart-seg--late" style="flex: 22 0 0"></div>
+                            <div class="chart-seg chart-seg--current" style="flex: 66 0 0"></div>
+                        </div>
+                        <span class="chart-label chart-label--emphasis">Actual (Q4)</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="repayments-card" aria-labelledby="repay-title">
+                <div class="repayments-card__head">
+                    <h2 class="dash-card__title repayments-card__title" id="repay-title">Próximos pagos</h2>
+                    <button type="button" class="repayments-card__link">Ver calendario completo →</button>
+                </div>
+                <div class="repayments-scroll">
+                    <table class="repayments-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Ref. préstamo</th>
+                                <th class="text-right">Importe</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="cell-user">
+                                        <span class="cell-avatar" aria-hidden="true">JM</span>
+                                        <span class="cell-name">Jonathan Myer</span>
+                                    </div>
+                                </td>
+                                <td class="cell-ref">#LN-8922-A</td>
+                                <td class="cell-amount text-right">RD$12,450.00</td>
+                                <td class="cell-date">24 oct 2023</td>
+                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="cell-user">
+                                        <span class="cell-avatar" aria-hidden="true">EW</span>
+                                        <span class="cell-name">Eleanor Wright</span>
+                                    </div>
+                                </td>
+                                <td class="cell-ref">#LN-7710-C</td>
+                                <td class="cell-amount text-right">RD$8,900.00</td>
+                                <td class="cell-date">25 oct 2023</td>
+                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="cell-user">
+                                        <span class="cell-avatar" aria-hidden="true">RT</span>
+                                        <span class="cell-name">Robert Thompson</span>
+                                    </div>
+                                </td>
+                                <td class="cell-ref">#LN-6544-B</td>
+                                <td class="cell-amount text-right">RD$15,220.00</td>
+                                <td class="cell-date">27 oct 2023</td>
+                                <td><span class="dash-badge dash-badge--followup">Seguimiento<br>requerido</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="cell-user">
+                                        <span class="cell-avatar" aria-hidden="true">AL</span>
+                                        <span class="cell-name">Aisha Lewis</span>
+                                    </div>
+                                </td>
+                                <td class="cell-ref">#LN-9011-D</td>
+                                <td class="cell-amount text-right">RD$4,500.00</td>
+                                <td class="cell-date">28 oct 2023</td>
+                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="cell-user">
+                                        <span class="cell-avatar" aria-hidden="true">SK</span>
+                                        <span class="cell-name">Samuel King</span>
+                                    </div>
+                                </td>
+                                <td class="cell-ref">#LN-8119-F</td>
+                                <td class="cell-amount text-right">RD$22,000.00</td>
+                                <td class="cell-date">30 oct 2023</td>
+                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="dashboard-col-aside">
+            <section class="quick-actions" aria-labelledby="qa-title">
+                <div class="quick-actions__glow" aria-hidden="true"></div>
+                <h2 class="quick-actions__title" id="qa-title">Acciones rápidas</h2>
+                <div class="quick-actions__list">
+                    <button type="button" class="quick-action-btn" data-go-loans="1">
+                        <span class="quick-action-btn__left">
+                            <svg class="quick-action-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            Nueva solicitud de préstamo
+                        </span>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
+                    </button>
+                    <button type="button" class="quick-action-btn">
+                        <span class="quick-action-btn__left">
+                            <svg class="quick-action-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path d="M3 3v18h18"/><path d="M7 12l4-4 4 4 6-6"/>
+                            </svg>
+                            Generar informe de cartera
+                        </span>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
+                    </button>
+                    <button type="button" class="quick-action-btn">
+                        <span class="quick-action-btn__left">
+                            <svg class="quick-action-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            Análisis de riesgo
+                        </span>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
+                    </button>
+                </div>
+            </section>
+
+            <section class="dash-card events-card" aria-labelledby="events-title">
+                <h2 class="dash-card__title" id="events-title">Eventos recientes del portafolio</h2>
+                <div class="events-feed">
+                    <article class="event-item">
+                        <div class="event-item__icon event-item__icon--success" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        </div>
+                        <div class="event-item__title">Nueva solicitud de Sarah Miller</div>
+                        <div class="event-item__meta">Hace 10 min · RD$450k refinanciación (DOP)</div>
+                    </article>
+                    <article class="event-item">
+                        <div class="event-item__icon event-item__icon--info" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 10v4M9 12h6"/></svg>
+                        </div>
+                        <div class="event-item__title">Pago recibido · Préstamo #8821</div>
+                        <div class="event-item__meta">Hace 2 h · RD$12,400 capital (DOP)</div>
+                    </article>
+                    <article class="event-item">
+                        <div class="event-item__icon event-item__icon--warn" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                        </div>
+                        <div class="event-item__title">Documento firmado: contrato Brooks</div>
+                        <div class="event-item__meta">Hace 4 h · Verificación underwriting</div>
+                    </article>
+                    <article class="event-item">
+                        <div class="event-item__icon event-item__icon--neutral" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>
+                        </div>
+                        <div class="event-item__title">Informe de crédito: James Wilson</div>
+                        <div class="event-item__meta">Ayer · Puntuación 785 (excelente)</div>
+                    </article>
+                </div>
+                <button type="button" class="events-audit-btn">Ver registro de auditoría</button>
+            </section>
+
+            <section class="insight-card" aria-labelledby="insight-label">
+                <svg class="insight-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M9 18h6M10 22h4M12 2a7 7 0 017 7c0 5-7 9-7 9s-7-4-7-9a7 7 0 017-7z"/>
+                </svg>
+                <div>
+                    <div class="insight-card__label" id="insight-label">Insight de cartera</div>
+                    <p class="insight-card__body">
+                        La subida de tipos puede afectar la mora en segmentos de <strong>tipo variable</strong>. Conviene revisar el colchón de riesgo del Q4.
+                    </p>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>

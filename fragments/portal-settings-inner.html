@@ -1,0 +1,493 @@
+<main class="settings-canvas" aria-label="Configuración del portal">
+    <header class="settings-canvas__head">
+        <div>
+            <h1 class="settings-canvas__title">Configuración</h1>
+            <p class="settings-canvas__lead">Administra tu perfil, la institución, notificaciones, seguridad y preferencias avanzadas del portal Lending Ledger.</p>
+        </div>
+        <div class="settings-canvas__meta">
+            <span class="settings-pill">Portal empresa</span>
+            <span class="settings-pill settings-pill--ok">Sesión verificada</span>
+        </div>
+    </header>
+
+    <div class="settings-layout">
+        <nav class="settings-nav" role="tablist" aria-label="Secciones">
+            <button type="button" class="settings-nav__btn is-active" role="tab" id="settings-tab-cuenta" data-settings-tab="cuenta" aria-selected="true" aria-controls="settings-panel-cuenta">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                Cuenta y perfil
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-institucion" data-settings-tab="institucion" aria-selected="false" aria-controls="settings-panel-institucion">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                Institución
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-notificaciones" data-settings-tab="notificaciones" aria-selected="false" aria-controls="settings-panel-notificaciones">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+                Notificaciones
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-seguridad" data-settings-tab="seguridad" aria-selected="false" aria-controls="settings-panel-seguridad">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+                Seguridad
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-apariencia" data-settings-tab="apariencia" aria-selected="false" aria-controls="settings-panel-apariencia">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span>
+                Apariencia
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-datos" data-settings-tab="datos" aria-selected="false" aria-controls="settings-panel-datos">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+                Datos y privacidad
+            </button>
+            <button type="button" class="settings-nav__btn" role="tab" id="settings-tab-avanzado" data-settings-tab="avanzado" aria-selected="false" aria-controls="settings-panel-avanzado">
+                <span class="settings-nav__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span>
+                Avanzado
+            </button>
+        </nav>
+
+        <div class="settings-panels">
+            <!-- Cuenta -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-cuenta" data-settings-panel="cuenta" aria-labelledby="settings-tab-cuenta">
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Perfil de usuario</h2>
+                        <p class="settings-card__desc">Datos visibles en el portal y en comunicaciones internas. El correo proviene de tu cuenta de acceso.</p>
+                    </div>
+                    <form id="settings-form-profile" class="settings-card__body">
+                        <div class="settings-grid">
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-field-name">Nombre para mostrar</label>
+                                <input type="text" id="settings-field-name" name="display_name" class="settings-input" autocomplete="name" placeholder="Tu nombre completo">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-field-email">Correo electrónico</label>
+                                <input type="email" id="settings-field-email" name="email" class="settings-input" readonly autocomplete="email" aria-readonly="true">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-field-role">Cargo o rol operativo</label>
+                                <input type="text" id="settings-field-role" name="job_title" class="settings-input" placeholder="Ej. Analista de riesgos">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-field-phone">Teléfono de contacto</label>
+                                <input type="tel" id="settings-field-phone" name="phone" class="settings-input" autocomplete="tel" placeholder="+57 …">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-field-locale">Idioma de la interfaz</label>
+                                <select id="settings-field-locale" name="locale" class="settings-select">
+                                    <option value="es">Español</option>
+                                    <option value="en">English</option>
+                                    <option value="pt">Português</option>
+                                </select>
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-field-tz">Zona horaria</label>
+                                <select id="settings-field-tz" name="timezone" class="settings-select">
+                                    <option value="America/Bogota">América/Bogotá (GMT-5)</option>
+                                    <option value="America/Mexico_City">América/Ciudad de México (GMT-6)</option>
+                                    <option value="America/Santiago">América/Santiago (GMT-4)</option>
+                                    <option value="America/New_York">América/Nueva York (GMT-5)</option>
+                                    <option value="Europe/Madrid">Europa/Madrid (GMT+1)</option>
+                                </select>
+                            </div>
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-field-bio">Firma o nota interna <span class="settings-label__hint">(opcional)</span></label>
+                                <textarea id="settings-field-bio" name="bio" class="settings-textarea" rows="2" placeholder="Texto breve en reportes exportados…"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="button" class="settings-btn settings-btn--ghost" data-settings-reset-form="settings-form-profile">Restablecer</button>
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-profile">Guardar perfil</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Institución -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-institucion" data-settings-panel="institucion" aria-labelledby="settings-tab-institucion" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Datos de la institución</h2>
+                        <p class="settings-card__desc">Identificación del tenant en documentos, pie de página y comunicaciones con clientes.</p>
+                    </div>
+                    <form id="settings-form-org" class="settings-card__body">
+                        <div class="settings-grid">
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-org-legal">Razón social legal</label>
+                                <input type="text" id="settings-org-legal" name="org_legal_name" class="settings-input" placeholder="Nombre registrado ante cámara de comercio">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-org-trade">Nombre comercial</label>
+                                <input type="text" id="settings-org-trade" name="org_trade_name" class="settings-input" placeholder="Lending Ledger">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-org-slug">Identificador corto (slug)</label>
+                                <input type="text" id="settings-org-slug" name="org_slug" class="settings-input" placeholder="lending-ledger" pattern="[a-z0-9-]+" title="Solo minúsculas, números y guiones">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-org-sector">Sector principal</label>
+                                <select id="settings-org-sector" name="org_sector" class="settings-select">
+                                    <option value="hipotecario">Originación hipotecaria</option>
+                                    <option value="consumo">Crédito de consumo</option>
+                                    <option value="pyme">PYME / comercial</option>
+                                    <option value="mixto">Cartera mixta</option>
+                                </select>
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-org-web">Sitio web</label>
+                                <input type="url" id="settings-org-web" name="org_website" class="settings-input" placeholder="https://">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-org-support">Correo de soporte institucional</label>
+                                <input type="email" id="settings-org-support" name="org_support_email" class="settings-input" placeholder="soporte@…">
+                            </div>
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-org-address">Dirección fiscal / sede</label>
+                                <textarea id="settings-org-address" name="org_address" class="settings-textarea" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-org">Guardar institución</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notificaciones -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-notificaciones" data-settings-panel="notificaciones" aria-labelledby="settings-tab-notificaciones" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Canales y alertas</h2>
+                        <p class="settings-card__desc">Controla qué eventos generan correo, avisos en el portal y resúmenes programados.</p>
+                    </div>
+                    <form id="settings-form-notify" class="settings-card__body">
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Correo: vencimientos y mora</strong>
+                                <span>Alertas cuando un pago está próximo o entra en mora.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="notif_email_payments" class="settings-switch__input" checked>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Correo: nuevas solicitudes</strong>
+                                <span>Cliente nuevo o solicitud de producto pendiente de asignación.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="notif_email_applications" class="settings-switch__input" checked>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Correo: informes programados</strong>
+                                <span>Resumen semanal de cartera y KPIs.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="notif_email_digest" class="settings-switch__input" checked>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Avisos en el portal (campana)</strong>
+                                <span>Notificaciones en tiempo casi real mientras usas la app.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="notif_inapp" class="settings-switch__input" checked>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Recordatorios de documentación KYC</strong>
+                                <span>Caducidad o pendientes de carga por cliente.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="notif_kyc" class="settings-switch__input">
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-grid" style="margin-top: 20px;">
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-digest-day">Día del resumen semanal</label>
+                                <select id="settings-digest-day" name="digest_weekday" class="settings-select">
+                                    <option value="1">Lunes</option>
+                                    <option value="2">Martes</option>
+                                    <option value="3">Miércoles</option>
+                                    <option value="4">Jueves</option>
+                                    <option value="5">Viernes</option>
+                                </select>
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-digest-hour">Hora (zona configurada)</label>
+                                <select id="settings-digest-hour" name="digest_hour" class="settings-select">
+                                    <option value="7">07:00</option>
+                                    <option value="8" selected>08:00</option>
+                                    <option value="9">09:00</option>
+                                    <option value="17">17:00</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-notify">Guardar notificaciones</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seguridad -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-seguridad" data-settings-panel="seguridad" aria-labelledby="settings-tab-seguridad" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Contraseña y sesión</h2>
+                        <p class="settings-card__desc">Actualiza tu clave de acceso y define políticas de cierre de sesión por inactividad.</p>
+                    </div>
+                    <form id="settings-form-security" class="settings-card__body" autocomplete="off">
+                        <div class="settings-grid">
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-pw-current">Contraseña actual</label>
+                                <input type="password" id="settings-pw-current" name="password_current" class="settings-input" autocomplete="current-password">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-pw-new">Nueva contraseña</label>
+                                <input type="password" id="settings-pw-new" name="password_new" class="settings-input" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-pw-confirm">Confirmar nueva contraseña</label>
+                                <input type="password" id="settings-pw-confirm" name="password_confirm" class="settings-input" autocomplete="new-password" minlength="8">
+                            </div>
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-session-timeout">Cierre por inactividad</label>
+                                <select id="settings-session-timeout" name="session_timeout_min" class="settings-select">
+                                    <option value="15">15 minutos</option>
+                                    <option value="30" selected>30 minutos</option>
+                                    <option value="60">1 hora</option>
+                                    <option value="120">2 horas</option>
+                                    <option value="0">Solo al cerrar sesión manualmente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="settings-toggle-row" style="margin-top: 8px;">
+                            <div class="settings-toggle-row__text">
+                                <strong>Verificación en dos pasos (2FA)</strong>
+                                <span>Próximamente: TOTP o SMS para operaciones sensibles.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="twofa_enabled" class="settings-switch__input" disabled>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-security">Actualizar seguridad</button>
+                    </div>
+                </div>
+
+                <div class="settings-card" style="margin-top: 20px;">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Sesiones activas</h2>
+                        <p class="settings-card__desc">Dispositivos que han iniciado sesión recientemente con tu cuenta.</p>
+                    </div>
+                    <div class="settings-card__body">
+                        <div class="settings-sessions">
+                            <div class="settings-session">
+                                <div>
+                                    <div class="settings-session__device">Este equipo — Nexo (Electron)</div>
+                                    <div class="settings-session__meta">Windows · Actividad: ahora · IP local</div>
+                                </div>
+                                <span class="settings-session__badge">Actual</span>
+                            </div>
+                            <div class="settings-session">
+                                <div>
+                                    <div class="settings-session__device">Chrome · Windows</div>
+                                    <div class="settings-session__meta">Hace 2 días · Ciudad aproximada</div>
+                                </div>
+                                <span class="settings-session__badge settings-session__badge--remote">Remota</span>
+                            </div>
+                        </div>
+                        <p class="settings-callout">Para cerrar todas las sesiones excepto la actual, usa “Cerrar otras sesiones” cuando conectes el backend de autenticación.</p>
+                    </div>
+                    <div class="settings-card__footer">
+                        <button type="button" class="settings-btn settings-btn--danger" disabled title="Requiere API de sesiones">Cerrar otras sesiones</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Apariencia -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-apariencia" data-settings-panel="apariencia" aria-labelledby="settings-tab-apariencia" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Experiencia visual</h2>
+                        <p class="settings-card__desc">Densidad de la interfaz, animaciones y acento de marca en botones e indicadores.</p>
+                    </div>
+                    <form id="settings-form-appearance" class="settings-card__body">
+                        <div class="settings-field" style="margin-bottom: 20px;">
+                            <span class="settings-label">Densidad de listados y tablas</span>
+                            <div class="settings-accent-options" role="radiogroup" aria-label="Densidad">
+                                <label class="settings-accent-opt">
+                                    <input type="radio" name="ui_density" value="comfortable" checked>
+                                    <span class="settings-accent-opt__box"><span class="settings-accent-dot settings-accent-dot--navy"></span> Cómoda</span>
+                                </label>
+                                <label class="settings-accent-opt">
+                                    <input type="radio" name="ui_density" value="compact">
+                                    <span class="settings-accent-opt__box"><span class="settings-accent-dot settings-accent-dot--slate"></span> Compacta</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="settings-field" style="margin-bottom: 20px;">
+                            <span class="settings-label">Color de acento</span>
+                            <div class="settings-accent-options" role="radiogroup" aria-label="Acento">
+                                <label class="settings-accent-opt">
+                                    <input type="radio" name="ui_accent" value="navy" checked>
+                                    <span class="settings-accent-opt__box"><span class="settings-accent-dot settings-accent-dot--navy"></span> Navy institucional</span>
+                                </label>
+                                <label class="settings-accent-opt">
+                                    <input type="radio" name="ui_accent" value="mint">
+                                    <span class="settings-accent-opt__box"><span class="settings-accent-dot settings-accent-dot--mint"></span> Mint Nexo</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Animaciones de interfaz</strong>
+                                <span>Transiciones suaves en paneles y modales.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="ui_animations" class="settings-switch__input" checked>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Reducir movimiento</strong>
+                                <span>Respeta preferencia del sistema operativo para menos animación.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="ui_reduce_motion" class="settings-switch__input">
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-appearance">Guardar apariencia</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Datos -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-datos" data-settings-panel="datos" aria-labelledby="settings-tab-datos" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Exportación y retención</h2>
+                        <p class="settings-card__desc">Descarga copias de datos operativos y ajusta cuánto tiempo se conservan registros de auditoría.</p>
+                    </div>
+                    <div class="settings-card__body">
+                        <form id="settings-form-data-retention" class="settings-grid">
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-retention-audit">Retención de logs de auditoría</label>
+                                <select id="settings-retention-audit" name="retention_audit_months" class="settings-select">
+                                    <option value="6">6 meses</option>
+                                    <option value="12" selected>12 meses</option>
+                                    <option value="24">24 meses</option>
+                                    <option value="60">5 años (normativa extendida)</option>
+                                </select>
+                            </div>
+                            <div class="settings-field settings-grid__full">
+                                <label class="settings-label" for="settings-retention-docs">Retención de metadatos de documentos</label>
+                                <select id="settings-retention-docs" name="retention_docs_months" class="settings-select">
+                                    <option value="12">12 meses</option>
+                                    <option value="36" selected>36 meses</option>
+                                    <option value="84">7 años</option>
+                                </select>
+                            </div>
+                        </form>
+                        <div class="settings-inline-actions" style="margin-top: 20px;">
+                            <button type="button" class="settings-btn settings-btn--mint" data-settings-export-json>Descargar exportación JSON (demo)</button>
+                            <button type="button" class="settings-btn settings-btn--ghost" disabled title="Requiere backend">Exportar cartera (CSV)</button>
+                        </div>
+                        <p class="settings-callout">Las exportaciones reales dependerán de tus políticas de privacidad y del consentimiento registrado por cliente.</p>
+                    </div>
+                    <div class="settings-card__footer">
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-data-retention">Guardar retención</button>
+                    </div>
+                </div>
+
+                <div class="settings-card" style="margin-top: 20px;">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Privacidad</h2>
+                        <p class="settings-card__desc">Base legal y contacto para ejercicio de derechos (ARCO / GDPR según jurisdicción).</p>
+                    </div>
+                    <div class="settings-card__body">
+                        <div class="settings-field">
+                            <label class="settings-label" for="settings-dpo-email">Correo del delegado de protección de datos</label>
+                            <input type="email" id="settings-dpo-email" name="dpo_email" class="settings-input" form="settings-form-privacy" placeholder="privacidad@…" autocomplete="email">
+                        </div>
+                        <p class="settings-callout settings-callout--warn" style="margin-top: 16px;">Revisa el texto legal aplicable con tu asesoría antes de publicar enlaces a políticas desde el portal.</p>
+                    </div>
+                    <div class="settings-card__footer">
+                        <form id="settings-form-privacy" style="display:contents">
+                            <button type="submit" class="settings-btn settings-btn--primary">Guardar privacidad</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Avanzado -->
+            <section class="settings-panel" role="tabpanel" id="settings-panel-avanzado" data-settings-panel="avanzado" aria-labelledby="settings-tab-avanzado" hidden>
+                <div class="settings-card">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Rendimiento y diagnóstico</h2>
+                        <p class="settings-card__desc">Opciones para entornos de prueba y soporte técnico.</p>
+                    </div>
+                    <form id="settings-form-advanced" class="settings-card__body">
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Modo diagnóstico (verbose)</strong>
+                                <span>Más mensajes en consola del cliente; solo para desarrollo.</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="debug_verbose" class="settings-switch__input">
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="settings-field" style="margin-top: 16px;">
+                            <label class="settings-label" for="settings-log-level">Nivel de registro del cliente</label>
+                            <select id="settings-log-level" name="client_log_level" class="settings-select">
+                                <option value="error">Solo errores</option>
+                                <option value="warn" selected>Advertencias</option>
+                                <option value="info">Informativo</option>
+                            </select>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-row__text">
+                                <strong>Modo mantenimiento (solo lectura)</strong>
+                                <span>Bloquea acciones de escritura para usuarios del portal (requiere backend).</span>
+                            </div>
+                            <label class="settings-switch">
+                                <input type="checkbox" name="maintenance_readonly" class="settings-switch__input" disabled>
+                                <span class="settings-switch__track" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                    </form>
+                    <div class="settings-card__footer">
+                        <button type="button" class="settings-btn settings-btn--ghost" data-settings-clear-cache>Vaciar caché de interfaz</button>
+                        <button type="submit" class="settings-btn settings-btn--primary" form="settings-form-advanced">Guardar avanzado</button>
+                    </div>
+                </div>
+
+                <div class="settings-card settings-danger" style="margin-top: 20px;">
+                    <div class="settings-card__head">
+                        <h2 class="settings-card__title">Zona crítica</h2>
+                        <p class="settings-card__desc">Acciones irreversibles sobre la configuración del tenant.</p>
+                    </div>
+                    <div class="settings-card__body">
+                        <p class="settings-card__desc" style="margin:0;">La desactivación del portal o borrado de datos maestros debe ejecutarse desde consola de administración o soporte InsForge.</p>
+                    </div>
+                    <div class="settings-card__footer">
+                        <button type="button" class="settings-btn settings-btn--danger" disabled>Solicitar baja del tenant</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>

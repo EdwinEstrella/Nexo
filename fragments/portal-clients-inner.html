@@ -1,0 +1,262 @@
+<div class="clients-view">
+<main class="clients-canvas" aria-label="Directorio de clientes institucionales">
+    <div class="clients-canvas__head">
+        <div class="clients-canvas__titles">
+            <h1 class="clients-canvas__title">Clientes y perfiles</h1>
+            <p class="clients-canvas__subtitle">Directorio unificado de personas y empresas con relación activa o en evaluación con la institución.</p>
+        </div>
+        <div class="clients-canvas__actions">
+            <button type="button" class="clients-btn clients-btn--ghost" aria-label="Exportar listado">
+                <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v8M2 5l3 3 3-3M0 10h10" stroke="currentColor" stroke-width="1.2"/></svg>
+                Exportar CSV
+            </button>
+            <button type="button" class="clients-btn clients-btn--primary" data-portal-view="loan-request" aria-label="Ir a nueva solicitud de préstamo">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 0v10M0 5h10" stroke="currentColor" stroke-width="1.5"/></svg>
+                Nuevo cliente
+            </button>
+        </div>
+    </div>
+
+    <div class="clients-kpi-grid" role="list">
+        <article class="clients-kpi" role="listitem">
+            <div class="clients-kpi__top">
+                <div class="clients-kpi__icon clients-kpi__icon--soft" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
+                <span class="clients-kpi__pill">+2,1%</span>
+            </div>
+            <p class="clients-kpi__label">Total en directorio</p>
+            <p class="clients-kpi__value">1.284</p>
+        </article>
+        <article class="clients-kpi" role="listitem">
+            <div class="clients-kpi__top">
+                <div class="clients-kpi__icon clients-kpi__icon--mint" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                </div>
+                <span class="clients-kpi__meta">Cartera vinculada</span>
+            </div>
+            <p class="clients-kpi__label">Con préstamo activo</p>
+            <p class="clients-kpi__value">892</p>
+        </article>
+        <article class="clients-kpi" role="listitem">
+            <div class="clients-kpi__top">
+                <div class="clients-kpi__icon clients-kpi__icon--soft" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </div>
+            </div>
+            <p class="clients-kpi__label">Prospectos</p>
+            <p class="clients-kpi__value">156</p>
+            <p class="clients-kpi__meta">En onboarding o preaprobación</p>
+        </article>
+        <article class="clients-kpi" role="listitem">
+            <div class="clients-kpi__top">
+                <div class="clients-kpi__icon clients-kpi__icon--warn" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15h6"/></svg>
+                </div>
+                <span class="clients-kpi__meta">Revisión</span>
+            </div>
+            <p class="clients-kpi__label">KYC pendiente</p>
+            <p class="clients-kpi__value">23</p>
+        </article>
+    </div>
+
+    <div class="clients-layout">
+        <div class="clients-main">
+            <div class="clients-filters">
+                <div class="clients-filters__left">
+                    <button type="button" class="clients-filter-chip" aria-label="Abrir filtros avanzados">
+                        <svg width="11" height="8" viewBox="0 0 11 8" fill="none" aria-hidden="true"><path d="M0 1h11M2 4h7M4 7h3" stroke="currentColor" stroke-width="1.2"/></svg>
+                        Filtros
+                    </button>
+                    <label class="visually-hidden" for="clients-filter-segment">Segmento</label>
+                    <select id="clients-filter-segment" class="clients-filter-chip clients-filter-chip--select" aria-label="Filtrar por segmento">
+                        <option>Segmento: Todos</option>
+                        <option>Residencial</option>
+                        <option>Corporativo</option>
+                        <option>Desarrollador</option>
+                    </select>
+                    <label class="visually-hidden" for="clients-filter-kyc">Estado KYC</label>
+                    <select id="clients-filter-kyc" class="clients-filter-chip clients-filter-chip--select" aria-label="Filtrar por KYC">
+                        <option>KYC: Todos</option>
+                        <option>Verificado</option>
+                        <option>Pendiente</option>
+                        <option>En revisión</option>
+                    </select>
+                </div>
+                <p class="clients-filters__count">Mostrando 4 de 1.284 clientes</p>
+            </div>
+
+            <div class="clients-table-card">
+                <div class="clients-table-scroll">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Cliente</th>
+                                <th scope="col">Segmento</th>
+                                <th scope="col">Contacto</th>
+                                <th scope="col">Préstamos</th>
+                                <th scope="col">Última actividad</th>
+                                <th scope="col">KYC</th>
+                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="clients-cell-user">
+                                        <div class="clients-avatar clients-avatar--a" aria-hidden="true">MR</div>
+                                        <div>
+                                            <div class="clients-name">María Ríos Castillo</div>
+                                            <div class="clients-id">CLI-2023-8841</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="clients-segment">Residencial<br>hipotecario</span></td>
+                                <td>
+                                    <div class="clients-contact">m.rios@email.com</div>
+                                    <div class="clients-contact-meta">+1 (305) 555-0142</div>
+                                </td>
+                                <td>
+                                    <div class="clients-loan-count">2</div>
+                                    <div class="clients-loan-meta">Saldo agregado RD$620k (DOP)</div>
+                                </td>
+                                <td>
+                                    11 oct 2023
+                                    <div class="clients-activity-meta clients-activity-meta--ok">Pago registrado</div>
+                                </td>
+                                <td><span class="clients-badge clients-badge--verified">Verificado</span></td>
+                                <td class="clients-row-actions">
+                                    <button type="button" class="clients-menu-btn" aria-label="Más opciones, María Ríos">
+                                        <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="clients-cell-user">
+                                        <div class="clients-avatar clients-avatar--b" aria-hidden="true">GC</div>
+                                        <div>
+                                            <div class="clients-name">Grupo Constructor S.A.</div>
+                                            <div class="clients-id">CLI-2022-1204</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="clients-segment">Desarrollador<br>inmobiliario</span></td>
+                                <td>
+                                    <div class="clients-contact">ops@grupoconstructor.com</div>
+                                    <div class="clients-contact-meta">Oficina central</div>
+                                </td>
+                                <td>
+                                    <div class="clients-loan-count">5</div>
+                                    <div class="clients-loan-meta">Línea puente activa</div>
+                                </td>
+                                <td>
+                                    09 oct 2023
+                                    <div class="clients-activity-meta clients-activity-meta--muted">Doc. actualizada</div>
+                                </td>
+                                <td><span class="clients-badge clients-badge--verified">Verificado</span></td>
+                                <td class="clients-row-actions">
+                                    <button type="button" class="clients-menu-btn" aria-label="Más opciones, Grupo Constructor">
+                                        <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="clients-cell-user">
+                                        <div class="clients-avatar clients-avatar--c" aria-hidden="true">JV</div>
+                                        <div>
+                                            <div class="clients-name">Jorge Vela Márquez</div>
+                                            <div class="clients-id">CLI-2024-0192</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="clients-segment">Corporativo<br>PYME</span></td>
+                                <td>
+                                    <div class="clients-contact">j.vela@industriasnorte.mx</div>
+                                    <div class="clients-contact-meta">Doc. identidad ·***92</div>
+                                </td>
+                                <td>
+                                    <div class="clients-loan-count">1</div>
+                                    <div class="clients-loan-meta">En desembolso</div>
+                                </td>
+                                <td>
+                                    08 oct 2023
+                                    <div class="clients-activity-meta clients-activity-meta--muted">Firma programada</div>
+                                </td>
+                                <td><span class="clients-badge clients-badge--review">En revisión</span></td>
+                                <td class="clients-row-actions">
+                                    <button type="button" class="clients-menu-btn" aria-label="Más opciones, Jorge Vela">
+                                        <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="clients-cell-user">
+                                        <div class="clients-avatar clients-avatar--d" aria-hidden="true">IL</div>
+                                        <div>
+                                            <div class="clients-name">Inmobiliaria del Este S.A.</div>
+                                            <div class="clients-id">CLI-2021-4407</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="clients-segment">Corporativo<br>institucional</span></td>
+                                <td>
+                                    <div class="clients-contact">cartera@inmobiliariadeleste.com</div>
+                                    <div class="clients-contact-meta">Relación desde 2021</div>
+                                </td>
+                                <td>
+                                    <div class="clients-loan-count">0</div>
+                                    <div class="clients-loan-meta">Prospecto calificado</div>
+                                </td>
+                                <td>
+                                    05 oct 2023
+                                    <div class="clients-activity-meta clients-activity-meta--ok">Reunión comercial</div>
+                                </td>
+                                <td><span class="clients-badge clients-badge--pending">Pendiente</span></td>
+                                <td class="clients-row-actions">
+                                    <button type="button" class="clients-menu-btn" aria-label="Más opciones, Inmobiliaria del Este">
+                                        <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <aside class="clients-aside" aria-label="Resumen y enlaces">
+            <div class="clients-panel">
+                <h2 class="clients-panel__title">Salud del directorio</h2>
+                <div class="clients-panel__list">
+                    <div class="clients-panel-row">
+                        <span class="clients-panel-row__label">Tasa de verificación KYC</span>
+                        <span class="clients-panel-row__value">94,2%</span>
+                    </div>
+                    <div class="clients-panel-row">
+                        <span class="clients-panel-row__label">Clientes multi-producto</span>
+                        <span class="clients-panel-row__value">312</span>
+                    </div>
+                    <div class="clients-panel-row">
+                        <span class="clients-panel-row__label">Contactos actualizados (90 d)</span>
+                        <span class="clients-panel-row__value">88%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="clients-kyc-card">
+                <span class="clients-kyc-card__deco" aria-hidden="true">✓</span>
+                <h2 class="clients-kyc-card__title">Ciclo de cumplimiento</h2>
+                <div class="clients-kyc-card__stat">12 d</div>
+                <p class="clients-kyc-card__note">Tiempo promedio desde alta hasta KYC completo en el último trimestre.</p>
+                <button type="button" class="clients-link-loans" data-go-loans="1">
+                    Ir a cartera de préstamos
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" stroke-width="1.2"/></svg>
+                </button>
+            </div>
+        </aside>
+    </div>
+</main>
+</div>

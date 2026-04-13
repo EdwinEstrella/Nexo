@@ -1,0 +1,212 @@
+<div class="lr-wrap">
+<main class="lr-canvas" aria-label="Nueva solicitud de préstamo">
+    <header class="lr-canvas__head">
+        <div>
+            <h1 class="lr-canvas__title">Nueva solicitud de préstamo</h1>
+            <p class="lr-canvas__subtitle">Registro integral del solicitante y de la operación crediticia en un solo flujo. Los datos se validan en el cliente; el envío definitivo se conectará a tu backend (InsForge u otro).</p>
+        </div>
+        <div class="lr-canvas__actions">
+            <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="loans" aria-label="Volver a la cartera de préstamos">Cartera</button>
+            <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="clients" aria-label="Ir al directorio de clientes">Clientes</button>
+        </div>
+    </header>
+
+    <nav class="lr-progress" aria-label="Secciones del formulario">
+        <a class="lr-progress__link" href="#lr-solicitante">1 · Solicitante</a>
+        <a class="lr-progress__link" href="#lr-operacion">2 · Operación</a>
+        <a class="lr-progress__link" href="#lr-cierre">3 · Declaraciones</a>
+    </nav>
+
+    <form id="loan-request-form" class="lr-form" novalidate>
+        <section id="lr-solicitante" class="lr-card" aria-labelledby="lr-h-solicitante">
+            <div class="lr-card__head">
+                <span class="lr-card__step" aria-hidden="true">Paso 1</span>
+                <h2 id="lr-h-solicitante" class="lr-card__title">Identificación del solicitante</h2>
+                <p class="lr-card__desc">Persona física o jurídica. Usa documento de identidad válido y una dirección completa en texto (sin mapa).</p>
+            </div>
+            <div class="lr-card__body">
+                <div class="lr-grid">
+                    <fieldset class="lr-fieldset lr-grid__full">
+                        <legend class="lr-legend">Tipo de solicitante</legend>
+                        <div class="lr-radios">
+                            <label class="lr-radio">
+                                <input type="radio" name="cliente_tipo" value="fisica" checked>
+                                <span>Persona física</span>
+                            </label>
+                            <label class="lr-radio">
+                                <input type="radio" name="cliente_tipo" value="juridica">
+                                <span>Persona jurídica</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <div class="lr-field lr-grid__full">
+                        <label class="lr-label" for="lr-nombre">Nombre completo o razón social <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="text" id="lr-nombre" name="nombre" class="lr-input" required autocomplete="name" placeholder="Ej. Ana Gómez Ruiz o Inversiones Norte S.A.">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-doc-tipo">Documento de identidad <span class="lr-req" aria-hidden="true">*</span></label>
+                        <select id="lr-doc-tipo" name="documento_tipo" class="lr-select" required>
+                            <option value="">Seleccionar…</option>
+                            <option value="cedula">Cédula de ciudadanía</option>
+                            <option value="cedula_extranjeria">Cédula de extranjería</option>
+                            <option value="pasaporte">Pasaporte</option>
+                            <option value="tarjeta_identidad">Tarjeta de identidad</option>
+                            <option value="documento_extranjero">Documento de identidad (extranjero)</option>
+                            <option value="doc_empresa">Documento de identificación empresarial</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-doc-numero">Número de documento <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="text" id="lr-doc-numero" name="documento_numero" class="lr-input" required inputmode="numeric" autocomplete="off" placeholder="Sin puntos ni espacios">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-email">Correo electrónico <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="email" id="lr-email" name="email" class="lr-input" required autocomplete="email" placeholder="correo@ejemplo.com">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-telefono">Teléfono <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="tel" id="lr-telefono" name="telefono" class="lr-input" required autocomplete="tel" placeholder="+57 300 000 0000">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-ocupacion">Ocupación o actividad económica</label>
+                        <input type="text" id="lr-ocupacion" name="ocupacion" class="lr-input" autocomplete="organization-title" placeholder="Ej. Ingeniera, comerciante, sector servicios">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-ingresos">Ingresos mensuales declarados (opcional)</label>
+                        <input type="text" id="lr-ingresos" name="ingresos_mensuales" class="lr-input" inputmode="decimal" autocomplete="off" placeholder="En DOP, sin formato">
+                    </div>
+
+                    <div class="lr-field lr-grid__full">
+                        <label class="lr-label" for="lr-direccion">Dirección de residencia o domicilio social <span class="lr-req" aria-hidden="true">*</span></label>
+                        <textarea id="lr-direccion" name="direccion" class="lr-textarea" required rows="3" placeholder="Calle, número, barrio, ciudad, departamento o país"></textarea>
+                        <p class="lr-hint">Escribe la dirección completa. No se utiliza mapa ni geolocalización en esta versión.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lr-operacion" class="lr-card" aria-labelledby="lr-h-operacion">
+            <div class="lr-card__head">
+                <span class="lr-card__step" aria-hidden="true">Paso 2</span>
+                <h2 id="lr-h-operacion" class="lr-card__title">Producto y condiciones solicitadas</h2>
+                <p class="lr-card__desc">Montos y plazos orientativos para análisis de mesa de control. Las condiciones finales dependen de política, scoring y garantías.</p>
+            </div>
+            <div class="lr-card__body">
+                <div class="lr-grid">
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-producto">Producto <span class="lr-req" aria-hidden="true">*</span></label>
+                        <select id="lr-producto" name="producto" class="lr-select" required>
+                            <option value="">Seleccionar…</option>
+                            <option value="hipotecario">Hipotecario residencial</option>
+                            <option value="comercial">Comercial / PYME</option>
+                            <option value="puente">Puente inmobiliario</option>
+                            <option value="microcredito">Microcrédito</option>
+                            <option value="consumo">Libre inversión / consumo</option>
+                            <option value="otro">Otro / A definir con analista</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-proposito">Finalidad del crédito <span class="lr-req" aria-hidden="true">*</span></label>
+                        <select id="lr-proposito" name="proposito" class="lr-select" required>
+                            <option value="">Seleccionar…</option>
+                            <option value="vivienda">Adquisición o mejora de vivienda</option>
+                            <option value="liquidez">Liquidez / capital de trabajo</option>
+                            <option value="vehiculo">Vehículo</option>
+                            <option value="refinanciacion">Refinanciación o recompra de cartera</option>
+                            <option value="inversion">Inversión productiva</option>
+                            <option value="otro">Otra (detallar en notas)</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field lr-grid__full">
+                        <label class="lr-label" for="lr-monto">Monto solicitado (DOP / RD$) <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="hidden" name="moneda" value="DOP">
+                        <input type="text" id="lr-monto" name="monto_solicitado" class="lr-input" required inputmode="decimal" autocomplete="off" placeholder="Ej. 2 500 000 (pesos dominicanos)">
+                        <p class="lr-hint">La moneda del sistema es únicamente <strong>DOP</strong> (peso dominicano, RD$).</p>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-plazo">Plazo (meses) <span class="lr-req" aria-hidden="true">*</span></label>
+                        <select id="lr-plazo" name="plazo_meses" class="lr-select" required>
+                            <option value="12">12</option>
+                            <option value="24">24</option>
+                            <option value="36">36</option>
+                            <option value="48">48</option>
+                            <option value="60" selected>60</option>
+                            <option value="84">84</option>
+                            <option value="120">120</option>
+                            <option value="180">180</option>
+                            <option value="240">240</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-tasa">Tipo de tasa preferida</label>
+                        <select id="lr-tasa" name="tipo_tasa" class="lr-select">
+                            <option value="fija">Fija</option>
+                            <option value="variable" selected>Variable indexada</option>
+                            <option value="mixta">Mixta</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-amort">Sistema de amortización</label>
+                        <select id="lr-amort" name="tipo_amortizacion" class="lr-select">
+                            <option value="frances" selected>Francés (cuota fija)</option>
+                            <option value="aleman">Alemán (capital constante)</option>
+                            <option value="flat">Flat (interés sobre saldo inicial)</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field lr-grid__full">
+                        <label class="lr-label" for="lr-garantia">Descripción resumida de garantías ofrecidas</label>
+                        <textarea id="lr-garantia" name="garantias" class="lr-textarea" rows="2" placeholder="Hipoteca, prenda, fianza, codeudor…"></textarea>
+                    </div>
+
+                    <div class="lr-field lr-grid__full">
+                        <label class="lr-label" for="lr-notas">Notas para el analista</label>
+                        <textarea id="lr-notas" name="notas" class="lr-textarea" rows="2" placeholder="Contexto, referido, urgencia, documentación pendiente…"></textarea>
+                    </div>
+                </div>
+                <p class="lr-callout" role="note">Esta solicitud no constituye aprobación. Un oficial revisará capacidad de pago, historial y cumplimiento normativo antes de emitir oferta vinculante.</p>
+            </div>
+        </section>
+
+        <section id="lr-cierre" class="lr-card" aria-labelledby="lr-h-cierre">
+            <div class="lr-card__head">
+                <span class="lr-card__step" aria-hidden="true">Paso 3</span>
+                <h2 id="lr-h-cierre" class="lr-card__title">Declaraciones y envío</h2>
+                <p class="lr-card__desc">Confirma la veracidad de la información. Puedes guardar un borrador local antes de enviar.</p>
+            </div>
+            <div class="lr-card__body">
+                <div class="lr-check">
+                    <input type="checkbox" id="lr-veracidad" name="declara_veracidad" value="1" required>
+                    <label for="lr-veracidad">Declaro que los datos suministrados son veraces y autorizo a la institución a verificarlos con fuentes legítimas, de acuerdo con la política de privacidad aplicable.</label>
+                </div>
+                <div class="lr-check">
+                    <input type="checkbox" id="lr-comunicaciones" name="acepta_comunicaciones" value="1">
+                    <label for="lr-comunicaciones">Acepto recibir comunicaciones operativas sobre esta solicitud por los canales indicados (correo / teléfono).</label>
+                </div>
+            </div>
+        </section>
+
+        <p class="lr-legal" role="note">Tratamiento de datos personales conforme a la normativa vigente en tu jurisdicción. Conserva evidencia de consentimiento cuando conectes el flujo a producción.</p>
+
+        <div class="lr-footer-actions">
+            <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="clients">Salir sin enviar</button>
+            <div class="lr-footer-actions__right">
+                <button type="button" class="lr-btn lr-btn--mint" data-loan-save-draft>Guardar borrador</button>
+                <button type="submit" class="lr-btn lr-btn--primary">Enviar solicitud</button>
+            </div>
+        </div>
+    </form>
+</main>
+</div>

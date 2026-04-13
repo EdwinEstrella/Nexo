@@ -1,0 +1,262 @@
+<main class="loans-canvas" data-node-id="1:1650" aria-label="Gestión de cartera de préstamos">
+            <div class="loans-canvas__head">
+                <div class="loans-canvas__titles">
+                    <h1 class="loans-canvas__title">Gestión de Cartera de Préstamos</h1>
+                    <p class="loans-canvas__subtitle">Monitoreo y administración de activos hipotecarios institucionales.</p>
+                </div>
+                <div class="loans-canvas__actions">
+                    <button type="button" class="loans-btn loans-btn--ghost" aria-label="Exportar reporte">
+                        <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v8M2 5l3 3 3-3M0 10h10" stroke="currentColor" stroke-width="1.2"/></svg>
+                        Exportar Reporte
+                    </button>
+                    <button type="button" class="loans-btn loans-btn--primary" data-portal-view="loan-request" aria-label="Ir a nueva solicitud de préstamo">
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 0v10M0 5h10" stroke="currentColor" stroke-width="1.5"/></svg>
+                        Nuevo préstamo
+                    </button>
+                </div>
+            </div>
+
+            <div class="loans-kpi-grid" role="list">
+                <article class="loans-kpi" role="listitem">
+                    <div class="loans-kpi__top">
+                        <div class="loans-kpi__icon loans-kpi__icon--soft" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10h18M6 6h2M16 6h2M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <span class="loans-kpi__pill">+4.2%</span>
+                    </div>
+                    <p class="loans-kpi__label">Total cartera</p>
+                    <p class="loans-kpi__value"><span>RD$42.8M</span> <span class="loans-kpi__suffix">DOP</span></p>
+                </article>
+                <article class="loans-kpi" role="listitem">
+                    <div class="loans-kpi__top">
+                        <div class="loans-kpi__icon loans-kpi__icon--soft" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11H5a2 2 0 00-2 2v6h18v-6a2 2 0 00-2-2h-4M9 11V9a3 3 0 116 0v2M9 11h6"/></svg>
+                        </div>
+                        <span class="loans-kpi__meta">Mes actual</span>
+                    </div>
+                    <p class="loans-kpi__label">Préstamos activos</p>
+                    <p class="loans-kpi__value">1,248</p>
+                </article>
+                <article class="loans-kpi" role="listitem">
+                    <div class="loans-kpi__top">
+                        <div class="loans-kpi__icon loans-kpi__icon--warn" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v4M12 17h.01M10.3 3.3L1.8 18a1 1 0 00.9 1.5h18.6a1 1 0 00.9-1.5L13.7 3.3a1 1 0 00-1.8 0z"/></svg>
+                        </div>
+                        <span class="loans-kpi__pill loans-kpi__pill--danger">-1.5% v.m.</span>
+                    </div>
+                    <p class="loans-kpi__label">Monto en mora</p>
+                    <p class="loans-kpi__value"><span>RD$1.4M</span> <span class="loans-kpi__suffix">DOP</span></p>
+                </article>
+                <article class="loans-kpi" role="listitem">
+                    <div class="loans-kpi__top">
+                        <div class="loans-kpi__icon loans-kpi__icon--bill" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                        </div>
+                        <div class="loans-kpi__bar-wrap" aria-hidden="true">
+                            <div class="loans-kpi__bar"><div class="loans-kpi__bar-fill"></div></div>
+                        </div>
+                    </div>
+                    <p class="loans-kpi__label">Tasa de cobro</p>
+                    <p class="loans-kpi__value"><span>98.4</span> <span class="loans-kpi__suffix">%</span></p>
+                </article>
+            </div>
+
+            <div class="loans-layout">
+                <div class="loans-main">
+                    <div class="loans-filters">
+                        <div class="loans-filters__left">
+                            <button type="button" class="loans-filter-chip" aria-label="Abrir filtros">
+                                <svg width="11" height="8" viewBox="0 0 11 8" fill="none" aria-hidden="true"><path d="M0 1h11M2 4h7M4 7h3" stroke="currentColor" stroke-width="1.2"/></svg>
+                                Filtros
+                            </button>
+                            <label class="visually-hidden" for="filter-estado">Estado</label>
+                            <select id="filter-estado" class="loans-filter-chip loans-filter-chip--select" aria-label="Filtrar por estado">
+                                <option>Estado: Todos</option>
+                                <option>Al día</option>
+                                <option>En mora</option>
+                                <option>Pagado</option>
+                                <option>En proceso</option>
+                            </select>
+                            <label class="visually-hidden" for="filter-tipo">Tipo de préstamo</label>
+                            <select id="filter-tipo" class="loans-filter-chip loans-filter-chip--select" aria-label="Filtrar por tipo">
+                                <option>Tipo: Residencial</option>
+                                <option>Comercial</option>
+                                <option>Puente inmobiliario</option>
+                            </select>
+                        </div>
+                        <p class="loans-filters__count">Mostrando 10 de 1,248 registros</p>
+                    </div>
+
+                    <div class="loans-table-card">
+                        <div class="loans-table-scroll">
+                            <table class="loans-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Cliente</th>
+                                        <th scope="col">Tipo de préstamo</th>
+                                        <th scope="col">Monto / saldo</th>
+                                        <th scope="col">Próximo pago</th>
+                                        <th scope="col">Estado</th>
+                                        <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="loan-cell-user">
+                                                <div class="loan-avatar loan-avatar--a" aria-hidden="true">AM</div>
+                                                <div>
+                                                    <div class="loan-name">Alejandro Mendoza</div>
+                                                    <div class="loan-ref">REF-7729-001</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="loan-type">Hipoteca<br>Residencial</span></td>
+                                        <td>
+                                            <div class="loan-amount">RD$450,000</div>
+                                            <div class="loan-pend">Pend: RD$382,400</div>
+                                        </td>
+                                        <td>
+                                            12 Oct, 2023
+                                            <div class="loan-pay-meta loan-pay-meta--ok">En 5 días</div>
+                                        </td>
+                                        <td><span class="loan-badge loan-badge--ok">Al día</span></td>
+                                        <td class="loan-row-actions">
+                                            <button type="button" class="loan-menu-btn" aria-label="Más opciones, Alejandro Mendoza">
+                                                <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="loan-cell-user">
+                                                <div class="loan-avatar loan-avatar--b" aria-hidden="true">EL</div>
+                                                <div>
+                                                    <div class="loan-name">Elena Lombardini</div>
+                                                    <div class="loan-ref">REF-8105-X2</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="loan-type">Multifamiliar<br>Comercial</span></td>
+                                        <td>
+                                            <div class="loan-amount">RD$1,200,000</div>
+                                            <div class="loan-pend">Pend: RD$1,145,000</div>
+                                        </td>
+                                        <td>
+                                            02 Oct, 2023
+                                            <div class="loan-pay-meta loan-pay-meta--late">Vencido</div>
+                                        </td>
+                                        <td><span class="loan-badge loan-badge--mora">En mora</span></td>
+                                        <td class="loan-row-actions">
+                                            <button type="button" class="loan-menu-btn" aria-label="Más opciones, Elena Lombardini">
+                                                <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="loan-cell-user">
+                                                <div class="loan-avatar loan-avatar--c" aria-hidden="true">GC</div>
+                                                <div>
+                                                    <div class="loan-name">Grupo Constructor S.A.</div>
+                                                    <div class="loan-ref">REF-5541-DEV</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="loan-type">Puente<br>Inmobiliario</span></td>
+                                        <td>
+                                            <div class="loan-amount">RD$3,500,000</div>
+                                            <div class="loan-pend">Pend: RD$0</div>
+                                        </td>
+                                        <td>
+                                            —
+                                            <div class="loan-pay-meta loan-pay-meta--muted">Completado</div>
+                                        </td>
+                                        <td><span class="loan-badge loan-badge--paid">Pagado</span></td>
+                                        <td class="loan-row-actions">
+                                            <button type="button" class="loan-menu-btn" aria-label="Más opciones, Grupo Constructor S.A.">
+                                                <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="loan-cell-user">
+                                                <div class="loan-avatar loan-avatar--d" aria-hidden="true">JP</div>
+                                                <div>
+                                                    <div class="loan-name">Juan Pablo Rivas</div>
+                                                    <div class="loan-ref">REF-9233-004</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="loan-type">Hipoteca<br>Residencial</span></td>
+                                        <td>
+                                            <div class="loan-amount">RD$210,000</div>
+                                            <div class="loan-pend">Desembolso pend.</div>
+                                        </td>
+                                        <td>
+                                            25 Oct, 2023
+                                            <div class="loan-pay-meta loan-pay-meta--muted">Programado</div>
+                                        </td>
+                                        <td><span class="loan-badge loan-badge--process">En proceso</span></td>
+                                        <td class="loan-row-actions">
+                                            <button type="button" class="loan-menu-btn" aria-label="Más opciones, Juan Pablo Rivas">
+                                                <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="loans-aside" aria-label="Actividad e indicadores">
+                    <div class="loans-activity">
+                        <div class="loans-activity__head">
+                            <h2 class="loans-activity__title">Actividad<br>reciente</h2>
+                            <span class="loans-activity__chev" aria-hidden="true">
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="#000e24" stroke-width="1.2"/></svg>
+                            </span>
+                        </div>
+                        <div class="loans-activity__feed">
+                            <div class="loans-act-item">
+                                <div class="loans-act-item__dot loans-act-item__dot--pay" aria-hidden="true">
+                                    <svg width="13" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5l4 4 8-8" stroke="currentColor" stroke-width="1.5"/></svg>
+                                </div>
+                                <div class="loans-act-item__title">Pago recibido</div>
+                                <div class="loans-act-item__body">Alejandro Mendoza · Pago RD$2,450</div>
+                                <div class="loans-act-item__time">Hace 2 horas</div>
+                            </div>
+                            <div class="loans-act-item">
+                                <div class="loans-act-item__dot loans-act-item__dot--doc" aria-hidden="true">
+                                    <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M6 1H2v10h6V4L6 1z" stroke="currentColor" stroke-width="1"/><path d="M6 1v3h3" stroke="currentColor" stroke-width="1"/></svg>
+                                </div>
+                                <div class="loans-act-item__title">Documento cargado</div>
+                                <div class="loans-act-item__body">Escritura firmada — JP Rivas</div>
+                                <div class="loans-act-item__time">Hace 4 horas</div>
+                            </div>
+                            <div class="loans-act-item">
+                                <div class="loans-act-item__dot loans-act-item__dot--new" aria-hidden="true">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                </div>
+                                <div class="loans-act-item__title">Nuevo prospecto</div>
+                                <div class="loans-act-item__body">Inmobiliaria del Este S.A.</div>
+                                <div class="loans-act-item__time">Ayer</div>
+                            </div>
+                        </div>
+                        <button type="button" class="loans-activity__more">Ver todo el historial</button>
+                    </div>
+
+                    <div class="loans-rate-card">
+                        <span class="loans-rate-card__deco" aria-hidden="true">↑</span>
+                        <h2 class="loans-rate-card__title">Tasa de interés<br>referencia</h2>
+                        <div class="loans-rate-card__row">
+                            <span class="loans-rate-card__value">7.25%</span>
+                            <span class="loans-rate-card__delta">+0.25</span>
+                        </div>
+                        <p class="loans-rate-card__note">Referencia institucional para nuevos contratos hipotecarios Q4 2023.</p>
+                    </div>
+                </aside>
+            </div>
+        </main>
