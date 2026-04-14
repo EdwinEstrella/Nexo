@@ -16,47 +16,47 @@
         <article class="kpi-card">
             <div class="kpi-card__glow" aria-hidden="true"></div>
             <div class="kpi-card__row">
-                <span class="kpi-card__label">Valor total de cartera</span>
+                <span class="kpi-card__label" id="dash-kpi-label-1">Total prestado</span>
                 <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
                     <path d="M9 9v0M9 12v0M9 15v0"/>
                 </svg>
             </div>
-            <div class="kpi-card__value">RD$45.8M</div>
-            <div class="kpi-card__meta kpi-card__meta--success">
+            <div class="kpi-card__value" id="dash-kpi-value-1">RD$0</div>
+            <div class="kpi-card__meta kpi-card__meta--success" id="dash-kpi-meta-1">
                 <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l3-3 2 2 3-4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
                 +4.2% respecto al mes anterior
             </div>
         </article>
         <article class="kpi-card">
             <div class="kpi-card__row">
-                <span class="kpi-card__label">Préstamos activos</span>
+                <span class="kpi-card__label" id="dash-kpi-label-2">Total cobrado</span>
                 <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
                 </svg>
             </div>
-            <div class="kpi-card__value">284</div>
-            <div class="kpi-card__meta kpi-card__meta--muted">12 en espera de firma final</div>
+            <div class="kpi-card__value" id="dash-kpi-value-2">RD$0</div>
+            <div class="kpi-card__meta kpi-card__meta--muted" id="dash-kpi-meta-2">Sin pagos registrados</div>
         </article>
         <article class="kpi-card">
             <div class="kpi-card__row">
-                <span class="kpi-card__label">Tasa de mora</span>
+                <span class="kpi-card__label" id="dash-kpi-label-3">Clientes morosos</span>
                 <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M10.29 3.86L1.82 18a1 1 0 00.86 1.5h18.64a1 1 0 00.86-1.5L13.71 3.86a1 1 0 00-1.72 0zM12 9v4M12 17h.01"/>
                 </svg>
             </div>
-            <div class="kpi-card__value kpi-card__value--danger">2.4%</div>
-            <div class="kpi-card__meta kpi-card__meta--danger">+0.3% umbral crítico</div>
+            <div class="kpi-card__value kpi-card__value--danger" id="dash-kpi-value-3">0</div>
+            <div class="kpi-card__meta kpi-card__meta--danger" id="dash-kpi-meta-3">Sin mora activa</div>
         </article>
         <article class="kpi-card">
             <div class="kpi-card__row">
-                <span class="kpi-card__label">Solicitudes pendientes</span>
+                <span class="kpi-card__label" id="dash-kpi-label-4">Ganancias (interés + mora)</span>
                 <svg class="kpi-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <div class="kpi-card__value">18</div>
-            <div class="kpi-card__meta kpi-card__meta--success">RD$3.2M en pipeline (DOP)</div>
+            <div class="kpi-card__value" id="dash-kpi-value-4">RD$0</div>
+            <div class="kpi-card__meta kpi-card__meta--success" id="dash-kpi-meta-4">Calculado automáticamente</div>
         </article>
     </section>
 
@@ -126,68 +126,7 @@
                                 <th>Estado</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <div class="cell-user">
-                                        <span class="cell-avatar" aria-hidden="true">JM</span>
-                                        <span class="cell-name">Jonathan Myer</span>
-                                    </div>
-                                </td>
-                                <td class="cell-ref">#LN-8922-A</td>
-                                <td class="cell-amount text-right">RD$12,450.00</td>
-                                <td class="cell-date">24 oct 2023</td>
-                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="cell-user">
-                                        <span class="cell-avatar" aria-hidden="true">EW</span>
-                                        <span class="cell-name">Eleanor Wright</span>
-                                    </div>
-                                </td>
-                                <td class="cell-ref">#LN-7710-C</td>
-                                <td class="cell-amount text-right">RD$8,900.00</td>
-                                <td class="cell-date">25 oct 2023</td>
-                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="cell-user">
-                                        <span class="cell-avatar" aria-hidden="true">RT</span>
-                                        <span class="cell-name">Robert Thompson</span>
-                                    </div>
-                                </td>
-                                <td class="cell-ref">#LN-6544-B</td>
-                                <td class="cell-amount text-right">RD$15,220.00</td>
-                                <td class="cell-date">27 oct 2023</td>
-                                <td><span class="dash-badge dash-badge--followup">Seguimiento<br>requerido</span></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="cell-user">
-                                        <span class="cell-avatar" aria-hidden="true">AL</span>
-                                        <span class="cell-name">Aisha Lewis</span>
-                                    </div>
-                                </td>
-                                <td class="cell-ref">#LN-9011-D</td>
-                                <td class="cell-amount text-right">RD$4,500.00</td>
-                                <td class="cell-date">28 oct 2023</td>
-                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="cell-user">
-                                        <span class="cell-avatar" aria-hidden="true">SK</span>
-                                        <span class="cell-name">Samuel King</span>
-                                    </div>
-                                </td>
-                                <td class="cell-ref">#LN-8119-F</td>
-                                <td class="cell-amount text-right">RD$22,000.00</td>
-                                <td class="cell-date">30 oct 2023</td>
-                                <td><span class="dash-badge dash-badge--autopay">Pendiente<br>autopago</span></td>
-                            </tr>
-                        </tbody>
+                        <tbody id="dash-repayments-body"></tbody>
                     </table>
                 </div>
             </section>
@@ -198,7 +137,7 @@
                 <div class="quick-actions__glow" aria-hidden="true"></div>
                 <h2 class="quick-actions__title" id="qa-title">Acciones rápidas</h2>
                 <div class="quick-actions__list">
-                    <button type="button" class="quick-action-btn" data-go-loans="1">
+                    <button type="button" class="quick-action-btn" data-portal-view="loan-request">
                         <span class="quick-action-btn__left">
                             <svg class="quick-action-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                             Nueva solicitud de préstamo

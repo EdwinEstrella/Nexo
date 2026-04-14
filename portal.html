@@ -250,6 +250,210 @@
             } catch (_) {}
         }
 
+        const LOAN_SYSTEM_KEY = 'nexo_mortgage_system_v1'
+
+        function randomId (prefix) {
+            return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
+        }
+
+        function fmtMoney (value) {
+            const n = Number(value) || 0
+            return `RD$${n.toLocaleString('es-DO', { maximumFractionDigits: 2, minimumFractionDigits: n % 1 ? 2 : 0 })}`
+        }
+
+        function isoToday () {
+            const d = new Date()
+            const y = d.getFullYear()
+            const m = String(d.getMonth() + 1).padStart(2, '0')
+            const day = String(d.getDate()).padStart(2, '0')
+            return `${y}-${m}-${day}`
+        }
+
+        function addPeriodISO (dateISO, index, frequency) {
+            const d = new Date(`${dateISO}T00:00:00`)
+            if (frequency === 'weekly') {
+                d.setDate(d.getDate() + (7 * index))
+            } else {
+                d.setMonth(d.getMonth() + index)
+            }
+            return d.toISOString().slice(0, 10)
+        }
+
+        function defaultLoanSystemState () {
+            return {
+                settings: {
+                    late_fee_percent: 1,
+                    grace_days: 2,
+                    payment_frequency: 'monthly',
+                    interest_mode: 'annual',
+                    reminder_days: 2
+                },
+                clients: [],
+                loans: [],
+                payments: []
+            }
+        }
+
+        function readLoanSystemState () {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(LOAN_SYSTEM_KEY) || 'null')
+                if (!parsed || typeof parsed !== 'object') return defaultLoanSystemState()
+                return {
+                    settings: { ...defaultLoanSystemState().settings, ...(parsed.settings || {}) },
+                    clients: Array.isArray(parsed.clients) ? parsed.clients : [],
+                    loans: Array.isArray(parsed.loans) ? parsed.loans : [],
+                    payments: Array.isArray(parsed.payments) ? parsed.payments : []
+                }
+            } catch (_) {
+                return defaultLoanSystemState()
+            }
+        }
+
+        function writeLoanSystemState (state) {
+            try {
+                localStorage.setItem(LOAN_SYSTEM_KEY, JSON.stringify(state))
+            } catch (_) {}
+        }
+
+        function monthlyInstallment (principal, periodicRate, periods) {
+            if (!periodicRate) return principal / periods
+            const f = periodicRate / (1 - Math.pow(1 + periodicRate, -periods))
+            return principal * f
+        }
+
+        function generateInstallments (loanInput) {
+            const principal = Number(loanInput.principal) || 0
+            const termMonths = Math.max(1, Number(loanInput.term_months) || 1)
+            const frequency = loanInput.payment_frequency === 'weekly' ? 'weekly' : 'monthly'
+            const periods = frequency === 'weekly' ? termMonths * 4 : termMonths
+            const ratePct = Number(loanInput.interest_rate_pct) || 0
+            let periodicRate = ratePct / 100
+            if (loanInput.interest_mode === 'annual') {
+                periodicRate = frequency === 'weekly' ? (ratePct / 100) / 52 : (ratePct / 100) / 12
+            } else if (frequency === 'weekly') {
+                periodicRate = (ratePct / 100) / 4
+            }
+            const fee = monthlyInstallment(principal, periodicRate, periods)
+            const out = []
+            let remaining = principal
+            for (let i = 1; i <= periods; i++) {
+                const interest = remaining * periodicRate
+                let principalDue = fee - interest
+                if (i === periods) principalDue = remaining
+                remaining = Math.max(0, remaining - principalDue)
+                out.push({
+                    n: i,
+                    due_date: addPeriodISO(loanInput.start_date, i - 1, frequency),
+                    principal_due: Number(principalDue.toFixed(2)),
+                    interest_due: Number(interest.toFixed(2)),
+                    total_due: Number((principalDue + interest).toFixed(2)),
+                    paid_amount: 0
+                })
+            }
+            return out
+        }
+
+        function evaluateInstallment (inst, policy, now = new Date()) {
+            const due = new Date(`${inst.due_date}T00:00:00`)
+            const paid = Number(inst.paid_amount) || 0
+            const base = Number(inst.total_due) || 0
+            const paidToBase = Math.min(base, paid)
+            const paidToFee = Math.max(0, paid - base)
+            const pendingBase = Math.max(0, base - paidToBase)
+            const msDay = 1000 * 60 * 60 * 24
+            const daysLate = pendingBase > 0 ? Math.floor((now - due) / msDay) : 0
+            const grace = Number(policy.grace_days) || 0
+            const lateDays = Math.max(0, daysLate - grace)
+            const lateFeeAccrued = pendingBase > 0 ? pendingBase * ((Number(policy.late_fee_percent) || 0) / 100) * lateDays : 0
+            const pendingFee = Math.max(0, lateFeeAccrued - paidToFee)
+            const pendingTotal = pendingBase + pendingFee
+            let status = 'pendiente'
+            if (pendingTotal <= 0.009) status = 'pagado'
+            else if (daysLate > grace) status = 'mora'
+            else if (daysLate > 0) status = 'atrasado'
+            return {
+                ...inst,
+                daysLate,
+                lateDays,
+                lateFeeAccrued: Number(lateFeeAccrued.toFixed(2)),
+                pendingTotal: Number(pendingTotal.toFixed(2)),
+                status
+            }
+        }
+
+        function summarizeLoan (loan, state, now = new Date()) {
+            const policy = state.settings
+            const items = (loan.installments || []).map((it) => evaluateInstallment(it, policy, now))
+            const pending = items.reduce((s, it) => s + it.pendingTotal, 0)
+            const mora = items.reduce((s, it) => s + Math.max(0, it.lateFeeAccrued), 0)
+            const next = items.find((it) => it.status !== 'pagado')
+            const paidCount = items.filter((it) => it.status === 'pagado').length
+            const status = pending <= 0.009 ? 'finalizado' : (items.some((it) => it.status === 'mora') ? 'moroso' : 'activo')
+            const paidTotal = items.reduce((s, it) => s + (Number(it.paid_amount) || 0), 0)
+            return { items, pending, mora, next, paidCount, status, paidTotal, totalInstallments: items.length }
+        }
+
+        function buildAutoNotifications (state, now = new Date()) {
+            const out = []
+            const reminderDays = Number(state.settings.reminder_days) || 0
+            const msDay = 1000 * 60 * 60 * 24
+            state.loans.forEach((loan) => {
+                const loanSummary = summarizeLoan(loan, state, now)
+                loanSummary.items.forEach((inst) => {
+                    if (inst.status === 'pagado') return
+                    const due = new Date(`${inst.due_date}T00:00:00`)
+                    const days = Math.ceil((due - now) / msDay)
+                    if (days === reminderDays) out.push({ type: 'recordatorio', text: `Recordatorio: cuota ${inst.n} de ${loan.client_name} vence en ${days} día(s).` })
+                    if (inst.status === 'atrasado') out.push({ type: 'atraso', text: `Atraso detectado: cuota ${inst.n} de ${loan.client_name} está vencida.` })
+                    if (inst.status === 'mora') out.push({ type: 'mora', text: `Mora generada: cuota ${inst.n} de ${loan.client_name}, recargo ${fmtMoney(inst.lateFeeAccrued)}.` })
+                })
+            })
+            return out.slice(0, 8)
+        }
+
+        function getOrCreateLoanSystemState () {
+            const state = readLoanSystemState()
+            if (!state.clients.length && !state.loans.length) {
+                const demoClient = {
+                    id: randomId('cli'),
+                    name: 'María Ríos Castillo',
+                    document_type: 'cedula',
+                    document_number: '00112345678',
+                    phone: '+1 809 555 0142',
+                    address: 'Santo Domingo, República Dominicana',
+                    email: 'm.rios@email.com',
+                    created_at: new Date().toISOString()
+                }
+                const demoLoan = {
+                    id: randomId('loan'),
+                    client_id: demoClient.id,
+                    client_name: demoClient.name,
+                    product: 'hipotecario',
+                    purpose: 'vivienda',
+                    principal: 450000,
+                    term_months: 12,
+                    interest_rate_pct: 12,
+                    interest_mode: 'annual',
+                    payment_frequency: 'monthly',
+                    start_date: isoToday(),
+                    created_at: new Date().toISOString(),
+                    installments: generateInstallments({
+                        principal: 450000,
+                        term_months: 12,
+                        interest_rate_pct: 12,
+                        interest_mode: 'annual',
+                        payment_frequency: 'monthly',
+                        start_date: isoToday()
+                    }),
+                    documents: []
+                }
+                state.clients.push(demoClient)
+                state.loans.push(demoLoan)
+                writeLoanSystemState(state)
+            }
+            return state
+        }
+
         function hydrateSettingsView () {
             const root = document.getElementById('portal-main')
             if (!root || !root.querySelector('.settings-canvas')) return
@@ -302,6 +506,12 @@
             setCb('#settings-form-appearance', 'ui_reduce_motion', false)
 
             setVal('#settings-session-timeout', prefs.session_timeout_min || '30')
+            const loanState = getOrCreateLoanSystemState()
+            setVal('#settings-late-fee-percent', loanState.settings.late_fee_percent)
+            setVal('#settings-grace-days', loanState.settings.grace_days)
+            setVal('#settings-payment-frequency', loanState.settings.payment_frequency || 'monthly')
+            setVal('#settings-interest-mode', loanState.settings.interest_mode || 'annual')
+            setVal('#settings-reminder-days', loanState.settings.reminder_days || '2')
 
             setVal('#settings-retention-audit', org.retention_audit_months || '12')
             setVal('#settings-retention-docs', org.retention_docs_months || '36')
@@ -347,6 +557,263 @@
                     el.value = v == null ? '' : String(v)
                 }
             })
+        }
+
+        function initials (name) {
+            const p = (name || '').trim().split(/\s+/).filter(Boolean)
+            if (!p.length) return 'CL'
+            if (p.length === 1) return p[0].slice(0, 2).toUpperCase()
+            return `${p[0][0]}${p[p.length - 1][0]}`.toUpperCase()
+        }
+
+        function dateLabel (iso) {
+            if (!iso) return '—'
+            const d = new Date(`${iso}T00:00:00`)
+            return d.toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })
+        }
+
+        function badgeForLoanStatus (status) {
+            if (status === 'moroso') return { cls: 'loan-badge--mora', text: 'Moroso' }
+            if (status === 'finalizado') return { cls: 'loan-badge--paid', text: 'Finalizado' }
+            return { cls: 'loan-badge--ok', text: 'Activo' }
+        }
+
+        function renderClientsView () {
+            const root = document.getElementById('portal-main')
+            const body = root?.querySelector('#clients-table-body')
+            if (!body) return
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const loansByClient = new Map()
+            state.loans.forEach((loan) => {
+                const summary = summarizeLoan(loan, state, now)
+                const arr = loansByClient.get(loan.client_id) || []
+                arr.push({ loan, summary })
+                loansByClient.set(loan.client_id, arr)
+            })
+            const rows = state.clients.map((c, idx) => {
+                const loans = loansByClient.get(c.id) || []
+                const totalBalance = loans.reduce((s, x) => s + x.summary.pending, 0)
+                const hasMoroso = loans.some((x) => x.summary.status === 'moroso')
+                const allClosed = loans.length > 0 && loans.every((x) => x.summary.status === 'finalizado')
+                const status = hasMoroso ? 'moroso' : (allClosed ? 'finalizado' : 'activo')
+                const badgeCls = status === 'moroso' ? 'clients-badge--pending' : (status === 'finalizado' ? 'clients-badge--review' : 'clients-badge--verified')
+                const segment = loans[0]?.loan?.product || 'hipotecario'
+                return `
+                    <tr>
+                        <td>
+                            <div class="clients-cell-user">
+                                <div class="clients-avatar clients-avatar--${['a', 'b', 'c', 'd'][idx % 4]}" aria-hidden="true">${initials(c.name)}</div>
+                                <div>
+                                    <div class="clients-name">${c.name}</div>
+                                    <div class="clients-id">${c.document_type || 'doc'} · ${c.document_number || '—'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="clients-segment">${segment}</span></td>
+                        <td>
+                            <div class="clients-contact">${c.email || '—'}</div>
+                            <div class="clients-contact-meta">${c.phone || '—'}</div>
+                        </td>
+                        <td>
+                            <div class="clients-loan-count">${loans.length}</div>
+                            <div class="clients-loan-meta">Saldo agregado ${fmtMoney(totalBalance)}</div>
+                        </td>
+                        <td>
+                            ${dateLabel(c.created_at?.slice(0, 10))}
+                            <div class="clients-activity-meta clients-activity-meta--ok">Actualizado por cartera</div>
+                        </td>
+                        <td><span class="clients-badge ${badgeCls}">${status}</span></td>
+                        <td class="clients-row-actions">
+                            <button type="button" class="clients-menu-btn" aria-label="Más opciones, ${c.name}">
+                                <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `
+            })
+            body.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="loans-empty-note">Sin clientes registrados.</td></tr>'
+            const countEl = root.querySelector('.clients-filters__count')
+            if (countEl) countEl.textContent = `Mostrando ${rows.length} de ${rows.length} clientes`
+        }
+
+        function renderDashboardView () {
+            const root = document.getElementById('portal-main')
+            const repaymentsBody = root?.querySelector('#dash-repayments-body')
+            if (!repaymentsBody) return
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+            const totalPrestado = summaries.reduce((s, x) => s + (Number(x.loan.principal) || 0), 0)
+            const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)
+            const totalMora = summaries.reduce((s, x) => s + x.sum.mora, 0)
+            const morosos = summaries.filter((x) => x.sum.status === 'moroso').length
+            const interesesPlan = summaries.reduce((s, x) => s + x.sum.items.reduce((t, i) => t + i.interest_due, 0), 0)
+            const ganancias = Math.max(0, Math.min(totalCobrado, interesesPlan + totalMora))
+
+            const setText = (id, v) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = v }
+            setText('dash-kpi-value-1', fmtMoney(totalPrestado))
+            setText('dash-kpi-value-2', fmtMoney(totalCobrado))
+            setText('dash-kpi-value-3', String(morosos))
+            setText('dash-kpi-value-4', fmtMoney(ganancias))
+            setText('dash-kpi-meta-2', `${state.payments.length} pagos registrados`)
+            setText('dash-kpi-meta-3', totalMora > 0 ? `${fmtMoney(totalMora)} en mora acumulada` : 'Sin mora activa')
+
+            const installments = summaries.flatMap(({ loan, sum }) => sum.items
+                .filter((it) => it.status !== 'pagado')
+                .map((it) => ({ loan, it })))
+                .sort((a, b) => a.it.due_date.localeCompare(b.it.due_date))
+                .slice(0, 8)
+
+            repaymentsBody.innerHTML = installments.length
+                ? installments.map(({ loan, it }) => `
+                    <tr>
+                        <td><div class="cell-user"><span class="cell-avatar" aria-hidden="true">${initials(loan.client_name)}</span><span class="cell-name">${loan.client_name}</span></div></td>
+                        <td class="cell-ref">${loan.id}</td>
+                        <td class="cell-amount text-right">${fmtMoney(it.total_due)}</td>
+                        <td class="cell-date">${dateLabel(it.due_date)}</td>
+                        <td><span class="dash-badge ${it.status === 'mora' ? 'dash-badge--followup' : 'dash-badge--autopay'}">${it.status}</span></td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="5" class="loans-empty-note">Sin cuotas pendientes.</td></tr>'
+        }
+
+        function renderAnalyticsView () {
+            const root = document.getElementById('portal-main')
+            if (!root?.querySelector('.analytics-canvas')) return
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+            const overdue = summaries.filter((x) => x.sum.items.some((i) => i.status === 'atrasado' || i.status === 'mora')).length
+            const active = summaries.filter((x) => x.sum.status === 'activo' || x.sum.status === 'moroso').length
+            const monthlyProfit = summaries.reduce((s, x) => s + x.sum.mora, 0)
+            const setText = (id, v) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = v }
+            setText('analytics-kpi-active-loans', String(active))
+            setText('analytics-kpi-overdue-loans', String(overdue))
+            setText('analytics-kpi-payments', String(state.payments.length))
+            setText('analytics-kpi-monthly-profit', fmtMoney(monthlyProfit))
+        }
+
+        function exportSystemReport (type) {
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+            let payload = {}
+            if (type === 'active-loans') payload = summaries.filter((x) => x.sum.status !== 'finalizado')
+            else if (type === 'overdue-loans') payload = summaries.filter((x) => x.sum.status === 'moroso')
+            else if (type === 'payments-history') payload = state.payments
+            else if (type === 'loans-summary') payload = summaries
+            else payload = { state, generated_at: new Date().toISOString() }
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+            const a = document.createElement('a')
+            a.href = URL.createObjectURL(blob)
+            a.download = `nexo-${type}.json`
+            a.click()
+            URL.revokeObjectURL(a.href)
+        }
+
+        function populatePaymentInstallmentSelect (loanId) {
+            const root = document.getElementById('portal-main')
+            const state = getOrCreateLoanSystemState()
+            const instSel = root?.querySelector('#payment-installment-select')
+            if (!instSel) return
+            const loan = state.loans.find((l) => l.id === loanId)
+            if (!loan) {
+                instSel.innerHTML = ''
+                return
+            }
+            const summary = summarizeLoan(loan, state)
+            const options = summary.items.filter((i) => i.status !== 'pagado')
+                .map((i) => `<option value="${i.n}">Cuota ${i.n} · ${dateLabel(i.due_date)} · ${fmtMoney(i.pendingTotal)}</option>`)
+            instSel.innerHTML = options.join('')
+        }
+
+        function renderLoansView () {
+            const root = document.getElementById('portal-main')
+            const tableBody = root?.querySelector('#loans-table-body')
+            if (!tableBody) return
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const statusFilter = root.querySelector('#filter-estado')?.value || 'todos'
+            const typeFilter = root.querySelector('#filter-tipo')?.value || 'todos'
+            const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+                .filter(({ loan, sum }) => (statusFilter === 'todos' || sum.status === statusFilter) && (typeFilter === 'todos' || loan.product === typeFilter))
+
+            tableBody.innerHTML = summaries.length
+                ? summaries.map(({ loan, sum }, idx) => {
+                    const badge = badgeForLoanStatus(sum.status)
+                    const nextText = sum.next ? `${dateLabel(sum.next.due_date)}<div class="loan-pay-meta ${sum.next.status === 'mora' ? 'loan-pay-meta--late' : 'loan-pay-meta--ok'}">${sum.next.status}</div>` : '—'
+                    return `
+                        <tr>
+                            <td>
+                                <div class="loan-cell-user">
+                                    <div class="loan-avatar loan-avatar--${['a', 'b', 'c', 'd'][idx % 4]}" aria-hidden="true">${initials(loan.client_name)}</div>
+                                    <div><div class="loan-name">${loan.client_name}</div><div class="loan-ref">${loan.id}</div></div>
+                                </div>
+                            </td>
+                            <td><span class="loan-type">${loan.product || 'hipotecario'}</span></td>
+                            <td><div class="loan-amount">${fmtMoney(loan.principal)}</div><div class="loan-pend">Pend: ${fmtMoney(sum.pending)}</div></td>
+                            <td>${nextText}</td>
+                            <td><span class="loan-badge ${badge.cls}">${badge.text}</span></td>
+                            <td class="loan-row-actions"><button type="button" class="loan-menu-btn" aria-label="Más opciones, ${loan.client_name}"><svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg></button></td>
+                        </tr>
+                    `
+                }).join('')
+                : '<tr><td colspan="6" class="loans-empty-note">No hay préstamos para este filtro.</td></tr>'
+
+            const totalPrestado = summaries.reduce((s, x) => s + (Number(x.loan.principal) || 0), 0)
+            const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)
+            const totalMora = summaries.reduce((s, x) => s + x.sum.mora, 0)
+            const clientesMorosos = new Set(summaries.filter((x) => x.sum.status === 'moroso').map((x) => x.loan.client_id)).size
+            const intereses = summaries.reduce((s, x) => s + x.sum.items.reduce((z, i) => z + i.interest_due, 0), 0)
+            const ganancias = Math.max(0, Math.min(totalCobrado, intereses + totalMora))
+            const kpiSet = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value }
+            kpiSet('kpi-total-prestado', fmtMoney(totalPrestado))
+            kpiSet('kpi-total-cobrado', fmtMoney(totalCobrado))
+            kpiSet('kpi-total-mora', fmtMoney(totalMora))
+            kpiSet('kpi-clientes-morosos', String(clientesMorosos))
+            kpiSet('kpi-ganancias', fmtMoney(ganancias))
+            const count = root.querySelector('#loans-record-count')
+            if (count) count.textContent = `Mostrando ${summaries.length} de ${state.loans.length} registros`
+
+            const scheduleBody = root.querySelector('#loans-schedule-body')
+            if (scheduleBody) {
+                const schedule = summaries.flatMap(({ loan, sum }) => sum.items.map((i) => ({ loan, i })))
+                    .sort((a, b) => a.i.due_date.localeCompare(b.i.due_date))
+                    .slice(0, 20)
+                scheduleBody.innerHTML = schedule.length ? schedule.map(({ loan, i }) => `
+                    <tr>
+                        <td>${loan.id}</td>
+                        <td>#${i.n}</td>
+                        <td>${dateLabel(i.due_date)}</td>
+                        <td>${fmtMoney(i.pendingTotal)}</td>
+                        <td>${fmtMoney(i.lateFeeAccrued)}</td>
+                        <td><span class="loan-badge ${i.status === 'mora' ? 'loan-badge--mora' : (i.status === 'pagado' ? 'loan-badge--paid' : 'loan-badge--ok')}">${i.status}</span></td>
+                    </tr>
+                `).join('') : '<tr><td colspan="6" class="loans-empty-note">Sin calendario disponible.</td></tr>'
+            }
+
+            const payLoanSel = root.querySelector('#payment-loan-select')
+            if (payLoanSel) {
+                payLoanSel.innerHTML = state.loans.map((l) => `<option value="${l.id}">${l.id} · ${l.client_name}</option>`).join('')
+                if (payLoanSel.value) populatePaymentInstallmentSelect(payLoanSel.value)
+            }
+
+            const activityFeed = root.querySelector('#loans-activity-feed')
+            if (activityFeed) {
+                const recent = [...state.payments].slice(-6).reverse()
+                activityFeed.innerHTML = recent.length
+                    ? recent.map((p) => `<div class="loans-act-item"><div class="loans-act-item__dot loans-act-item__dot--pay" aria-hidden="true"><svg width="13" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5l4 4 8-8" stroke="currentColor" stroke-width="1.5"/></svg></div><div class="loans-act-item__title">Pago aplicado</div><div class="loans-act-item__body">${p.loan_id} · cuota ${p.installment_n} · ${fmtMoney(p.amount)}</div><div class="loans-act-item__time">${new Date(p.created_at).toLocaleString('es-DO')}</div></div>`).join('')
+                    : '<p class="loans-empty-note">Sin actividad de pagos todavía.</p>'
+            }
+
+            const alertsList = root.querySelector('#loan-alerts-list')
+            if (alertsList) {
+                const alerts = buildAutoNotifications(state, now)
+                alertsList.innerHTML = alerts.length
+                    ? alerts.map((a) => `<div class="loans-act-item"><div class="loans-act-item__dot ${a.type === 'mora' ? 'loans-act-item__dot--doc' : 'loans-act-item__dot--new'}" aria-hidden="true"></div><div class="loans-act-item__body">${a.text}</div></div>`).join('')
+                    : '<p class="loans-empty-note">Sin alertas activas por ahora.</p>'
+            }
         }
 
         function ensurePortalMainDelegation () {
@@ -421,6 +888,13 @@
                     URL.revokeObjectURL(a.href)
                     return
                 }
+                const rpt = e.target.closest('[data-report-export],[data-export-report]')
+                if (rpt && root.contains(rpt)) {
+                    e.preventDefault()
+                    const type = rpt.getAttribute('data-report-export') || rpt.getAttribute('data-export-report') || 'full'
+                    exportSystemReport(type)
+                    return
+                }
                 if (e.target.closest('[data-go-loans]')) {
                     e.preventDefault()
                     if (portalSidebar) portalSidebar.setActiveNavOnly('loans')
@@ -440,6 +914,17 @@
                 }
             })
 
+            root.addEventListener('change', (e) => {
+                const t = e.target
+                if (t.id === 'filter-estado' || t.id === 'filter-tipo') {
+                    renderLoansView()
+                    return
+                }
+                if (t.id === 'payment-loan-select') {
+                    populatePaymentInstallmentSelect(t.value)
+                }
+            })
+
             root.addEventListener('submit', (e) => {
                 const form = e.target
                 if (form.id === 'loan-request-form') {
@@ -450,15 +935,103 @@
                     }
                     const fd = new FormData(form)
                     const payload = Object.fromEntries(fd.entries())
-                    form.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-                        if (cb.name) payload[cb.name] = cb.checked ? (cb.value || 'on') : ''
-                    })
-                    console.info('[Nexo] Solicitud de préstamo', payload)
+                    const state = getOrCreateLoanSystemState()
+                    const docType = (payload.documento_tipo || '').trim()
+                    const docNo = (payload.documento_numero || '').trim()
+                    let client = state.clients.find((c) => c.document_type === docType && c.document_number === docNo)
+                    if (!client) {
+                        client = {
+                            id: randomId('cli'),
+                            name: payload.nombre,
+                            document_type: docType,
+                            document_number: docNo,
+                            phone: payload.telefono,
+                            address: payload.direccion,
+                            email: payload.email,
+                            created_at: new Date().toISOString()
+                        }
+                        state.clients.unshift(client)
+                    } else {
+                        client.name = payload.nombre || client.name
+                        client.phone = payload.telefono || client.phone
+                        client.address = payload.direccion || client.address
+                        client.email = payload.email || client.email
+                    }
+                    const interestMode = payload.interest_mode || state.settings.interest_mode || 'annual'
+                    const paymentFrequency = payload.payment_frequency || state.settings.payment_frequency || 'monthly'
+                    const loanInput = {
+                        principal: Number(String(payload.monto_solicitado || '0').replace(/[^\d.-]/g, '')),
+                        term_months: Number(payload.plazo_meses) || 12,
+                        interest_rate_pct: Number(payload.interes_porcentaje) || 0,
+                        interest_mode: interestMode,
+                        payment_frequency: paymentFrequency,
+                        start_date: payload.fecha_inicio || isoToday()
+                    }
+                    const files = [...(form.querySelector('#lr-documents')?.files || [])].map((f) => ({
+                        name: f.name,
+                        size: f.size,
+                        type: f.type
+                    }))
+                    const loan = {
+                        id: randomId('loan'),
+                        client_id: client.id,
+                        client_name: client.name,
+                        product: payload.producto || 'hipotecario',
+                        purpose: payload.proposito || '',
+                        principal: loanInput.principal,
+                        term_months: loanInput.term_months,
+                        interest_rate_pct: loanInput.interest_rate_pct,
+                        interest_mode: loanInput.interest_mode,
+                        payment_frequency: loanInput.payment_frequency,
+                        start_date: loanInput.start_date,
+                        created_at: new Date().toISOString(),
+                        contract_signer: payload.contract_signer || '',
+                        installments: generateInstallments(loanInput),
+                        documents: files
+                    }
+                    state.loans.unshift(loan)
+                    writeLoanSystemState(state)
+                    console.info('[Nexo] Solicitud de préstamo creada', loan)
                     try {
                         localStorage.removeItem('nexo_loan_request_draft')
                     } catch (_) {}
-                    alert('Solicitud registrada en modo demostración. Revisa la consola para el detalle; al conectar el backend aquí se creará el expediente real.')
+                    alert(`Solicitud registrada. Se generaron ${loan.installments.length} cuotas automáticas para ${client.name}.`)
                     form.reset()
+                    const defaultFreq = form.querySelector('#lr-payment-frequency')
+                    if (defaultFreq) defaultFreq.value = state.settings.payment_frequency || 'monthly'
+                    const defaultMode = form.querySelector('#lr-interest-mode')
+                    if (defaultMode) defaultMode.value = state.settings.interest_mode || 'annual'
+                    return
+                }
+                if (form.id === 'loan-payment-form') {
+                    e.preventDefault()
+                    if (!form.checkValidity()) {
+                        form.reportValidity()
+                        return
+                    }
+                    const fd = new FormData(form)
+                    const state = getOrCreateLoanSystemState()
+                    const loan = state.loans.find((l) => l.id === String(fd.get('loan_id')))
+                    if (!loan) return
+                    const n = Number(fd.get('installment_n'))
+                    const amount = Number(fd.get('amount'))
+                    const inst = (loan.installments || []).find((i) => Number(i.n) === n)
+                    if (!inst || !amount || amount <= 0) return
+                    inst.paid_amount = Number(((Number(inst.paid_amount) || 0) + amount).toFixed(2))
+                    state.payments.push({
+                        id: randomId('pay'),
+                        loan_id: loan.id,
+                        installment_n: n,
+                        amount,
+                        created_at: new Date().toISOString()
+                    })
+                    writeLoanSystemState(state)
+                    alert('Pago registrado correctamente.')
+                    form.reset()
+                    renderLoansView()
+                    renderDashboardView()
+                    renderAnalyticsView()
+                    renderClientsView()
                     return
                 }
                 if (!form.id || !form.id.startsWith('settings-form-')) return
@@ -521,6 +1094,18 @@
                         client_log_level: payload.client_log_level
                     })
                 }
+                if (form.id === 'settings-form-credit-policy') {
+                    const state = getOrCreateLoanSystemState()
+                    state.settings = {
+                        ...state.settings,
+                        late_fee_percent: Number(payload.late_fee_percent) || 0,
+                        grace_days: Number(payload.grace_days) || 0,
+                        payment_frequency: payload.payment_frequency || 'monthly',
+                        interest_mode: payload.interest_mode || 'annual',
+                        reminder_days: Number(payload.reminder_days) || 0
+                    }
+                    writeLoanSystemState(state)
+                }
                 if (form.id === 'settings-form-data-retention') {
                     writeOrgPrefs({
                         retention_audit_months: payload.retention_audit_months,
@@ -570,7 +1155,21 @@
             ensurePortalMainDelegation()
 
             if (pageId === 'settings') hydrateSettingsView()
-            if (pageId === 'loan-request') hydrateLoanRequestDraft()
+            if (pageId === 'loan-request') {
+                const state = getOrCreateLoanSystemState()
+                const root = document.getElementById('portal-main')
+                const dateEl = root?.querySelector('#lr-fecha-inicio')
+                if (dateEl && !dateEl.value) dateEl.value = isoToday()
+                const freqEl = root?.querySelector('#lr-payment-frequency')
+                if (freqEl) freqEl.value = state.settings.payment_frequency || 'monthly'
+                const modeEl = root?.querySelector('#lr-interest-mode')
+                if (modeEl) modeEl.value = state.settings.interest_mode || 'annual'
+                hydrateLoanRequestDraft()
+            }
+            if (pageId === 'dashboard') renderDashboardView()
+            if (pageId === 'clients') renderClientsView()
+            if (pageId === 'loans') renderLoansView()
+            if (pageId === 'analytics') renderAnalyticsView()
 
             const dashboardLike = pageId === 'dashboard'
             if (dashboardLike) {
@@ -591,6 +1190,7 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             const initialView = getInitialPortalView()
+            getOrCreateLoanSystemState()
 
             portalSidebar = new Sidebar({
                 variant: 'portal',

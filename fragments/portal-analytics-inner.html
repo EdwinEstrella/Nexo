@@ -13,9 +13,9 @@
 
             <section class="analytics-kpi-grid" aria-label="Indicadores">
                 <article class="analytics-kpi">
-                    <div class="analytics-kpi__label">Rendimiento total de cartera</div>
+                    <div class="analytics-kpi__label">Préstamos activos</div>
                     <div class="analytics-kpi__row">
-                        <span class="analytics-kpi__value">6,82%</span>
+                        <span class="analytics-kpi__value" id="analytics-kpi-active-loans">0</span>
                         <span class="analytics-kpi__pill analytics-kpi__pill--up" aria-label="Variación positiva 0,4 por ciento">
                             <svg width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 6L4 3l2 2 4-4" stroke="currentColor" stroke-width="1.2"/></svg>
                             0,4%
@@ -23,16 +23,16 @@
                     </div>
                 </article>
                 <article class="analytics-kpi">
-                    <div class="analytics-kpi__label">LTV promedio ponderado</div>
+                    <div class="analytics-kpi__label">Préstamos vencidos</div>
                     <div class="analytics-kpi__row">
-                        <span class="analytics-kpi__value">72,4%</span>
-                        <span class="analytics-kpi__zone">Zona<br>saludable</span>
+                        <span class="analytics-kpi__value" id="analytics-kpi-overdue-loans">0</span>
+                        <span class="analytics-kpi__zone">Cartera<br>vencida</span>
                     </div>
                 </article>
                 <article class="analytics-kpi">
-                    <div class="analytics-kpi__label">Eficiencia de aprobación</div>
+                    <div class="analytics-kpi__label">Historial de pagos</div>
                     <div class="analytics-kpi__row">
-                        <span class="analytics-kpi__value">14d</span>
+                        <span class="analytics-kpi__value" id="analytics-kpi-payments">0</span>
                         <span class="analytics-kpi__pill analytics-kpi__pill--up" aria-label="Menos dos días">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                             −2d
@@ -40,9 +40,9 @@
                     </div>
                 </article>
                 <article class="analytics-kpi">
-                    <div class="analytics-kpi__label">Tendencia de mora</div>
+                    <div class="analytics-kpi__label">Ganancias del mes</div>
                     <div class="analytics-kpi__row">
-                        <span class="analytics-kpi__value">0,9%</span>
+                        <span class="analytics-kpi__value" id="analytics-kpi-monthly-profit">RD$0</span>
                         <span class="analytics-kpi__pill analytics-kpi__pill--stable">→ Estable</span>
                     </div>
                 </article>
@@ -137,7 +137,7 @@
                                 <div class="analytics-report-row__meta">Actualizado 24 oct 2023 · PDF · 4,2 MB</div>
                             </div>
                         </div>
-                        <button type="button" class="analytics-report-dl" aria-label="Descargar informe trimestral de cumplimiento">
+                        <button type="button" class="analytics-report-dl" data-report-export="active-loans" aria-label="Descargar préstamos activos">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         </button>
                     </div>
@@ -151,7 +151,7 @@
                                 <div class="analytics-report-row__meta">Actualizado 20 oct 2023 · Excel · 1,8 MB</div>
                             </div>
                         </div>
-                        <button type="button" class="analytics-report-dl" aria-label="Descargar auditoría de desempeño">
+                        <button type="button" class="analytics-report-dl" data-report-export="overdue-loans" aria-label="Descargar préstamos vencidos">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         </button>
                     </div>
@@ -165,7 +165,7 @@
                                 <div class="analytics-report-row__meta">Actualizado 30 sep 2023 · PDF · 0,9 MB</div>
                             </div>
                         </div>
-                        <button type="button" class="analytics-report-dl" aria-label="Descargar resumen fiscal">
+                        <button type="button" class="analytics-report-dl" data-report-export="payments-history" aria-label="Descargar historial de pagos">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         </button>
                     </div>

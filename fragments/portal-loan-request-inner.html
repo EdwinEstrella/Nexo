@@ -134,6 +134,16 @@
                     </div>
 
                     <div class="lr-field">
+                        <label class="lr-label" for="lr-fecha-inicio">Fecha de inicio <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="date" id="lr-fecha-inicio" name="fecha_inicio" class="lr-input" required>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-interes">Interés (%) <span class="lr-req" aria-hidden="true">*</span></label>
+                        <input type="number" id="lr-interes" name="interes_porcentaje" class="lr-input" required min="0" step="0.01" value="12">
+                    </div>
+
+                    <div class="lr-field">
                         <label class="lr-label" for="lr-plazo">Plazo (meses) <span class="lr-req" aria-hidden="true">*</span></label>
                         <select id="lr-plazo" name="plazo_meses" class="lr-select" required>
                             <option value="12">12</option>
@@ -154,6 +164,22 @@
                             <option value="fija">Fija</option>
                             <option value="variable" selected>Variable indexada</option>
                             <option value="mixta">Mixta</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-interest-mode">Interés expresado como</label>
+                        <select id="lr-interest-mode" name="interest_mode" class="lr-select">
+                            <option value="annual" selected>Anual</option>
+                            <option value="monthly">Mensual</option>
+                        </select>
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-payment-frequency">Frecuencia de pago</label>
+                        <select id="lr-payment-frequency" name="payment_frequency" class="lr-select">
+                            <option value="monthly" selected>Mensual</option>
+                            <option value="weekly">Semanal</option>
                         </select>
                     </div>
 
@@ -194,6 +220,14 @@
                 <div class="lr-check">
                     <input type="checkbox" id="lr-comunicaciones" name="acepta_comunicaciones" value="1">
                     <label for="lr-comunicaciones">Acepto recibir comunicaciones operativas sobre esta solicitud por los canales indicados (correo / teléfono).</label>
+                </div>
+                <div class="lr-field" style="margin-top: 14px;">
+                    <label class="lr-label" for="lr-documents">Documentos del cliente</label>
+                    <input type="file" id="lr-documents" name="documents" class="lr-input" multiple>
+                </div>
+                <div class="lr-field" style="margin-top: 12px;">
+                    <label class="lr-label" for="lr-signer">Firmante del contrato (opcional)</label>
+                    <input type="text" id="lr-signer" name="contract_signer" class="lr-input" placeholder="Nombre completo del firmante">
                 </div>
             </div>
         </section>
