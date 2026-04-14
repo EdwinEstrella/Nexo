@@ -17,12 +17,7 @@ class Sidebar {
         }
 
         this.adminPages = [
-            { id: 'dashboard', label: 'Dashboard', icon: this.getDashboardIcon() },
-            { id: 'companies', label: 'Empresas', icon: this.getCompaniesIcon() },
-            { id: 'users', label: 'Usuarios', icon: this.getUsersIcon() },
-            { id: 'payments', label: 'Pagos', icon: this.getPaymentsIcon() },
-            { id: 'analytics', label: 'Analíticas', icon: this.getAnalyticsIcon() },
-            { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon() }
+            { id: 'companies', label: 'Empresas', icon: this.getCompaniesIcon() }
         ]
 
         this.portalPages = [

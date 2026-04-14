@@ -9,6 +9,160 @@ let insforge = null
 
 let mainWindow = null
 
+function slugifyCompany (value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+async function getTenantById (tenantId) {
+  if (!tenantId) return null
+  const { data, error } = await insforge.database
+    .from('nexo_tenants')
+    .select('*')
+    .eq('id', tenantId)
+    .maybeSingle()
+  if (error || !data) return null
+  return data
+}
+
+async function ensureTenantForCompany (companyName) {
+  const name = String(companyName || '').trim()
+  if (!name) return null
+  const baseSlug = slugifyCompany(name) || 'empresa'
+
+  const byName = await insforge.database
+    .from('nexo_tenants')
+    .select('*')
+    .eq('name', name)
+    .maybeSingle()
+  if (byName?.data) return byName.data
+
+  const bySlug = await insforge.database
+    .from('nexo_tenants')
+    .select('*')
+    .eq('slug', baseSlug)
+    .maybeSingle()
+  if (bySlug?.data) return bySlug.data
+
+  for (let i = 0; i < 50; i += 1) {
+    const candidateSlug = i === 0 ? baseSlug : `${baseSlug}-${i + 1}`
+    const exists = await insforge.database
+      .from('nexo_tenants')
+      .select('id')
+      .eq('slug', candidateSlug)
+      .maybeSingle()
+    if (exists?.data) continue
+
+    const { data: inserted, error } = await insforge.database
+      .from('nexo_tenants')
+      .insert([{
+        name,
+        slug: candidateSlug,
+        status: 'active',
+        is_blocked: false
+      }])
+      .select('*')
+      .maybeSingle()
+
+    if (!error && inserted) return inserted
+    const msg = String(error?.message || '')
+    if (!msg.toLowerCase().includes('duplicate')) {
+      console.warn('[ensureTenantForCompany]', msg || error)
+      return null
+    }
+  }
+  return null
+}
+
+async function ensureTenantMembership ({ tenantId, userId }) {
+  if (!tenantId || !userId) return
+  const existing = await insforge.database
+    .from('nexo_tenant_members')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (existing?.data) return
+
+  const { error } = await insforge.database
+    .from('nexo_tenant_members')
+    .insert([{
+      tenant_id: tenantId,
+      user_id: userId,
+      member_role: 'owner'
+    }])
+  if (error) {
+    const msg = String(error.message || error)
+    if (!msg.toLowerCase().includes('duplicate')) {
+      console.warn('[ensureTenantMembership]', msg)
+    }
+  }
+}
+
+async function ensureTenantsFromEmpresaProfiles () {
+  const { data: profiles, error } = await insforge.database
+    .from('nexo_profiles')
+    .select('user_id, company, app_role')
+    .eq('app_role', 'empresa')
+    .not('company', 'is', null)
+
+  if (error || !Array.isArray(profiles)) {
+    if (error) console.warn('[ensureTenantsFromEmpresaProfiles]', error.message || error)
+    return
+  }
+
+  for (const p of profiles) {
+    const company = String(p.company || '').trim()
+    if (!company) continue
+    const tenant = await ensureTenantForCompany(company)
+    if (!tenant?.id) continue
+    await ensureTenantMembership({ tenantId: tenant.id, userId: p.user_id })
+    await insforge.database
+      .from('nexo_profiles')
+      .update({ default_tenant_id: tenant.id })
+      .eq('user_id', p.user_id)
+  }
+}
+
+async function findTenantForUser (user) {
+  if (!user?.id) return null
+  try {
+    const member = await insforge.database
+      .from('nexo_tenant_members')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (member?.data?.tenant_id) {
+      const byId = await getTenantById(member.data.tenant_id)
+      if (byId) return byId
+    }
+  } catch (_) {}
+
+  const company = user?.profile?.company || user?.nexo_profile?.company || null
+  if (!company) return null
+  try {
+    const bySlug = await insforge.database
+      .from('nexo_tenants')
+      .select('*')
+      .eq('slug', String(company).trim().toLowerCase().replace(/\s+/g, '-'))
+      .maybeSingle()
+    if (bySlug?.data) return bySlug.data
+  } catch (_) {}
+  try {
+    const byName = await insforge.database
+      .from('nexo_tenants')
+      .select('*')
+      .eq('name', company)
+      .maybeSingle()
+    if (byName?.data) return byName.data
+  } catch (_) {}
+  return null
+}
+
 /**
  * Une public.nexo_profiles al objeto usuario (rol multi-tenant / super admin).
  */
@@ -28,6 +182,18 @@ async function mergeNexoProfile (user) {
     if (data.company != null && data.company !== '') user.profile.company = data.company
     if (data.full_name && !user.profile.name) user.profile.name = data.full_name
     user.nexo_profile = data
+
+    const tenant = await findTenantForUser(user)
+    if (tenant) {
+      user.nexo_tenant = tenant
+      user.company_blocked = Boolean(
+        tenant.is_blocked === true ||
+        tenant.status === 'blocked' ||
+        tenant.status === 'suspended'
+      )
+    } else {
+      user.company_blocked = false
+    }
   } catch (e) {
     console.warn('[mergeNexoProfile]', e?.message || e)
   }
@@ -124,6 +290,75 @@ ipcMain.on('window-close', () => {
 })
 
 function registerAuthIpc () {
+  ipcMain.handle('admin:listCompanies', async () => {
+    try {
+      await ensureTenantsFromEmpresaProfiles()
+
+      const { data, error } = await insforge.database
+        .from('nexo_tenants')
+        .select('id,name,slug,status,is_blocked,created_at,updated_at')
+        .order('updated_at', { ascending: false })
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return { success: true, companies: data }
+      }
+
+      const { data: profileRows, error: profileError } = await insforge.database
+        .from('nexo_profiles')
+        .select('company')
+        .eq('app_role', 'empresa')
+        .not('company', 'is', null)
+
+      if (profileError) {
+        return { success: false, error: profileError.message || 'No se pudieron listar empresas' }
+      }
+
+      const unique = [...new Set((profileRows || []).map((r) => String(r.company || '').trim()).filter(Boolean))]
+      const companies = unique.map((name, i) => ({
+        id: `profile-company-${i + 1}`,
+        name,
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        status: 'active',
+        is_blocked: false,
+        created_at: null,
+        updated_at: null,
+        source: 'profiles_fallback'
+      }))
+      return { success: true, companies }
+    } catch (error) {
+      return { success: false, error: error.message || 'No se pudieron listar empresas' }
+    }
+  })
+
+  ipcMain.handle('admin:setCompanyBlocked', async (event, { companyId, blocked }) => {
+    try {
+      if (!companyId) {
+        return { success: false, error: 'companyId es requerido' }
+      }
+      const nextStatus = blocked ? 'blocked' : 'active'
+      const payload = {
+        is_blocked: Boolean(blocked),
+        status: nextStatus,
+        updated_at: new Date().toISOString()
+      }
+      const { data, error } = await insforge.database
+        .from('nexo_tenants')
+        .update(payload)
+        .eq('id', companyId)
+        .select('id')
+
+      if (error) {
+        return { success: false, error: error.message || 'No se pudo actualizar empresa' }
+      }
+      if (!Array.isArray(data) || data.length === 0) {
+        return { success: false, error: 'Empresa no encontrada en nexo_tenants' }
+      }
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message || 'No se pudo actualizar empresa' }
+    }
+  })
+
   ipcMain.handle('auth:signUp', async (event, { email, password, name, company }) => {
   try {
     const { data, error } = await insforge.auth.signUp({
@@ -152,6 +387,16 @@ function registerAuthIpc () {
         fullName: name,
         company
       })
+      if (company && String(company).trim()) {
+        const tenant = await ensureTenantForCompany(company)
+        if (tenant?.id) {
+          await ensureTenantMembership({ tenantId: tenant.id, userId: u.id })
+          await insforge.database
+            .from('nexo_profiles')
+            .update({ default_tenant_id: tenant.id })
+            .eq('user_id', u.id)
+        }
+      }
       await mergeNexoProfile(data.user)
     }
 

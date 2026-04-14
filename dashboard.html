@@ -167,9 +167,9 @@
                 type="search"
                 class="app-header__search"
                 id="app-header-search"
-                placeholder="Buscar administradores, empresas o roles..."
+                placeholder="Buscar empresas..."
                 autocomplete="off"
-                aria-label="Buscar administradores, empresas o roles"
+                aria-label="Buscar empresas"
             >
         </div>
         <div class="app-header__actions">
@@ -205,117 +205,142 @@
         </div>
     </header>
 
-    <!-- Super admin: operaciones plataforma (no vista cartera empresa) -->
+    <!-- Super admin: solo empresas + bloqueo -->
     <div class="main-content">
         <main class="admin-console" aria-label="Panel super administrador">
             <header class="admin-console__head">
                 <div>
                     <span class="admin-console__badge">Super admin</span>
-                    <h1 class="admin-console__title">Operaciones NEXO</h1>
-                    <p class="admin-console__lead">Gestión multi-tenant: empresas registradas, usuarios de la plataforma y configuración global. La cartera institucional la ven los usuarios con rol empresa en el portal.</p>
+                    <h1 class="admin-console__title">Empresas registradas</h1>
+                    <p class="admin-console__lead">Vista única de empresas y control de bloqueo por falta de pago. Si una empresa queda bloqueada, sus usuarios no podrán usar el portal.</p>
                     <p class="admin-console__session" id="admin-console-session" hidden></p>
                 </div>
             </header>
 
-            <section class="admin-kpi-grid" aria-label="Métricas de plataforma">
+            <section class="admin-kpi-grid" aria-label="Métricas de empresas">
                 <article class="admin-kpi">
-                    <div class="admin-kpi__label">Empresas (tenants)</div>
-                    <div class="admin-kpi__value">—</div>
-                    <div class="admin-kpi__meta admin-kpi__meta--ok">Conecta nexo_tenants / InsForge DB</div>
+                    <div class="admin-kpi__label">Total empresas</div>
+                    <div class="admin-kpi__value" id="kpi-total-companies">0</div>
+                    <div class="admin-kpi__meta">nexo_tenants</div>
                 </article>
                 <article class="admin-kpi">
-                    <div class="admin-kpi__label">Usuarios con rol empresa</div>
-                    <div class="admin-kpi__value">—</div>
-                    <div class="admin-kpi__meta">Desde nexo_profiles</div>
+                    <div class="admin-kpi__label">Empresas activas</div>
+                    <div class="admin-kpi__value" id="kpi-active-companies">0</div>
+                    <div class="admin-kpi__meta admin-kpi__meta--ok">Acceso habilitado</div>
                 </article>
                 <article class="admin-kpi">
-                    <div class="admin-kpi__label">Super admins</div>
-                    <div class="admin-kpi__value">1</div>
-                    <div class="admin-kpi__meta">Incluye esta sesión</div>
+                    <div class="admin-kpi__label">Empresas bloqueadas</div>
+                    <div class="admin-kpi__value" id="kpi-blocked-companies">0</div>
+                    <div class="admin-kpi__meta">Acceso suspendido por cobro</div>
                 </article>
                 <article class="admin-kpi">
-                    <div class="admin-kpi__label">Estado API</div>
-                    <div class="admin-kpi__value" style="font-size: 20px;">OK</div>
-                    <div class="admin-kpi__meta admin-kpi__meta--ok">Backend InsForge</div>
+                    <div class="admin-kpi__label">Sincronización</div>
+                    <div class="admin-kpi__value" id="kpi-last-sync" style="font-size: 20px;">—</div>
+                    <div class="admin-kpi__meta">Lectura en tiempo real</div>
                 </article>
             </section>
 
-            <div class="admin-layout">
-                <div class="admin-panel">
-                    <h2 class="admin-panel__title">Acciones de plataforma</h2>
-                    <div class="admin-actions">
-                        <button type="button" class="admin-action-btn" data-admin-nav="companies">
-                            Gestionar empresas
-                            <span>Altas, suspensión y datos de tenant</span>
-                        </button>
-                        <button type="button" class="admin-action-btn" data-admin-nav="users">
-                            Usuarios y roles
-                            <span>Perfiles, app_role y acceso al portal</span>
-                        </button>
-                        <button type="button" class="admin-action-btn" data-admin-nav="payments">
-                            Pagos y facturación
-                            <span>Próximamente</span>
-                        </button>
-                        <button type="button" class="admin-action-btn" data-admin-nav="settings">
-                            Configuración global
-                            <span>Auth, límites y entorno</span>
-                        </button>
-                    </div>
-                    <p class="admin-note">Las secciones del menú lateral enlazarán a pantallas dedicadas cuando estén implementadas; este panel sustituye la vista de cartera que corresponde solo al portal empresa.</p>
+            <div class="admin-panel">
+                <div class="admin-panel__toolbar">
+                    <h2 class="admin-panel__title">Empresas</h2>
+                    <label class="admin-filter" for="companies-status-filter">
+                        <span>Estado</span>
+                        <select id="companies-status-filter" class="admin-filter__select" aria-label="Filtrar por estado">
+                            <option value="todos">Todos</option>
+                            <option value="bloqueados">Bloqueados</option>
+                            <option value="desbloqueados">Desbloqueados</option>
+                        </select>
+                    </label>
                 </div>
-                <div>
-                    <div class="admin-panel" style="margin-bottom: 16px;">
-                        <h2 class="admin-panel__title">Actividad reciente (plataforma)</h2>
-                        <div class="admin-feed">
-                            <div class="admin-feed__item">
-                                <div class="admin-feed__title">Nuevo registro empresa</div>
-                                <div class="admin-feed__meta">Demo · hace 2 h · app_role empresa</div>
-                            </div>
-                            <div class="admin-feed__item">
-                                <div class="admin-feed__title">Super admin conectado</div>
-                                <div class="admin-feed__meta">Sesión iniciada vía email/contraseña</div>
-                            </div>
-                            <div class="admin-feed__item">
-                                <div class="admin-feed__title">Esquema multi-tenant</div>
-                                <div class="admin-feed__meta">Tablas nexo_tenants, nexo_profiles, nexo_tenant_members</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="admin-panel">
-                        <h2 class="admin-panel__title">Últimas empresas (demo)</h2>
-                        <div class="admin-table-wrap">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Organización</th>
-                                        <th>Slug</th>
-                                        <th>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Acme Capital S.A.</td>
-                                        <td>acme-capital</td>
-                                        <td><span class="admin-pill admin-pill--ok">Activa</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Inmobiliaria del Este</td>
-                                        <td>este-sa</td>
-                                        <td><span class="admin-pill admin-pill--pending">Onboarding</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <p class="admin-note">Bloquear una empresa corta acceso al portal de todos sus usuarios empresa hasta desbloquearla.</p>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Organización</th>
+                                <th>Slug</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companies-table-body">
+                            <tr>
+                                <td colspan="4">Cargando empresas…</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
+    </div>
+
+    <div class="admin-modal" id="admin-modal" hidden aria-hidden="true">
+        <div class="admin-modal__backdrop" data-admin-modal-dismiss="backdrop"></div>
+        <div class="admin-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title" aria-describedby="admin-modal-body">
+            <h3 class="admin-modal__title" id="admin-modal-title">Confirmación</h3>
+            <p class="admin-modal__body" id="admin-modal-body"></p>
+            <div class="admin-modal__actions">
+                <button type="button" class="admin-modal__btn admin-modal__btn--neutral" id="admin-modal-cancel">Cancelar</button>
+                <button type="button" class="admin-modal__btn admin-modal__btn--primary" id="admin-modal-confirm">Aceptar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="components/auth-roles.js"></script>
     <script src="components/sidebar.js"></script>
     <script>
+        const AdminModal = (() => {
+            let resolver = null
+            const root = document.getElementById('admin-modal')
+            const titleEl = document.getElementById('admin-modal-title')
+            const bodyEl = document.getElementById('admin-modal-body')
+            const cancelBtn = document.getElementById('admin-modal-cancel')
+            const confirmBtn = document.getElementById('admin-modal-confirm')
+
+            function close (value) {
+                if (!root) return
+                root.hidden = true
+                root.setAttribute('aria-hidden', 'true')
+                if (resolver) {
+                    resolver(value)
+                    resolver = null
+                }
+            }
+
+            if (cancelBtn) cancelBtn.addEventListener('click', () => close(false))
+            if (confirmBtn) confirmBtn.addEventListener('click', () => close(true))
+            if (root) {
+                root.addEventListener('click', (e) => {
+                    const target = e.target
+                    if (target instanceof HTMLElement && target.dataset.adminModalDismiss === 'backdrop') {
+                        close(false)
+                    }
+                })
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && root && !root.hidden) close(false)
+            })
+
+            return {
+                async confirm ({ title, message, confirmText = 'Aceptar', cancelText = 'Cancelar' }) {
+                    if (!root || !titleEl || !bodyEl || !confirmBtn || !cancelBtn) return false
+                    titleEl.textContent = title
+                    bodyEl.textContent = message
+                    confirmBtn.textContent = confirmText
+                    cancelBtn.textContent = cancelText
+                    root.hidden = false
+                    root.setAttribute('aria-hidden', 'false')
+                    confirmBtn.focus()
+                    return await new Promise((resolve) => { resolver = resolve })
+                },
+                async notify ({ title, message, buttonText = 'Entendido' }) {
+                    const ok = await this.confirm({ title, message, confirmText: buttonText, cancelText: 'Cerrar' })
+                    return ok
+                }
+            }
+        })()
+
         function initialsFromName (name) {
             const parts = name.trim().split(/\s+/).filter(Boolean)
             if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -341,6 +366,105 @@
                 avatarEl.removeAttribute('aria-hidden')
             }
         }
+        let adminCompaniesCache = []
+
+        function renderCompaniesTableFiltered () {
+            const body = document.getElementById('companies-table-body')
+            if (!body) return
+            const searchInput = document.getElementById('app-header-search')
+            const statusFilter = document.getElementById('companies-status-filter')?.value || 'todos'
+            const q = String(searchInput?.value || '').trim().toLowerCase()
+            const filtered = adminCompaniesCache.filter((c) => {
+                const blockedNow = c.is_blocked || c.status === 'blocked' || c.status === 'suspended'
+                if (statusFilter === 'bloqueados' && !blockedNow) return false
+                if (statusFilter === 'desbloqueados' && blockedNow) return false
+                if (!q) return true
+                const name = String(c.name || '').toLowerCase()
+                const slug = String(c.slug || '').toLowerCase()
+                return name.includes(q) || slug.includes(q)
+            })
+            if (!filtered.length) {
+                body.innerHTML = '<tr><td colspan="4">No hay resultados con ese filtro.</td></tr>'
+                return
+            }
+            body.innerHTML = filtered.map((c) => {
+                const blockedNow = c.is_blocked || c.status === 'blocked' || c.status === 'suspended'
+                const statusLabel = blockedNow ? 'Bloqueada' : 'Activa'
+                const statusClass = blockedNow ? 'admin-pill--pending' : 'admin-pill--ok'
+                const actionLabel = blockedNow ? 'Desbloquear' : 'Bloquear'
+                const actionIntent = blockedNow ? 'unblock' : 'block'
+                const canToggle = c.source !== 'profiles_fallback'
+                return `
+                    <tr>
+                        <td>${c.name || '—'}</td>
+                        <td>${c.slug || '—'}</td>
+                        <td><span class="admin-pill ${statusClass}">${statusLabel}</span></td>
+                        <td>
+                            <button type="button" class="admin-action-btn" data-company-action="${actionIntent}" data-company-id="${c.id}" style="padding:8px 12px;font-size:12px;" ${canToggle ? '' : 'disabled title="Solo disponible cuando existe nexo_tenants"'}>
+                                ${canToggle ? actionLabel : 'No disponible'}
+                            </button>
+                        </td>
+                    </tr>
+                `
+            }).join('')
+        }
+
+        async function loadCompanies () {
+            const body = document.getElementById('companies-table-body')
+            if (!body) return
+            if (!window.electronAPI?.admin?.listCompanies) {
+                body.innerHTML = '<tr><td colspan="4">El backend no expone admin:listCompanies todavía.</td></tr>'
+                return
+            }
+            body.innerHTML = '<tr><td colspan="4">Cargando empresas…</td></tr>'
+            const result = await window.electronAPI.admin.listCompanies()
+            if (!result?.success) {
+                body.innerHTML = `<tr><td colspan="4">Error: ${result?.error || 'No se pudo cargar empresas'}</td></tr>`
+                return
+            }
+            const companies = Array.isArray(result.companies) ? result.companies : []
+            adminCompaniesCache = companies
+            const active = companies.filter((c) => !c.is_blocked && c.status !== 'blocked' && c.status !== 'suspended').length
+            const blocked = companies.length - active
+            const setText = (id, value) => {
+                const el = document.getElementById(id)
+                if (el) el.textContent = value
+            }
+            setText('kpi-total-companies', String(companies.length))
+            setText('kpi-active-companies', String(active))
+            setText('kpi-blocked-companies', String(blocked))
+            setText('kpi-last-sync', new Date().toLocaleTimeString('es-DO'))
+            renderCompaniesTableFiltered()
+        }
+
+        async function toggleCompanyBlocked (companyId, shouldBlock) {
+            if (!window.electronAPI?.admin?.setCompanyBlocked) {
+                await AdminModal.notify({
+                    title: 'Acción no disponible',
+                    message: 'El backend aún no expone la acción para bloquear/desbloquear empresas.'
+                })
+                return
+            }
+            const q = shouldBlock
+                ? '¿Bloquear esta empresa? Sus usuarios no podrán acceder al portal.'
+                : '¿Desbloquear esta empresa para reactivar acceso al portal?'
+            const confirmed = await AdminModal.confirm({
+                title: shouldBlock ? 'Confirmar bloqueo' : 'Confirmar desbloqueo',
+                message: q,
+                confirmText: shouldBlock ? 'Sí, bloquear' : 'Sí, desbloquear',
+                cancelText: 'Cancelar'
+            })
+            if (!confirmed) return
+            const result = await window.electronAPI.admin.setCompanyBlocked(companyId, shouldBlock)
+            if (!result?.success) {
+                await AdminModal.notify({
+                    title: 'No se pudo completar',
+                    message: result?.error || 'No se pudo actualizar el estado de la empresa.'
+                })
+                return
+            }
+            await loadCompanies()
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!window.electronAPI) return
@@ -359,21 +483,41 @@
                 sessionLine.textContent = `Sesión super admin · ${result.user.email}`
                 sessionLine.hidden = false
             }
+            const searchInput = document.getElementById('app-header-search')
+            if (searchInput && !searchInput.dataset.searchWired) {
+                searchInput.dataset.searchWired = '1'
+                searchInput.addEventListener('input', () => {
+                    renderCompaniesTableFiltered()
+                })
+            }
+            const statusFilter = document.getElementById('companies-status-filter')
+            if (statusFilter && !statusFilter.dataset.filterWired) {
+                statusFilter.dataset.filterWired = '1'
+                statusFilter.addEventListener('change', () => {
+                    renderCompaniesTableFiltered()
+                })
+            }
+            await loadCompanies()
         })
 
-        document.querySelectorAll('[data-admin-nav]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-admin-nav')
-                console.log('[super-admin] acción:', id)
-            })
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-company-action]')
+            if (!btn) return
+            const companyId = btn.getAttribute('data-company-id')
+            const action = btn.getAttribute('data-company-action')
+            if (!companyId || !action) return
+            void toggleCompanyBlocked(companyId, action === 'block')
         })
 
         // Sidebar super admin (operaciones NEXO)
         const sidebar = new Sidebar({
             variant: 'admin',
-            activePage: 'dashboard',
+            activePage: 'companies',
             onNavigate: (pageId) => {
-                console.log('Navegando a:', pageId)
+                if (pageId === 'companies') {
+                    void loadCompanies()
+                    return
+                }
             }
         });
 

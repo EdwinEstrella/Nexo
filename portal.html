@@ -103,6 +103,52 @@
             white-space: nowrap;
             border: 0;
         }
+        .portal-search-results[hidden] { display: none; }
+        .portal-search-results {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            z-index: 1200;
+            background: #ffffff;
+            border: 1px solid rgba(0, 14, 36, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 22px 48px rgba(0, 14, 36, 0.2);
+            overflow: hidden;
+            max-height: min(56vh, 420px);
+            overflow-y: auto;
+        }
+        .portal-search-results__empty {
+            padding: 14px 16px;
+            color: #6b7891;
+            font-size: 13px;
+        }
+        .portal-search-results__item {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #edf2ff;
+            background: #fff;
+            text-align: left;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .portal-search-results__item:last-child { border-bottom: none; }
+        .portal-search-results__item:hover {
+            background: #f3f6ff;
+        }
+        .portal-search-results__title {
+            color: #0f1f3b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .portal-search-results__meta {
+            color: #5b6880;
+            font-size: 12px;
+        }
         @media (max-width: 900px) {
             .titlebar { left: 0; }
             .main-content {
@@ -137,6 +183,7 @@
                 </svg>
             </span>
             <input type="search" class="app-header__search" id="app-header-search" placeholder="Buscar préstamos, clientes o solicitudes…" autocomplete="off" aria-label="Buscar en el portal">
+            <div class="portal-search-results" id="portal-search-results" hidden aria-label="Resultados de búsqueda"></div>
         </div>
         <div class="app-header__actions">
             <div class="app-header__icon-btns">
@@ -219,6 +266,21 @@
         let portalUserEmail = ''
         let portalCurrentView = 'dashboard'
         const nexoPortalProfile = { email: '', displayName: '', company: '', roleLine: '' }
+        const PORTAL_SEARCH_INDEX = [
+            { id: 'dash', title: 'Dashboard general', meta: 'KPIs, cartera y próximos pagos', view: 'dashboard', keywords: 'inicio resumen panel principal' },
+            { id: 'loans-list', title: 'Préstamos', meta: 'Ver cartera y estados de préstamo', view: 'loans', keywords: 'cartera cuotas mora pagos' },
+            { id: 'loans-pay', title: 'Registrar pago', meta: 'Aplicar pago a cuota (mora, interés, capital)', view: 'loans', focusSelector: '#loan-payment-form', keywords: 'abono capital interes mora cuota' },
+            { id: 'clients', title: 'Clientes', meta: 'Directorio de clientes y estado', view: 'clients', keywords: 'personas cedula telefono historial' },
+            { id: 'new-loan', title: 'Nuevo préstamo', meta: 'Crear solicitud nueva', view: 'loan-request', focusSelector: '#loan-request-form', keywords: 'solicitud crear prestamo nuevo' },
+            { id: 'analytics', title: 'Análisis', meta: 'Reportes y métricas', view: 'analytics', keywords: 'reportes ganancias morosos exportar' },
+            { id: 'settings-account', title: 'Configuración · Cuenta y perfil', meta: 'Nombre, correo, teléfono, idioma', view: 'settings', settingsTab: 'cuenta', keywords: 'perfil cuenta usuario idioma zona horaria' },
+            { id: 'settings-org', title: 'Configuración · Institución', meta: 'Datos legales, sector, contacto', view: 'settings', settingsTab: 'institucion', keywords: 'empresa institucion razon social direccion slug' },
+            { id: 'settings-notify', title: 'Configuración · Notificaciones', meta: 'Correos y avisos', view: 'settings', settingsTab: 'notificaciones', keywords: 'recordatorio aviso correo campana notificacion' },
+            { id: 'settings-security', title: 'Configuración · Seguridad', meta: 'Contraseña y sesión', view: 'settings', settingsTab: 'seguridad', keywords: 'password seguridad sesion timeout' },
+            { id: 'settings-appearance', title: 'Configuración · Apariencia', meta: 'Tema, densidad, acento', view: 'settings', settingsTab: 'apariencia', keywords: 'tema apariencia animaciones color interfaz' },
+            { id: 'settings-data', title: 'Configuración · Datos y privacidad', meta: 'Retención y privacidad', view: 'settings', settingsTab: 'datos', keywords: 'datos privacidad retencion dpo exportar' },
+            { id: 'settings-credit', title: 'Configuración · Políticas de crédito', meta: 'Mora, días de gracia, frecuencia, interés', view: 'settings', settingsTab: 'avanzado', focusSelector: '#settings-form-credit-policy', keywords: 'mora gracia interes frecuencia credito politicas' }
+        ]
 
         function readProfilePrefs () {
             try {
@@ -248,6 +310,99 @@
                 const cur = readOrgPrefs()
                 localStorage.setItem('nexo_ui_org', JSON.stringify({ ...cur, ...partial }))
             } catch (_) {}
+        }
+
+        function normalizeSearchText (value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim()
+        }
+
+        function findPortalSearchResults (query) {
+            const q = normalizeSearchText(query)
+            if (!q) return PORTAL_SEARCH_INDEX.slice(0, 8)
+            return PORTAL_SEARCH_INDEX
+                .filter((item) => {
+                    const haystack = normalizeSearchText(`${item.title} ${item.meta} ${item.keywords}`)
+                    return haystack.includes(q)
+                })
+                .slice(0, 10)
+        }
+
+        function hidePortalSearchResults () {
+            const box = document.getElementById('portal-search-results')
+            if (box) box.hidden = true
+        }
+
+        function renderPortalSearchResults (query) {
+            const box = document.getElementById('portal-search-results')
+            if (!box) return
+            const items = findPortalSearchResults(query)
+            if (!items.length) {
+                box.innerHTML = '<div class="portal-search-results__empty">No encontramos funciones con ese término.</div>'
+                box.hidden = false
+                return
+            }
+            box.innerHTML = items.map((item) => `
+                <button type="button" class="portal-search-results__item" data-search-item="${item.id}">
+                    <span class="portal-search-results__title">${item.title}</span>
+                    <span class="portal-search-results__meta">${item.meta}</span>
+                </button>
+            `).join('')
+            box.hidden = false
+        }
+
+        async function openPortalSearchItemById (id) {
+            const item = PORTAL_SEARCH_INDEX.find((x) => x.id === id)
+            if (!item) return
+            if (portalSidebar) portalSidebar.setActiveNavOnly(item.view)
+            await loadPortalView(item.view, { pushState: true })
+
+            if (item.settingsTab) {
+                const tabBtn = document.querySelector(`#portal-main [data-settings-tab="${item.settingsTab}"]`)
+                if (tabBtn) tabBtn.click()
+            }
+            if (item.focusSelector) {
+                const target = document.querySelector(`#portal-main ${item.focusSelector}`)
+                if (target && typeof target.focus === 'function') target.focus()
+            }
+            const searchInput = document.getElementById('app-header-search')
+            if (searchInput) searchInput.value = ''
+            hidePortalSearchResults()
+        }
+
+        function wirePortalSearch () {
+            const input = document.getElementById('app-header-search')
+            const box = document.getElementById('portal-search-results')
+            if (!input || !box || input.dataset.searchWired === '1') return
+            input.dataset.searchWired = '1'
+
+            input.addEventListener('focus', () => {
+                renderPortalSearchResults(input.value)
+            })
+            input.addEventListener('input', () => {
+                renderPortalSearchResults(input.value)
+            })
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const first = box.querySelector('[data-search-item]')
+                    if (first) void openPortalSearchItemById(first.getAttribute('data-search-item'))
+                }
+                if (e.key === 'Escape') hidePortalSearchResults()
+            })
+            box.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-search-item]')
+                if (!btn) return
+                void openPortalSearchItemById(btn.getAttribute('data-search-item'))
+            })
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#app-header-search') && !e.target.closest('#portal-search-results')) {
+                    hidePortalSearchResults()
+                }
+            })
         }
 
         const LOAN_SYSTEM_KEY = 'nexo_mortgage_system_v1'
@@ -315,10 +470,12 @@
             } catch (_) {}
         }
 
-        function monthlyInstallment (principal, periodicRate, periods) {
-            if (!periodicRate) return principal / periods
-            const f = periodicRate / (1 - Math.pow(1 + periodicRate, -periods))
-            return principal * f
+        function periodicRateForLoan (loan) {
+            const pct = Number(loan.interest_rate_pct) || 0
+            const freq = loan.payment_frequency === 'weekly' ? 'weekly' : 'monthly'
+            const mode = loan.interest_mode === 'monthly' ? 'monthly' : 'annual'
+            if (mode === 'annual') return freq === 'weekly' ? (pct / 100) / 52 : (pct / 100) / 12
+            return freq === 'weekly' ? (pct / 100) / 4 : (pct / 100)
         }
 
         function generateInstallments (loanInput) {
@@ -326,71 +483,132 @@
             const termMonths = Math.max(1, Number(loanInput.term_months) || 1)
             const frequency = loanInput.payment_frequency === 'weekly' ? 'weekly' : 'monthly'
             const periods = frequency === 'weekly' ? termMonths * 4 : termMonths
-            const ratePct = Number(loanInput.interest_rate_pct) || 0
-            let periodicRate = ratePct / 100
-            if (loanInput.interest_mode === 'annual') {
-                periodicRate = frequency === 'weekly' ? (ratePct / 100) / 52 : (ratePct / 100) / 12
-            } else if (frequency === 'weekly') {
-                periodicRate = (ratePct / 100) / 4
-            }
-            const fee = monthlyInstallment(principal, periodicRate, periods)
+            const principalTarget = periods > 0 ? principal / periods : principal
             const out = []
-            let remaining = principal
             for (let i = 1; i <= periods; i++) {
-                const interest = remaining * periodicRate
-                let principalDue = fee - interest
-                if (i === periods) principalDue = remaining
-                remaining = Math.max(0, remaining - principalDue)
                 out.push({
                     n: i,
                     due_date: addPeriodISO(loanInput.start_date, i - 1, frequency),
-                    principal_due: Number(principalDue.toFixed(2)),
-                    interest_due: Number(interest.toFixed(2)),
-                    total_due: Number((principalDue + interest).toFixed(2)),
-                    paid_amount: 0
+                    principal_target: Number(principalTarget.toFixed(2)),
+                    paid_interest: 0,
+                    paid_principal: 0,
+                    paid_late_fee: 0
                 })
             }
             return out
         }
 
-        function evaluateInstallment (inst, policy, now = new Date()) {
+        function normalizeInstallmentRecord (inst, fallbackPrincipalTarget = 0) {
+            if (inst && typeof inst === 'object') {
+                return {
+                    n: Number(inst.n) || 0,
+                    due_date: inst.due_date,
+                    principal_target: Number(inst.principal_target != null ? inst.principal_target : (inst.principal_due != null ? inst.principal_due : fallbackPrincipalTarget)) || 0,
+                    paid_interest: Number(inst.paid_interest) || 0,
+                    paid_principal: Number(inst.paid_principal) || 0,
+                    paid_late_fee: Number(inst.paid_late_fee) || 0,
+                    legacy_paid_amount: Number(inst.paid_amount) || 0
+                }
+            }
+            return {
+                n: 0,
+                due_date: isoToday(),
+                principal_target: Number(fallbackPrincipalTarget) || 0,
+                paid_interest: 0,
+                paid_principal: 0,
+                paid_late_fee: 0,
+                legacy_paid_amount: 0
+            }
+        }
+
+        function evaluateInstallment (inst, loan, policy, remainingPrincipalAtStart, now = new Date()) {
             const due = new Date(`${inst.due_date}T00:00:00`)
-            const paid = Number(inst.paid_amount) || 0
-            const base = Number(inst.total_due) || 0
-            const paidToBase = Math.min(base, paid)
-            const paidToFee = Math.max(0, paid - base)
-            const pendingBase = Math.max(0, base - paidToBase)
+            const periodRate = periodicRateForLoan(loan)
+            const interestDue = Math.max(0, Number((remainingPrincipalAtStart * periodRate).toFixed(2)))
+            const principalTarget = Math.max(0, Math.min(remainingPrincipalAtStart, Number(inst.principal_target) || 0))
+            let paidInterest = Math.max(0, Number(inst.paid_interest) || 0)
+            let paidPrincipal = Math.max(0, Number(inst.paid_principal) || 0)
+            const paidLateFee = Math.max(0, Number(inst.paid_late_fee) || 0)
+            const legacyPaid = Math.max(0, Number(inst.legacy_paid_amount) || 0)
+            if (legacyPaid > 0 && paidInterest === 0 && paidPrincipal === 0 && paidLateFee === 0) {
+                paidInterest = Math.min(legacyPaid, interestDue)
+                paidPrincipal = Math.max(0, legacyPaid - paidInterest)
+            }
+
+            const pendingInterest = Math.max(0, interestDue - paidInterest)
+            const pendingPrincipal = Math.max(0, principalTarget - paidPrincipal)
+            const basePending = pendingInterest + pendingPrincipal
+
             const msDay = 1000 * 60 * 60 * 24
-            const daysLate = pendingBase > 0 ? Math.floor((now - due) / msDay) : 0
+            const rawDaysLate = basePending > 0 ? Math.floor((now - due) / msDay) : 0
             const grace = Number(policy.grace_days) || 0
-            const lateDays = Math.max(0, daysLate - grace)
-            const lateFeeAccrued = pendingBase > 0 ? pendingBase * ((Number(policy.late_fee_percent) || 0) / 100) * lateDays : 0
-            const pendingFee = Math.max(0, lateFeeAccrued - paidToFee)
-            const pendingTotal = pendingBase + pendingFee
+            const lateDays = Math.max(0, rawDaysLate - grace)
+            const lateFeeAccrued = basePending > 0 ? basePending * ((Number(policy.late_fee_percent) || 0) / 100) * lateDays : 0
+            const pendingLateFee = Math.max(0, lateFeeAccrued - paidLateFee)
+            const pendingTotal = basePending + pendingLateFee
+
             let status = 'pendiente'
             if (pendingTotal <= 0.009) status = 'pagado'
-            else if (daysLate > grace) status = 'mora'
-            else if (daysLate > 0) status = 'atrasado'
+            else if (rawDaysLate > grace) status = 'mora'
+            else if (rawDaysLate > 0) status = 'atrasado'
+
             return {
                 ...inst,
-                daysLate,
-                lateDays,
+                interest_due: interestDue,
+                principal_target: principalTarget,
+                total_due: Number((interestDue + principalTarget).toFixed(2)),
+                pending_interest: Number(pendingInterest.toFixed(2)),
+                pending_principal: Number(pendingPrincipal.toFixed(2)),
+                pending_late_fee: Number(pendingLateFee.toFixed(2)),
                 lateFeeAccrued: Number(lateFeeAccrued.toFixed(2)),
                 pendingTotal: Number(pendingTotal.toFixed(2)),
-                status
+                status,
+                daysLate: rawDaysLate,
+                lateDays
             }
         }
 
         function summarizeLoan (loan, state, now = new Date()) {
             const policy = state.settings
-            const items = (loan.installments || []).map((it) => evaluateInstallment(it, policy, now))
+            const rawInst = Array.isArray(loan.installments) ? loan.installments : []
+            const periods = rawInst.length || Math.max(1, Number(loan.term_months) || 1)
+            const fallbackTarget = periods > 0 ? (Number(loan.principal) || 0) / periods : (Number(loan.principal) || 0)
+            const normalized = rawInst.length ? rawInst.map((i) => normalizeInstallmentRecord(i, fallbackTarget)) : generateInstallments({
+                principal: Number(loan.principal) || 0,
+                term_months: Number(loan.term_months) || 1,
+                payment_frequency: loan.payment_frequency || state.settings.payment_frequency,
+                start_date: loan.start_date || isoToday()
+            }).map((i) => normalizeInstallmentRecord(i, fallbackTarget))
+
+            let remainingPrincipal = Number(loan.principal) || 0
+            const items = []
+            for (const inst of normalized.sort((a, b) => a.n - b.n)) {
+                const evaluated = evaluateInstallment(inst, loan, policy, remainingPrincipal, now)
+                items.push(evaluated)
+                remainingPrincipal = Math.max(0, remainingPrincipal - (Number(inst.paid_principal) || 0))
+            }
+
             const pending = items.reduce((s, it) => s + it.pendingTotal, 0)
-            const mora = items.reduce((s, it) => s + Math.max(0, it.lateFeeAccrued), 0)
+            const mora = items.reduce((s, it) => s + Math.max(0, it.pending_late_fee || 0), 0)
             const next = items.find((it) => it.status !== 'pagado')
             const paidCount = items.filter((it) => it.status === 'pagado').length
             const status = pending <= 0.009 ? 'finalizado' : (items.some((it) => it.status === 'mora') ? 'moroso' : 'activo')
-            const paidTotal = items.reduce((s, it) => s + (Number(it.paid_amount) || 0), 0)
-            return { items, pending, mora, next, paidCount, status, paidTotal, totalInstallments: items.length }
+            const paidTotal = items.reduce((s, it) => s + (Number(it.paid_interest) || 0) + (Number(it.paid_principal) || 0) + (Number(it.paid_late_fee) || 0), 0)
+            const collectedInterest = items.reduce((s, it) => s + (Number(it.paid_interest) || 0), 0)
+            const collectedLateFees = items.reduce((s, it) => s + (Number(it.paid_late_fee) || 0), 0)
+            return {
+                items,
+                pending: Number(pending.toFixed(2)),
+                mora: Number(mora.toFixed(2)),
+                next,
+                paidCount,
+                status,
+                paidTotal: Number(paidTotal.toFixed(2)),
+                totalInstallments: items.length,
+                principalOutstanding: Number(remainingPrincipal.toFixed(2)),
+                collectedInterest: Number(collectedInterest.toFixed(2)),
+                collectedLateFees: Number(collectedLateFees.toFixed(2))
+            }
         }
 
         function buildAutoNotifications (state, now = new Date()) {
@@ -648,8 +866,7 @@
             const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)
             const totalMora = summaries.reduce((s, x) => s + x.sum.mora, 0)
             const morosos = summaries.filter((x) => x.sum.status === 'moroso').length
-            const interesesPlan = summaries.reduce((s, x) => s + x.sum.items.reduce((t, i) => t + i.interest_due, 0), 0)
-            const ganancias = Math.max(0, Math.min(totalCobrado, interesesPlan + totalMora))
+            const ganancias = summaries.reduce((s, x) => s + x.sum.collectedInterest + x.sum.collectedLateFees, 0)
 
             const setText = (id, v) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = v }
             setText('dash-kpi-value-1', fmtMoney(totalPrestado))
@@ -765,8 +982,7 @@
             const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)
             const totalMora = summaries.reduce((s, x) => s + x.sum.mora, 0)
             const clientesMorosos = new Set(summaries.filter((x) => x.sum.status === 'moroso').map((x) => x.loan.client_id)).size
-            const intereses = summaries.reduce((s, x) => s + x.sum.items.reduce((z, i) => z + i.interest_due, 0), 0)
-            const ganancias = Math.max(0, Math.min(totalCobrado, intereses + totalMora))
+            const ganancias = summaries.reduce((s, x) => s + x.sum.collectedInterest + x.sum.collectedLateFees, 0)
             const kpiSet = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value }
             kpiSet('kpi-total-prestado', fmtMoney(totalPrestado))
             kpiSet('kpi-total-cobrado', fmtMoney(totalCobrado))
@@ -1014,15 +1230,30 @@
                     const loan = state.loans.find((l) => l.id === String(fd.get('loan_id')))
                     if (!loan) return
                     const n = Number(fd.get('installment_n'))
-                    const amount = Number(fd.get('amount'))
+                    let amount = Number(fd.get('amount'))
                     const inst = (loan.installments || []).find((i) => Number(i.n) === n)
                     if (!inst || !amount || amount <= 0) return
-                    inst.paid_amount = Number(((Number(inst.paid_amount) || 0) + amount).toFixed(2))
+                    const summary = summarizeLoan(loan, state)
+                    const current = summary.items.find((i) => Number(i.n) === n)
+                    if (!current) return
+                    const toLateFee = Math.min(amount, current.pending_late_fee)
+                    amount -= toLateFee
+                    const toInterest = Math.min(amount, current.pending_interest)
+                    amount -= toInterest
+                    const toPrincipal = Math.max(0, Math.min(amount, summary.principalOutstanding))
+                    inst.paid_late_fee = Number(((Number(inst.paid_late_fee) || 0) + toLateFee).toFixed(2))
+                    inst.paid_interest = Number(((Number(inst.paid_interest) || 0) + toInterest).toFixed(2))
+                    inst.paid_principal = Number(((Number(inst.paid_principal) || 0) + toPrincipal).toFixed(2))
                     state.payments.push({
                         id: randomId('pay'),
                         loan_id: loan.id,
                         installment_n: n,
-                        amount,
+                        amount: Number(fd.get('amount')),
+                        breakdown: {
+                            late_fee: Number(toLateFee.toFixed(2)),
+                            interest: Number(toInterest.toFixed(2)),
+                            principal: Number(toPrincipal.toFixed(2))
+                        },
                         created_at: new Date().toISOString()
                     })
                     writeLoanSystemState(state)
@@ -1191,6 +1422,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             const initialView = getInitialPortalView()
             getOrCreateLoanSystemState()
+            wirePortalSearch()
 
             portalSidebar = new Sidebar({
                 variant: 'portal',
@@ -1212,6 +1444,12 @@
             const u = result.user
             if (window.NexoAuth.isSuperAdmin(u)) {
                 window.location.href = 'dashboard.html'
+                return
+            }
+            if (u.company_blocked === true) {
+                alert('Tu empresa está bloqueada por administración. Contacta a NEXO para reactivar el servicio.')
+                await window.electronAPI.auth.signOut()
+                window.location.href = 'index.html'
                 return
             }
             const p = window.NexoAuth.profile(u)

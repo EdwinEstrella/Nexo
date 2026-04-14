@@ -649,8 +649,30 @@
 
         // Checkbox functionality
         const checkbox = document.getElementById('remember-checkbox')
+        const REMEMBER_LOGIN_KEY = 'nexo_remember_login'
+        const RUNTIME_SESSION_KEY = 'nexo_runtime_session'
+
+        function readRememberPreference () {
+            try {
+                const raw = localStorage.getItem(REMEMBER_LOGIN_KEY)
+                if (raw == null) return true
+                return raw === '1'
+            } catch (_) {
+                return true
+            }
+        }
+
+        function writeRememberPreference (remember) {
+            try {
+                localStorage.setItem(REMEMBER_LOGIN_KEY, remember ? '1' : '0')
+            } catch (_) {}
+        }
+
+        const initialRemember = readRememberPreference()
+        checkbox.classList.toggle('checked', initialRemember)
         checkbox.addEventListener('click', () => {
             checkbox.classList.toggle('checked')
+            writeRememberPreference(checkbox.classList.contains('checked'))
         })
 
         // Password toggle functionality
@@ -679,6 +701,15 @@
 
         // Si ya hay sesión, ir al home según rol (empresa → portal, super_admin → dashboard)
         window.addEventListener('DOMContentLoaded', async () => {
+            const rememberEnabled = readRememberPreference()
+            if (!rememberEnabled) {
+                const activeRuntimeSession = sessionStorage.getItem(RUNTIME_SESSION_KEY) === '1'
+                if (!activeRuntimeSession) {
+                    await window.electronAPI.auth.signOut()
+                    try { localStorage.removeItem('user') } catch (_) {}
+                    return
+                }
+            }
             const result = await window.electronAPI.auth.getCurrentUser()
             if (result.success && result.user) {
                 window.location.href = window.NexoAuth.homePath(result.user)
@@ -737,6 +768,12 @@
                 const result = await window.electronAPI.auth.signIn(email, password)
 
                 if (result.success) {
+                    writeRememberPreference(remember)
+                    if (remember) {
+                        sessionStorage.removeItem(RUNTIME_SESSION_KEY)
+                    } else {
+                        sessionStorage.setItem(RUNTIME_SESSION_KEY, '1')
+                    }
                     const fresh = await window.electronAPI.auth.getCurrentUser()
                     const user = fresh.success && fresh.user ? fresh.user : (result.data?.user ?? result.data)
                     if (user) {

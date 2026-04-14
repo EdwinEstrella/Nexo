@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     signOut: () => ipcRenderer.invoke('auth:signOut'),
     getCurrentUser: () => ipcRenderer.invoke('auth:getCurrentUser'),
     updateProfile: (profileData) => ipcRenderer.invoke('auth:updateProfile', profileData)
+  },
+  admin: {
+    listCompanies: () => ipcRenderer.invoke('admin:listCompanies'),
+    setCompanyBlocked: (companyId, blocked) => ipcRenderer.invoke('admin:setCompanyBlocked', { companyId, blocked })
   }
 })
 

@@ -147,6 +147,38 @@
     margin: 0 0 16px;
 }
 
+.admin-panel__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.admin-panel__toolbar .admin-panel__title {
+    margin: 0;
+}
+
+.admin-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.admin-filter__select {
+    border: 1px solid rgba(0, 14, 36, 0.15);
+    background: #f8faff;
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    -webkit-app-region: no-drag;
+}
+
 .admin-actions {
     display: flex;
     flex-direction: column;
@@ -176,6 +208,11 @@
 .admin-action-btn:hover {
     background: #f0f3ff;
     border-color: rgba(0, 14, 36, 0.12);
+}
+
+.admin-action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .admin-action-btn span {
@@ -266,4 +303,87 @@
     color: var(--text-tertiary);
     line-height: 1.5;
     margin-top: 16px;
+}
+
+.admin-modal[hidden] {
+    display: none;
+}
+
+.admin-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1600;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.admin-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 12, 26, 0.46);
+    backdrop-filter: blur(4px);
+}
+
+.admin-modal__dialog {
+    position: relative;
+    width: min(520px, 100%);
+    background: #ffffff;
+    border: 1px solid rgba(0, 14, 36, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0, 14, 36, 0.22);
+    padding: 22px 22px 18px;
+}
+
+.admin-modal__title {
+    margin: 0 0 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+}
+
+.admin-modal__body {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.admin-modal__actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.admin-modal__btn {
+    border: 1px solid rgba(0, 14, 36, 0.12);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: all 0.15s ease;
+}
+
+.admin-modal__btn--neutral {
+    background: #f5f7ff;
+    color: #223048;
+}
+
+.admin-modal__btn--neutral:hover {
+    background: #e9eeff;
+}
+
+.admin-modal__btn--primary {
+    background: #000e24;
+    color: #ffffff;
+}
+
+.admin-modal__btn--primary:hover {
+    background: #0a1d3f;
 }
