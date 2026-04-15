@@ -4,11 +4,74 @@
   "description": "Nexo - Aplicación de escritorio",
   "author": "Edwin",
   "main": "main.js",
+  "build": {
+    "appId": "com.edwin.nexo",
+    "productName": "Nexo",
+    "directories": {
+      "output": "release",
+      "buildResources": "."
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "index.html",
+      "portal.html",
+      "dashboard.html",
+      "register.html",
+      "portal-analytics.html",
+      "portal-loans.html",
+      "portal-loan-request.html",
+      "portal-clients.html",
+      "portal-settings.html",
+      "thermal-invoice.js",
+      "components/**/*",
+      "fragments/**/*",
+      "Logo.ico"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "afterPack": "./scripts/after-pack-exe-icon.cjs",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "Logo.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "Logo.ico",
+      "uninstallerIcon": "Logo.ico",
+      "installerHeaderIcon": "Logo.ico",
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "warningsAsErrors": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "EdwinEstrella",
+        "repo": "Nexo",
+        "releaseType": "release",
+        "vPrefixedTagName": true
+      }
+    ]
+  },
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "build:ico": "node scripts/build-windows-icon.cjs"
+    "build:ico": "node scripts/build-windows-icon.cjs",
+    "dist:win": "npm run build:ico && electron-builder --win",
+    "release:win": "npm run build:ico && electron-builder --win --publish always"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
@@ -20,6 +83,8 @@
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron/fuses": "^1.8.0",
     "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
+    "rcedit": "^5.0.2",
     "sharp": "^0.34.5",
     "to-ico": "^1.1.5"
   },

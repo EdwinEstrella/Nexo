@@ -142,6 +142,11 @@
     color: #ba1a1a;
 }
 
+.analytics-kpi__pill--neutral {
+    background: rgba(0, 35, 75, 0.06);
+    color: #515f74;
+}
+
 .analytics-kpi__zone {
     font-size: 10px;
     font-weight: 500;

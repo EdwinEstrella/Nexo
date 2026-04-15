@@ -1,5 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+function isPrintThermalPayload (v) {
+  if (v == null || typeof v !== 'object') return false
+  const o = v
+  if (typeof o.html !== 'string' || o.html.length === 0) return false
+  if (o.html.length > 5_000_000) return false
+  if (o.deviceName !== undefined && typeof o.deviceName !== 'string') return false
+  if (o.silent !== undefined && typeof o.silent !== 'boolean') return false
+  if (o.paperWidthMm !== undefined && (typeof o.paperWidthMm !== 'number' || !Number.isFinite(o.paperWidthMm))) return false
+  return true
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // Window controls
   minimize: () => ipcRenderer.send('window-minimize'),
@@ -20,6 +31,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   admin: {
     listCompanies: () => ipcRenderer.invoke('admin:listCompanies'),
     setCompanyBlocked: (companyId, blocked) => ipcRenderer.invoke('admin:setCompanyBlocked', { companyId, blocked })
+  },
+  portfolio: {
+    getState: () => ipcRenderer.invoke('portfolio:getState'),
+    saveSettings: (partial) => ipcRenderer.invoke('portfolio:saveSettings', partial),
+    createLoan: (payload) => ipcRenderer.invoke('portfolio:createLoan', payload),
+    applyPayment: (payload) => ipcRenderer.invoke('portfolio:applyPayment', payload),
+    importLegacyState: (state) => ipcRenderer.invoke('portfolio:importLegacyState', state)
+  },
+  listPrinters: () => ipcRenderer.invoke('printers:list'),
+  printThermal: (opts) => {
+    if (!isPrintThermalPayload(opts)) {
+      return Promise.resolve({ ok: false, error: 'Payload de impresión inválido' })
+    }
+    return ipcRenderer.invoke('print:thermal', opts)
   }
 })
 

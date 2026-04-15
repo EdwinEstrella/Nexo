@@ -13,7 +13,11 @@ async function main () {
     const input = path.join(root, 'Logo.png')
     const output = path.join(root, 'Logo.ico')
     if (!fs.existsSync(input)) {
-        console.error('No se encontró Logo.png en la raíz del proyecto.')
+        if (fs.existsSync(output)) {
+            console.warn('[build:ico] No hay Logo.png; se mantiene Logo.ico existente.')
+            process.exit(0)
+        }
+        console.error('No se encontró Logo.png ni Logo.ico en la raíz del proyecto.')
         process.exit(1)
     }
     let base = sharp(input).ensureAlpha()

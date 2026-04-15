@@ -2,7 +2,7 @@
     <header class="dashboard-canvas__head">
         <div class="dashboard-canvas__titles">
             <h1 class="page-title">Resumen de cartera</h1>
-            <p class="page-lead">Rendimiento de la cartera y métricas de riesgo institucional (octubre 2023).</p>
+            <p class="page-lead" id="dash-page-lead">Cargando resumen de cartera…</p>
             <p class="page-session" id="portal-session" hidden></p>
         </div>
         <div class="period-toggle" role="group" aria-label="Periodo">
@@ -23,10 +23,7 @@
                 </svg>
             </div>
             <div class="kpi-card__value" id="dash-kpi-value-1">RD$0</div>
-            <div class="kpi-card__meta kpi-card__meta--success" id="dash-kpi-meta-1">
-                <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l3-3 2 2 3-4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-                +4.2% respecto al mes anterior
-            </div>
+            <div class="kpi-card__meta kpi-card__meta--muted" id="dash-kpi-meta-1">Originación este mes vs el anterior</div>
         </article>
         <article class="kpi-card">
             <div class="kpi-card__row">
@@ -56,7 +53,7 @@
                 </svg>
             </div>
             <div class="kpi-card__value" id="dash-kpi-value-4">RD$0</div>
-            <div class="kpi-card__meta kpi-card__meta--success" id="dash-kpi-meta-4">Calculado automáticamente</div>
+            <div class="kpi-card__meta kpi-card__meta--muted" id="dash-kpi-meta-4">Resumen de ingresos por cartera</div>
         </article>
     </section>
 
@@ -134,36 +131,7 @@
 
             <section class="dash-card events-card" aria-labelledby="events-title">
                 <h2 class="dash-card__title" id="events-title">Eventos recientes del portafolio</h2>
-                <div class="events-feed">
-                    <article class="event-item">
-                        <div class="event-item__icon event-item__icon--success" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                        </div>
-                        <div class="event-item__title">Nueva solicitud de Sarah Miller</div>
-                        <div class="event-item__meta">Hace 10 min · RD$450k refinanciación (DOP)</div>
-                    </article>
-                    <article class="event-item">
-                        <div class="event-item__icon event-item__icon--info" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 10v4M9 12h6"/></svg>
-                        </div>
-                        <div class="event-item__title">Pago recibido · Préstamo #8821</div>
-                        <div class="event-item__meta">Hace 2 h · RD$12,400 capital (DOP)</div>
-                    </article>
-                    <article class="event-item">
-                        <div class="event-item__icon event-item__icon--warn" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                        </div>
-                        <div class="event-item__title">Documento firmado: contrato Brooks</div>
-                        <div class="event-item__meta">Hace 4 h · Verificación underwriting</div>
-                    </article>
-                    <article class="event-item">
-                        <div class="event-item__icon event-item__icon--neutral" aria-hidden="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>
-                        </div>
-                        <div class="event-item__title">Informe de crédito: James Wilson</div>
-                        <div class="event-item__meta">Ayer · Puntuación 785 (excelente)</div>
-                    </article>
-                </div>
+                <div class="events-feed" id="dash-events-feed" aria-live="polite"></div>
                 <button type="button" class="events-audit-btn">Ver registro de auditoría</button>
             </section>
 
@@ -173,9 +141,7 @@
                 </svg>
                 <div>
                     <div class="insight-card__label" id="insight-label">Insight de cartera</div>
-                    <p class="insight-card__body">
-                        La subida de tipos puede afectar la mora en segmentos de <strong>tipo variable</strong>. Conviene revisar el colchón de riesgo del Q4.
-                    </p>
+                    <p class="insight-card__body" id="dash-insight-body">Analizando la cartera…</p>
                 </div>
             </section>
         </aside>

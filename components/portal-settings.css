@@ -579,3 +579,51 @@
     border-left-color: #d97706;
     color: #78350f;
 }
+
+/* Factura térmica 58 mm — formulario + vista previa */
+.settings-thermal-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+    gap: clamp(20px, 3vw, 28px);
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .settings-thermal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.settings-thermal-form {
+    margin: 0;
+}
+
+.settings-thermal-preview-wrap {
+    background: linear-gradient(160deg, #e8ecf8 0%, #f4f6fc 100%);
+    border-radius: 14px;
+    padding: 14px 14px 16px;
+    border: 1px solid #e0e6f4;
+    position: sticky;
+    top: 12px;
+}
+
+.settings-thermal-preview-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #515f74;
+    margin: 0 0 10px;
+}
+
+.settings-thermal-preview-iframe {
+    display: block;
+    width: 100%;
+    min-height: 480px;
+    max-height: 70vh;
+    border: 0;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(0, 14, 36, 0.1);
+}

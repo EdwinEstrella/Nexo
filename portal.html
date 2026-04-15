@@ -333,6 +333,7 @@
 
     <script src="components/auth-roles.js"></script>
     <script src="components/sidebar.js"></script>
+    <script src="thermal-invoice.js"></script>
     <script>
         const PORTAL_VIEWS = new Set(['dashboard', 'loans', 'loan-detail', 'analytics', 'clients', 'loan-request', 'settings'])
         const PORTAL_FRAGMENTS = {
@@ -388,6 +389,7 @@
             { id: 'analytics', title: 'Análisis', meta: 'Reportes y métricas', view: 'analytics', keywords: 'reportes ganancias morosos exportar' },
             { id: 'settings-account', title: 'Configuración · Cuenta y perfil', meta: 'Nombre, correo, teléfono, idioma', view: 'settings', settingsTab: 'cuenta', keywords: 'perfil cuenta usuario idioma zona horaria' },
             { id: 'settings-org', title: 'Configuración · Institución', meta: 'Datos legales, sector, contacto', view: 'settings', settingsTab: 'institucion', keywords: 'empresa institucion razon social direccion slug' },
+            { id: 'settings-thermal', title: 'Configuración · Factura térmica 58 mm', meta: 'Comprobante de cobro e impresora', view: 'settings', settingsTab: 'termica', keywords: 'termica 58 impresora ticket recibo comprobante' },
             { id: 'settings-notify', title: 'Configuración · Notificaciones', meta: 'Correos y avisos', view: 'settings', settingsTab: 'notificaciones', keywords: 'recordatorio aviso correo campana notificacion' },
             { id: 'settings-security', title: 'Configuración · Seguridad', meta: 'Contraseña y sesión', view: 'settings', settingsTab: 'seguridad', keywords: 'password seguridad sesion timeout' },
             { id: 'settings-appearance', title: 'Configuración · Apariencia', meta: 'Tema, densidad, acento', view: 'settings', settingsTab: 'apariencia', keywords: 'tema apariencia animaciones color interfaz' },
@@ -423,6 +425,136 @@
                 const cur = readOrgPrefs()
                 localStorage.setItem('nexo_ui_org', JSON.stringify({ ...cur, ...partial }))
             } catch (_) {}
+        }
+
+        function collectOrgForThermalPreview (root) {
+            const v = (sel) => {
+                const el = root?.querySelector(sel)
+                return el && 'value' in el ? String(el.value).trim() : ''
+            }
+            const org = readOrgPrefs()
+            return {
+                org_legal_name: v('#settings-org-legal') || org.org_legal_name || '',
+                org_trade_name: v('#settings-org-trade') || org.org_trade_name || '',
+                org_address: v('#settings-org-address') || org.org_address || '',
+                org_support_email: v('#settings-org-support') || org.org_support_email || ''
+            }
+        }
+
+        function collectThermalFormLive (root) {
+            const NT = globalThis.NexoThermalInvoice
+            if (!NT) return {}
+            const form = root?.querySelector('#settings-form-thermal-invoice')
+            if (!form) return NT.getThermalInvoiceSettings()
+            const fd = new FormData(form)
+            const cb = form.querySelector('[name="show_breakdown"]')
+            return {
+                ...NT.getThermalInvoiceSettings(),
+                document_title: String(fd.get('document_title') || '').trim(),
+                logo_url: String(fd.get('logo_url') || '').trim(),
+                institution_tax_id: String(fd.get('institution_tax_id') || '').trim(),
+                footer_line1: String(fd.get('footer_line1') || '').trim(),
+                footer_line2: String(fd.get('footer_line2') || '').trim(),
+                show_breakdown: cb ? !!cb.checked : true,
+                printerName: String(fd.get('printer_name') || '').trim()
+            }
+        }
+
+        function refreshThermalInvoicePreview () {
+            const NT = globalThis.NexoThermalInvoice
+            const root = document.getElementById('portal-main')
+            const iframe = document.getElementById('thermal-invoice-preview-iframe')
+            if (!NT || !root || !iframe) return
+            const panel = root.querySelector('#settings-panel-termica')
+            if (!panel || panel.hidden) return
+            const org = collectOrgForThermalPreview(root)
+            const thermal = collectThermalFormLive(root)
+            const html = NT.buildThermalInvoiceHtml(org, thermal, NT.sampleReceipt())
+            iframe.srcdoc = html
+        }
+
+        async function populateThermalPrinterSelect (root) {
+            const sel = root?.querySelector('#thermal-printer-select')
+            if (!sel || !window.electronAPI?.listPrinters) return
+            const cur = String(sel.value || '')
+            let list = []
+            try {
+                list = await window.electronAPI.listPrinters() || []
+            } catch (_) {
+                list = []
+            }
+            sel.textContent = ''
+            const opt0 = document.createElement('option')
+            opt0.value = ''
+            opt0.textContent = 'Predeterminada del sistema / elegir al imprimir'
+            sel.appendChild(opt0)
+            for (const p of list) {
+                const name = p.name || ''
+                if (!name) continue
+                const o = document.createElement('option')
+                o.value = name
+                o.textContent = p.displayName || name
+                sel.appendChild(o)
+            }
+            if (cur && [...sel.options].some((o) => o.value === cur)) sel.value = cur
+        }
+
+        async function printNexoThermalHtml (html) {
+            const NT = globalThis.NexoThermalInvoice
+            const settings = NT ? NT.getThermalInvoiceSettings() : {}
+            const paperWidthMm = NT ? NT.PAPER_WIDTH_MM : 58
+            if (window.electronAPI?.printThermal) {
+                const res = await window.electronAPI.printThermal({
+                    html,
+                    deviceName: settings.printerName || undefined,
+                    silent: Boolean(String(settings.printerName || '').trim()),
+                    paperWidthMm
+                })
+                if (!res?.ok) {
+                    alert(res?.error || 'No se pudo enviar a la impresora.')
+                    return false
+                }
+                return true
+            }
+            const w = window.open('', '_blank', 'width=420,height=760')
+            if (!w) {
+                alert('No se pudo abrir la ventana de impresión.')
+                return false
+            }
+            w.document.open()
+            w.document.write(
+                html.replace(
+                    '</body>',
+                    '<script>window.onload=function(){window.print();setTimeout(function(){window.close()},800);}<\/script></body>'
+                )
+            )
+            w.document.close()
+            return true
+        }
+
+        function hydrateThermalInvoicePanel () {
+            const NT = globalThis.NexoThermalInvoice
+            const root = document.getElementById('portal-main')
+            if (!NT || !root?.querySelector('#settings-form-thermal-invoice')) return
+            const s = NT.getThermalInvoiceSettings()
+            const setVal = (id, v) => {
+                const el = root.querySelector(id)
+                if (el && 'value' in el) el.value = v == null ? '' : String(v)
+            }
+            setVal('#thermal-doc-title', s.document_title)
+            setVal('#thermal-logo-url', s.logo_url)
+            setVal('#thermal-tax-id', s.institution_tax_id)
+            setVal('#thermal-footer-1', s.footer_line1)
+            setVal('#thermal-footer-2', s.footer_line2)
+            const cb = root.querySelector('#settings-form-thermal-invoice [name="show_breakdown"]')
+            if (cb) cb.checked = s.show_breakdown !== false
+            void populateThermalPrinterSelect(root).then(() => {
+                const sel = root.querySelector('#thermal-printer-select')
+                if (sel && s.printerName && [...sel.options].some((o) => o.value === s.printerName)) {
+                    sel.value = s.printerName
+                }
+            })
+            refreshThermalInvoicePreview()
         }
 
         function normalizeSearchText (value) {
@@ -524,6 +656,58 @@
         }
 
         const LOAN_SYSTEM_KEY = 'nexo_mortgage_system_v1'
+        let __loanPortfolioCache = null
+
+        async function refreshLoanPortfolioFromDb () {
+            __loanPortfolioCache = null
+            if (!window.electronAPI?.portfolio?.getState) {
+                __loanPortfolioCache = defaultLoanSystemState()
+                return { success: false, error: 'Cartera: API no disponible' }
+            }
+            const r = await window.electronAPI.portfolio.getState()
+            if (!r.success) {
+                __loanPortfolioCache = defaultLoanSystemState()
+                if (r.error) console.warn('[Nexo cartera]', r.error)
+                return r
+            }
+            __loanPortfolioCache = r.state || defaultLoanSystemState()
+            ensureLoanReferences(__loanPortfolioCache)
+            return { success: true }
+        }
+
+        function getLoanState () {
+            return __loanPortfolioCache || defaultLoanSystemState()
+        }
+
+        async function maybeImportLegacyLoanLocalStorage () {
+            if (!window.electronAPI?.portfolio?.getState || !window.electronAPI?.portfolio?.importLegacyState) return
+            let raw = null
+            try {
+                raw = localStorage.getItem(LOAN_SYSTEM_KEY)
+            } catch (_) {}
+            if (!raw) return
+            let parsed = null
+            try {
+                parsed = JSON.parse(raw)
+            } catch (_) {
+                return
+            }
+            if (!parsed || typeof parsed !== 'object') return
+            const hasRows = (parsed.clients && parsed.clients.length) || (parsed.loans && parsed.loans.length)
+            if (!hasRows) return
+            const cur = await window.electronAPI.portfolio.getState()
+            if (!cur.success || !cur.state) return
+            const empty = !(cur.state.clients && cur.state.clients.length) && !(cur.state.loans && cur.state.loans.length)
+            if (!empty) return
+            const im = await window.electronAPI.portfolio.importLegacyState(parsed)
+            if (im.success) {
+                try {
+                    localStorage.removeItem(LOAN_SYSTEM_KEY)
+                } catch (_) {}
+            } else if (im.error) {
+                console.warn('[Nexo] Importación legacy omitida:', im.error)
+            }
+        }
 
         function randomId (prefix) {
             return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
@@ -611,27 +795,6 @@
                 loans: [],
                 payments: []
             }
-        }
-
-        function readLoanSystemState () {
-            try {
-                const parsed = JSON.parse(localStorage.getItem(LOAN_SYSTEM_KEY) || 'null')
-                if (!parsed || typeof parsed !== 'object') return defaultLoanSystemState()
-                return {
-                    settings: { ...defaultLoanSystemState().settings, ...(parsed.settings || {}) },
-                    clients: Array.isArray(parsed.clients) ? parsed.clients : [],
-                    loans: Array.isArray(parsed.loans) ? parsed.loans : [],
-                    payments: Array.isArray(parsed.payments) ? parsed.payments : []
-                }
-            } catch (_) {
-                return defaultLoanSystemState()
-            }
-        }
-
-        function writeLoanSystemState (state) {
-            try {
-                localStorage.setItem(LOAN_SYSTEM_KEY, JSON.stringify(state))
-            } catch (_) {}
         }
 
         function periodicRateForLoan (loan) {
@@ -875,53 +1038,6 @@
             return out.slice(0, 8)
         }
 
-        function getOrCreateLoanSystemState () {
-            const state = readLoanSystemState()
-            if (ensureLoanReferences(state)) {
-                writeLoanSystemState(state)
-            }
-            if (!state.clients.length && !state.loans.length) {
-                const demoClient = {
-                    id: randomId('cli'),
-                    name: 'María Ríos Castillo',
-                    document_type: 'cedula',
-                    document_number: '00112345678',
-                    phone: '+1 809 555 0142',
-                    address: 'Santo Domingo, República Dominicana',
-                    email: 'm.rios@email.com',
-                    created_at: new Date().toISOString()
-                }
-                const demoLoan = {
-                    id: randomId('loan'),
-                    reference: nextLoanReference(state),
-                    client_id: demoClient.id,
-                    client_name: demoClient.name,
-                    product: 'hipotecario',
-                    purpose: 'vivienda',
-                    principal: 450000,
-                    term_months: 12,
-                    interest_rate_pct: 12,
-                    interest_mode: 'annual',
-                    payment_frequency: 'monthly',
-                    start_date: isoToday(),
-                    created_at: new Date().toISOString(),
-                    installments: generateInstallments({
-                        principal: 450000,
-                        term_months: 12,
-                        interest_rate_pct: 12,
-                        interest_mode: 'annual',
-                        payment_frequency: 'monthly',
-                        start_date: isoToday()
-                    }),
-                    documents: []
-                }
-                state.clients.push(demoClient)
-                state.loans.push(demoLoan)
-                writeLoanSystemState(state)
-            }
-            return state
-        }
-
         function hydrateSettingsView () {
             const root = document.getElementById('portal-main')
             if (!root || !root.querySelector('.settings-canvas')) return
@@ -974,7 +1090,7 @@
             setCb('#settings-form-appearance', 'ui_reduce_motion', false)
 
             setVal('#settings-session-timeout', prefs.session_timeout_min || '30')
-            const loanState = getOrCreateLoanSystemState()
+            const loanState = getLoanState()
             setVal('#settings-late-fee-percent', loanState.settings.late_fee_percent)
             setVal('#settings-grace-days', loanState.settings.grace_days)
             setVal('#settings-payment-frequency', loanState.settings.payment_frequency || 'monthly')
@@ -1038,6 +1154,86 @@
             if (!iso) return '—'
             const d = new Date(`${iso}T00:00:00`)
             return d.toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })
+        }
+
+        function relativeTimeEs (iso) {
+            if (!iso) return ''
+            const t = new Date(iso).getTime()
+            if (Number.isNaN(t)) return ''
+            const diffMs = Date.now() - t
+            const sec = Math.floor(diffMs / 1000)
+            if (sec < 45) return 'Hace un momento'
+            const min = Math.floor(sec / 60)
+            if (min < 60) return `Hace ${min} min`
+            const h = Math.floor(min / 60)
+            if (h < 48) return `Hace ${h} h`
+            const d = Math.floor(h / 24)
+            if (d < 14) return `Hace ${d} día${d === 1 ? '' : 's'}`
+            return dateLabel(String(iso).slice(0, 10))
+        }
+
+        function sumPrincipalOriginatedBetween (loans, start, end) {
+            let s = 0
+            for (const loan of loans || []) {
+                const od = loanOriginationDate(loan)
+                if (od >= start && od <= end) s += Number(loan.principal) || 0
+            }
+            return s
+        }
+
+        function dashboardPageLeadText (state, now) {
+            const n = (state.loans && state.loans.length) || 0
+            const fed = now.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })
+            return `Resumen de tu cartera (${fed}). ${n} préstamo${n === 1 ? '' : 's'} en el sistema.`
+        }
+
+        function renderDashboardEventsFeed (root, state, now) {
+            const feed = root.querySelector('#dash-events-feed')
+            if (!feed) return
+            const timeline = []
+            for (const loan of state.loans || []) {
+                const raw = loan.created_at || loan.start_date
+                if (!raw) continue
+                const t = new Date(raw).getTime()
+                if (!Number.isNaN(t)) timeline.push({ t, kind: 'loan', loan })
+            }
+            for (const p of state.payments || []) {
+                if (!p.created_at) continue
+                const t = new Date(p.created_at).getTime()
+                if (!Number.isNaN(t)) timeline.push({ t, kind: 'payment', p })
+            }
+            timeline.sort((a, b) => b.t - a.t)
+            const top = timeline.slice(0, 8)
+            if (!top.length) {
+                feed.innerHTML = '<p class="loans-empty-note" style="margin:0">Sin movimientos recientes. Los nuevos préstamos y pagos aparecerán aquí.</p>'
+                return
+            }
+            const loanIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>'
+            const payIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 10v4M9 12h6"/></svg>'
+            feed.innerHTML = top.map((ev) => {
+                if (ev.kind === 'loan') {
+                    const { loan } = ev
+                    const title = escapeHtml(`Nuevo préstamo · ${loan.client_name || 'Cliente'}`)
+                    const when = relativeTimeEs(loan.created_at || loan.start_date)
+                    const amt = fmtMoney(Number(loan.principal) || 0)
+                    return `<article class="event-item">
+                        <div class="event-item__icon event-item__icon--success" aria-hidden="true">${loanIcon}</div>
+                        <div class="event-item__title">${title}</div>
+                        <div class="event-item__meta">${escapeHtml(when)} · ${escapeHtml(amt)} principal</div>
+                    </article>`
+                }
+                const { p } = ev
+                const loanRow = (state.loans || []).find((l) => l.id === p.loan_id)
+                const ref = loanRow ? displayLoanRef(loanRow) : (p.loan_id ? String(p.loan_id).slice(0, 8) : '—')
+                const title = escapeHtml(`Pago registrado · ${ref}`)
+                const when = relativeTimeEs(p.created_at)
+                const amt = fmtMoney(Number(p.amount) || 0)
+                return `<article class="event-item">
+                    <div class="event-item__icon event-item__icon--info" aria-hidden="true">${payIcon}</div>
+                    <div class="event-item__title">${title}</div>
+                    <div class="event-item__meta">${escapeHtml(when)} · ${escapeHtml(amt)}</div>
+                </article>`
+            }).join('')
         }
 
         function badgeForLoanStatus (status) {
@@ -1162,7 +1358,7 @@
             const root = document.getElementById('portal-main')
             const mount = root?.querySelector('#loan-detail-body')
             if (!mount || !loanId) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const loan = state.loans.find((l) => l.id === loanId)
             const titleEl = root.querySelector('#loan-detail-title')
             const subEl = root.querySelector('#loan-detail-sub')
@@ -1270,7 +1466,7 @@
             const body = document.getElementById('client-history-dialog-body')
             const sub = document.getElementById('client-history-dialog-sub')
             if (!dlg || !body || !sub) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const client = state.clients.find((c) => c.id === clientId)
             if (!client) return
             const now = new Date()
@@ -1305,7 +1501,7 @@
         }
 
         function getHeaderPaymentDueRows () {
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const map = new Map()
             state.loans.forEach((loan) => {
@@ -1426,7 +1622,7 @@
             const root = document.getElementById('portal-main')
             const body = root?.querySelector('#clients-table-body')
             if (!body) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const loansByClient = new Map()
             state.loans.forEach((loan) => {
@@ -1683,7 +1879,7 @@
             const root = document.getElementById('portal-main')
             const repaymentsBody = root?.querySelector('#dash-repayments-body')
             if (!repaymentsBody) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
             const totalPrestado = summaries.reduce((s, x) => s + (Number(x.loan.principal) || 0), 0)
@@ -1699,6 +1895,63 @@
             setText('dash-kpi-value-4', fmtMoney(ganancias))
             setText('dash-kpi-meta-2', `${state.payments.length} pagos registrados`)
             setText('dash-kpi-meta-3', totalMora > 0 ? `${fmtMoney(totalMora)} en mora acumulada` : 'Sin mora activa')
+
+            const pageLead = root.querySelector('#dash-page-lead')
+            if (pageLead) pageLead.textContent = dashboardPageLeadText(state, now)
+
+            const curMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+            const curMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+            const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0)
+            const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+            const curOrig = sumPrincipalOriginatedBetween(state.loans, curMonthStart, curMonthEnd)
+            const prevOrig = sumPrincipalOriginatedBetween(state.loans, prevMonthStart, prevMonthEnd)
+            const meta1 = root.querySelector('#dash-kpi-meta-1')
+            if (meta1) {
+                let cls = 'kpi-card__meta kpi-card__meta--muted'
+                let txt = ''
+                if (curOrig < 1 && prevOrig < 1) {
+                    txt = 'Sin originación registrada en los dos últimos meses'
+                } else if (prevOrig < 1 && curOrig >= 1) {
+                    txt = `${fmtMoney(curOrig)} originados este mes (sin base el mes anterior)`
+                    cls = 'kpi-card__meta kpi-card__meta--success'
+                } else {
+                    const pct = ((curOrig - prevOrig) / prevOrig) * 100
+                    const sign = pct >= 0 ? '+' : ''
+                    txt = `${sign}${pct.toFixed(1)}% vs mes anterior · ${fmtMoney(curOrig)} vs ${fmtMoney(prevOrig)}`
+                    if (pct > 0.5) cls = 'kpi-card__meta kpi-card__meta--success'
+                    else if (pct < -0.5) cls = 'kpi-card__meta kpi-card__meta--danger'
+                }
+                meta1.className = cls
+                meta1.textContent = txt
+            }
+
+            const withBal = summaries.filter((x) => x.sum.pending > 0.009).length
+            const meta4 = root.querySelector('#dash-kpi-meta-4')
+            if (meta4) {
+                if (totalPrestado > 0.01) {
+                    const pctCollected = Math.min(100, Math.round((totalCobrado / totalPrestado) * 100))
+                    meta4.textContent = `${withBal} préstamo(s) con saldo · ~${pctCollected}% del principal cobrado acumulado`
+                } else {
+                    meta4.textContent = withBal ? `${withBal} préstamo(s) con saldo pendiente` : 'Sin principal en cartera todavía'
+                }
+                meta4.className = 'kpi-card__meta kpi-card__meta--muted'
+            }
+
+            const insightEl = root.querySelector('#dash-insight-body')
+            if (insightEl) {
+                const anyAtraso = summaries.some((x) => x.sum.items.some((it) => it.status === 'atrasado'))
+                if (!state.loans.length) {
+                    insightEl.innerHTML = 'Aún no hay préstamos. Usa <strong>Nueva solicitud de préstamo</strong> para registrar la primera operación.'
+                } else if (morosos > 0) {
+                    insightEl.textContent = `Tienes ${morosos} préstamo(s) en mora. Revisa vencimientos y prioriza el seguimiento de cobro.`
+                } else if (anyAtraso) {
+                    insightEl.textContent = 'Hay cuotas atrasadas. Registra pagos o revisa días de gracia en la política de crédito.'
+                } else {
+                    insightEl.textContent = 'Sin morosidad declarada en la cartera. Mantén actualizado el calendario de cobros.'
+                }
+            }
+
+            renderDashboardEventsFeed(root, state, now)
 
             const installments = summaries.flatMap(({ loan, sum }) => sum.items
                 .filter((it) => it.status !== 'pagado')
@@ -1723,7 +1976,7 @@
         function renderAnalyticsView () {
             const root = document.getElementById('portal-main')
             if (!root?.querySelector('.analytics-canvas')) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
             const overdue = summaries.filter((x) => x.sum.items.some((i) => i.status === 'atrasado' || i.status === 'mora')).length
@@ -1743,9 +1996,61 @@
             setText('analytics-kpi-payments', String(state.payments.length))
             setText('analytics-kpi-monthly-profit', fmtMoney(monthProfit))
 
+            const prevY = m === 0 ? y - 1 : y
+            const prevM = m === 0 ? 11 : m - 1
+            const prevMonthProfit = state.payments.filter((p) => {
+                const d = new Date(p.created_at)
+                return d.getFullYear() === prevY && d.getMonth() === prevM
+            }).reduce((s, p) => {
+                const br = p.breakdown || {}
+                return s + (Number(br.interest) || 0) + (Number(br.late_fee) || 0)
+            }, 0)
+
             const periodBtn = root.querySelector('.analytics-period__btn.is-active[data-period]')
             const periodKey = periodBtn?.getAttribute('data-period') || '30d'
             const { ranges, labels } = getAnalyticsSliceRanges(periodKey, now)
+            const winStart = ranges[0].start
+            const winEnd = ranges[ranges.length - 1].end
+            const loansNewInWin = (state.loans || []).filter((loan) => {
+                const od = loanOriginationDate(loan)
+                return od >= winStart && od <= winEnd
+            }).length
+            const paymentsInWin = (state.payments || []).filter((p) => {
+                const d = new Date(p.created_at)
+                return !Number.isNaN(d.getTime()) && d >= winStart && d <= winEnd
+            }).length
+
+            const pillActive = root.querySelector('#analytics-kpi-pill-active')
+            if (pillActive) {
+                pillActive.textContent = loansNewInWin ? `${loansNewInWin} nueva(s) en el periodo` : 'Sin nuevas originaciones'
+                pillActive.className = 'analytics-kpi__pill analytics-kpi__pill--neutral'
+            }
+            const pillPay = root.querySelector('#analytics-kpi-pill-payments')
+            if (pillPay) {
+                pillPay.textContent = paymentsInWin ? `${paymentsInWin} pago(s) en el periodo` : 'Sin pagos en el periodo'
+                pillPay.className = 'analytics-kpi__pill analytics-kpi__pill--neutral'
+            }
+            const pillProfit = root.querySelector('#analytics-kpi-pill-profit')
+            if (pillProfit) {
+                if (monthProfit < 0.01 && prevMonthProfit < 0.01) {
+                    pillProfit.textContent = 'Sin interés/mora este mes'
+                    pillProfit.className = 'analytics-kpi__pill analytics-kpi__pill--neutral'
+                } else if (prevMonthProfit < 0.01 && monthProfit >= 0.01) {
+                    pillProfit.textContent = 'Primer mes con ingresos (int./mora)'
+                    pillProfit.className = 'analytics-kpi__pill analytics-kpi__pill--up'
+                } else {
+                    const pchg = ((monthProfit - prevMonthProfit) / prevMonthProfit) * 100
+                    const sign = pchg >= 0 ? '+' : ''
+                    pillProfit.textContent = `${sign}${pchg.toFixed(1)}% vs mes anterior`
+                    if (pchg > 1) pillProfit.className = 'analytics-kpi__pill analytics-kpi__pill--up'
+                    else if (pchg < -1) pillProfit.className = 'analytics-kpi__pill analytics-kpi__pill--stable'
+                    else pillProfit.className = 'analytics-kpi__pill analytics-kpi__pill--neutral'
+                }
+            }
+
+            root.querySelectorAll('[data-analytics-report-meta]').forEach((el) => {
+                el.textContent = `Datos de cartera · ${now.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}`
+            })
             const directSeries = []
             const brokerSeries = []
             for (const r of ranges) {
@@ -1841,12 +2146,12 @@
             const badge = root.querySelector('#analytics-reports-badge')
             if (badge) {
                 const fq = Math.floor(now.getMonth() / 3) + 1
-                badge.textContent = `Datos locales · Q${fq} ${now.getFullYear()}`
+                badge.textContent = `Cartera en vivo · Q${fq} ${now.getFullYear()}`
             }
         }
 
         function exportSystemReport (type) {
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
             let payload = {}
@@ -1865,7 +2170,7 @@
 
         function populatePaymentInstallmentSelect (loanId) {
             const root = document.getElementById('portal-main')
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const instSel = root?.querySelector('#payment-installment-select')
             if (!instSel) return
             const loan = state.loans.find((l) => l.id === loanId)
@@ -1902,7 +2207,7 @@
             const root = document.getElementById('portal-main')
             const tableBody = root?.querySelector('#loans-table-body')
             if (!tableBody) return
-            const state = getOrCreateLoanSystemState()
+            const state = getLoanState()
             const now = new Date()
             const statusFilter = root.querySelector('#filter-estado')?.value || 'todos'
             const typeFilter = root.querySelector('#filter-tipo')?.value || 'todos'
@@ -1973,6 +2278,21 @@
             if (!root || root._nexoDelegated) return
             root._nexoDelegated = true
 
+            root.addEventListener('input', (e) => {
+                const termPanel = root.querySelector('#settings-panel-termica')
+                if (!termPanel || termPanel.hidden) return
+                if (e.target.closest('#settings-form-thermal-invoice') || e.target.closest('#settings-form-org')) {
+                    refreshThermalInvoicePreview()
+                }
+            })
+            root.addEventListener('change', (e) => {
+                const termPanel = root.querySelector('#settings-panel-termica')
+                if (!termPanel || termPanel.hidden) return
+                if (e.target.closest('#settings-form-thermal-invoice') || e.target.closest('#settings-form-org')) {
+                    refreshThermalInvoicePreview()
+                }
+            })
+
             root.addEventListener('click', (e) => {
                 const goRegPay = e.target.closest('[data-go-register-pay]')
                 if (goRegPay && root.contains(goRegPay)) {
@@ -2013,6 +2333,20 @@
                     root.querySelectorAll('[data-settings-panel]').forEach((panel) => {
                         panel.hidden = panel.getAttribute('data-settings-panel') !== pid
                     })
+                    if (pid === 'termica') {
+                        window.requestAnimationFrame(() => hydrateThermalInvoicePanel())
+                    }
+                    return
+                }
+                const thermalPrintBtn = e.target.closest('[data-thermal-print-test]')
+                if (thermalPrintBtn && root.contains(thermalPrintBtn)) {
+                    e.preventDefault()
+                    const NT = globalThis.NexoThermalInvoice
+                    if (!NT) return
+                    const org = collectOrgForThermalPreview(root)
+                    const thermal = collectThermalFormLive(root)
+                    const html = NT.buildThermalInvoiceHtml(org, thermal, NT.sampleReceipt())
+                    void printNexoThermalHtml(html)
                     return
                 }
                 const resetFormBtn = e.target.closest('[data-settings-reset-form]')
@@ -2111,7 +2445,7 @@
                 }
             })
 
-            root.addEventListener('submit', (e) => {
+            root.addEventListener('submit', async (e) => {
                 const form = e.target
                 if (form.id === 'loan-request-form') {
                     e.preventDefault()
@@ -2121,7 +2455,7 @@
                     }
                     const fd = new FormData(form)
                     const payload = Object.fromEntries(fd.entries())
-                    const state = getOrCreateLoanSystemState()
+                    const state = getLoanState()
                     const docType = (payload.documento_tipo || '').trim()
                     const docNo = (payload.documento_numero || '').trim()
                     let client = state.clients.find((c) => c.document_type === docType && c.document_number === docNo)
@@ -2136,12 +2470,14 @@
                             email: payload.email,
                             created_at: new Date().toISOString()
                         }
-                        state.clients.unshift(client)
                     } else {
-                        client.name = payload.nombre || client.name
-                        client.phone = payload.telefono || client.phone
-                        client.address = payload.direccion || client.address
-                        client.email = payload.email || client.email
+                        client = {
+                            ...client,
+                            name: payload.nombre || client.name,
+                            phone: payload.telefono || client.phone,
+                            address: payload.direccion || client.address,
+                            email: payload.email || client.email
+                        }
                     }
                     const interestMode = payload.interest_mode || state.settings.interest_mode || 'annual'
                     const paymentFrequency = payload.payment_frequency || state.settings.payment_frequency || 'monthly'
@@ -2176,19 +2512,28 @@
                         installments: generateInstallments(loanInput),
                         documents: files
                     }
-                    state.loans.unshift(loan)
-                    writeLoanSystemState(state)
+                    if (!window.electronAPI?.portfolio?.createLoan) {
+                        alert('No se puede guardar: API de cartera no disponible.')
+                        return
+                    }
+                    const cr = await window.electronAPI.portfolio.createLoan({ client, loan })
+                    if (!cr.success) {
+                        alert(cr.error || 'No se pudo guardar el préstamo en el servidor.')
+                        return
+                    }
+                    await refreshLoanPortfolioFromDb()
                     refreshHeaderNotificationBadge()
-                    console.info('[Nexo] Préstamo creado en cartera local', loan)
+                    console.info('[Nexo] Préstamo creado en InsForge', loan)
                     try {
                         localStorage.removeItem('nexo_loan_request_draft')
                     } catch (_) {}
                     alert(`Préstamo creado y guardado. Se generaron ${loan.installments.length} cuotas para ${client.name}.`)
                     form.reset()
+                    const st2 = getLoanState()
                     const defaultFreq = form.querySelector('#lr-payment-frequency')
-                    if (defaultFreq) defaultFreq.value = state.settings.payment_frequency || 'monthly'
+                    if (defaultFreq) defaultFreq.value = st2.settings.payment_frequency || 'monthly'
                     const defaultMode = form.querySelector('#lr-interest-mode')
-                    if (defaultMode) defaultMode.value = state.settings.interest_mode || 'annual'
+                    if (defaultMode) defaultMode.value = st2.settings.interest_mode || 'annual'
                     return
                 }
                 if (form.id === 'loan-payment-form') {
@@ -2198,7 +2543,7 @@
                         return
                     }
                     const fd = new FormData(form)
-                    const state = getOrCreateLoanSystemState()
+                    const state = getLoanState()
                     const loan = state.loans.find((l) => l.id === String(fd.get('loan_id')))
                     if (!loan) return
                     const n = Number(fd.get('installment_n'))
@@ -2213,10 +2558,10 @@
                     const toInterest = Math.min(amount, current.pending_interest)
                     amount -= toInterest
                     const toPrincipal = Math.max(0, Math.min(amount, summary.principalOutstanding))
-                    inst.paid_late_fee = Number(((Number(inst.paid_late_fee) || 0) + toLateFee).toFixed(2))
-                    inst.paid_interest = Number(((Number(inst.paid_interest) || 0) + toInterest).toFixed(2))
-                    inst.paid_principal = Number(((Number(inst.paid_principal) || 0) + toPrincipal).toFixed(2))
-                    state.payments.push({
+                    const paidLate = Number(((Number(inst.paid_late_fee) || 0) + toLateFee).toFixed(2))
+                    const paidInt = Number(((Number(inst.paid_interest) || 0) + toInterest).toFixed(2))
+                    const paidPrin = Number(((Number(inst.paid_principal) || 0) + toPrincipal).toFixed(2))
+                    const payment = {
                         id: randomId('pay'),
                         loan_id: loan.id,
                         installment_n: n,
@@ -2227,15 +2572,75 @@
                             principal: Number(toPrincipal.toFixed(2))
                         },
                         created_at: new Date().toISOString()
+                    }
+                    if (!window.electronAPI?.portfolio?.applyPayment) {
+                        alert('No se puede registrar el pago: API de cartera no disponible.')
+                        return
+                    }
+                    const pr = await window.electronAPI.portfolio.applyPayment({
+                        loan_id: loan.id,
+                        installment_n: n,
+                        installmentPatch: {
+                            paid_late_fee: paidLate,
+                            paid_interest: paidInt,
+                            paid_principal: paidPrin
+                        },
+                        payment
                     })
-                    writeLoanSystemState(state)
-                    alert('Pago registrado correctamente.')
+                    if (!pr.success) {
+                        alert(pr.error || 'No se pudo registrar el pago.')
+                        return
+                    }
+                    await refreshLoanPortfolioFromDb()
+                    const NT = globalThis.NexoThermalInvoice
+                    const pm = document.getElementById('portal-main')
+                    if (NT && confirm('Pago registrado. ¿Imprimir comprobante térmico (58 mm) ahora?')) {
+                        const org = pm ? collectOrgForThermalPreview(pm) : collectOrgForThermalPreview(document)
+                        const thermal = NT.getThermalInvoiceSettings()
+                        const html = NT.buildThermalInvoiceHtml(org, thermal, {
+                            client_name: loan.client_name,
+                            loan_reference: displayLoanRef(loan),
+                            installment_n: n,
+                            amount: payment.amount,
+                            breakdown: payment.breakdown,
+                            payment_method: 'Registro portal',
+                            created_at: payment.created_at
+                        })
+                        await printNexoThermalHtml(html)
+                    } else {
+                        alert('Pago registrado correctamente.')
+                    }
                     form.reset()
                     renderLoansView()
                     renderDashboardView()
                     renderAnalyticsView()
                     renderClientsView()
                     refreshHeaderNotificationBadge()
+                    return
+                }
+                if (form.id === 'settings-form-thermal-invoice') {
+                    e.preventDefault()
+                    if (!form.checkValidity()) {
+                        form.reportValidity()
+                        return
+                    }
+                    const NT = globalThis.NexoThermalInvoice
+                    if (!NT) {
+                        alert('Módulo de factura térmica no cargado.')
+                        return
+                    }
+                    const fd = new FormData(form)
+                    NT.saveThermalInvoiceSettings({
+                        document_title: String(fd.get('document_title') || '').trim(),
+                        logo_url: String(fd.get('logo_url') || '').trim(),
+                        institution_tax_id: String(fd.get('institution_tax_id') || '').trim(),
+                        footer_line1: String(fd.get('footer_line1') || '').trim(),
+                        footer_line2: String(fd.get('footer_line2') || '').trim(),
+                        show_breakdown: !!form.querySelector('[name="show_breakdown"]')?.checked,
+                        printerName: String(fd.get('printer_name') || '').trim()
+                    })
+                    alert('Configuración de factura térmica guardada en este equipo.')
+                    refreshThermalInvoicePreview()
                     return
                 }
                 if (!form.id || !form.id.startsWith('settings-form-')) return
@@ -2299,16 +2704,22 @@
                     })
                 }
                 if (form.id === 'settings-form-credit-policy') {
-                    const state = getOrCreateLoanSystemState()
-                    state.settings = {
-                        ...state.settings,
+                    if (!window.electronAPI?.portfolio?.saveSettings) {
+                        alert('No se puede guardar la política: API de cartera no disponible.')
+                        return
+                    }
+                    const sv = await window.electronAPI.portfolio.saveSettings({
                         late_fee_percent: Number(payload.late_fee_percent) || 0,
                         grace_days: Number(payload.grace_days) || 0,
                         payment_frequency: payload.payment_frequency || 'monthly',
                         interest_mode: payload.interest_mode || 'annual',
                         reminder_days: Number(payload.reminder_days) || 0
+                    })
+                    if (!sv.success) {
+                        alert(sv.error || 'No se pudo guardar la política de crédito.')
+                        return
                     }
-                    writeLoanSystemState(state)
+                    await refreshLoanPortfolioFromDb()
                 }
                 if (form.id === 'settings-form-data-retention') {
                     writeOrgPrefs({
@@ -2317,7 +2728,7 @@
                     })
                 }
                 if (form.id === 'settings-form-privacy') writeOrgPrefs({ dpo_email: payload.dpo_email })
-                alert('Cambios guardados (demostración local). Revisa la consola para el detalle.')
+                alert('Cambios guardados.')
                 if (form.id === 'settings-form-security') {
                     ;['password_current', 'password_new', 'password_confirm'].forEach((n) => {
                         const i = form.querySelector(`[name="${n}"]`)
@@ -2342,7 +2753,7 @@
                         resolvedLoanId = null
                     }
                 }
-                const stCheck = getOrCreateLoanSystemState()
+                const stCheck = getLoanState()
                 if (!resolvedLoanId || !stCheck.loans.some((l) => l.id === resolvedLoanId)) {
                     await loadPortalView('loans', { pushState: true })
                     return
@@ -2377,9 +2788,13 @@
 
             ensurePortalMainDelegation()
 
+            if (pageId === 'dashboard' || pageId === 'analytics') {
+                await refreshLoanPortfolioFromDb()
+            }
+
             if (pageId === 'settings') hydrateSettingsView()
             if (pageId === 'loan-request') {
-                const state = getOrCreateLoanSystemState()
+                const state = getLoanState()
                 const root = document.getElementById('portal-main')
                 const dateEl = root?.querySelector('#lr-fecha-inicio')
                 if (dateEl && !dateEl.value) dateEl.value = isoToday()
@@ -2437,7 +2852,6 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             const initialView = getInitialPortalView()
-            getOrCreateLoanSystemState()
             wirePortalSearch()
             wireClientHistoryDialog()
             wireHeaderNotifications()
@@ -2490,6 +2904,12 @@
                 av.textContent = initialsFromName(display)
                 av.removeAttribute('aria-hidden')
                 av.setAttribute('aria-label', 'Avatar')
+            }
+
+            await maybeImportLegacyLoanLocalStorage()
+            const loadRes = await refreshLoanPortfolioFromDb()
+            if (!loadRes.success && loadRes.error) {
+                console.warn('[Nexo cartera]', loadRes.error)
             }
 
             await loadPortalView(initialView, { pushState: false })

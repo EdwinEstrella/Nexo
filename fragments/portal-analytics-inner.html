@@ -16,10 +16,7 @@
                     <div class="analytics-kpi__label">Préstamos activos</div>
                     <div class="analytics-kpi__row">
                         <span class="analytics-kpi__value" id="analytics-kpi-active-loans">0</span>
-                        <span class="analytics-kpi__pill analytics-kpi__pill--up" aria-label="Variación positiva 0,4 por ciento">
-                            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 6L4 3l2 2 4-4" stroke="currentColor" stroke-width="1.2"/></svg>
-                            0,4%
-                        </span>
+                        <span class="analytics-kpi__pill analytics-kpi__pill--stable" id="analytics-kpi-pill-active" aria-live="polite">—</span>
                     </div>
                 </article>
                 <article class="analytics-kpi">
@@ -33,17 +30,14 @@
                     <div class="analytics-kpi__label">Historial de pagos</div>
                     <div class="analytics-kpi__row">
                         <span class="analytics-kpi__value" id="analytics-kpi-payments">0</span>
-                        <span class="analytics-kpi__pill analytics-kpi__pill--up" aria-label="Menos dos días">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                            −2d
-                        </span>
+                        <span class="analytics-kpi__pill analytics-kpi__pill--stable" id="analytics-kpi-pill-payments" aria-live="polite">—</span>
                     </div>
                 </article>
                 <article class="analytics-kpi">
                     <div class="analytics-kpi__label">Ganancias del mes</div>
                     <div class="analytics-kpi__row">
                         <span class="analytics-kpi__value" id="analytics-kpi-monthly-profit">RD$0</span>
-                        <span class="analytics-kpi__pill analytics-kpi__pill--stable">→ Estable</span>
+                        <span class="analytics-kpi__pill analytics-kpi__pill--stable" id="analytics-kpi-pill-profit" aria-live="polite">—</span>
                     </div>
                 </article>
             </section>
@@ -102,7 +96,7 @@
                             </div>
                             <div>
                                 <div class="analytics-report-row__title">Informe trimestral de cumplimiento</div>
-                                <div class="analytics-report-row__meta">Actualizado 24 oct 2023 · PDF · 4,2 MB</div>
+                                <div class="analytics-report-row__meta" data-analytics-report-meta>Exportación JSON desde tu cartera</div>
                             </div>
                         </div>
                         <button type="button" class="analytics-report-dl" data-report-export="active-loans" aria-label="Descargar préstamos activos">
@@ -116,7 +110,7 @@
                             </div>
                             <div>
                                 <div class="analytics-report-row__title">Auditoría de desempeño de préstamos</div>
-                                <div class="analytics-report-row__meta">Actualizado 20 oct 2023 · Excel · 1,8 MB</div>
+                                <div class="analytics-report-row__meta" data-analytics-report-meta>Exportación JSON desde tu cartera</div>
                             </div>
                         </div>
                         <button type="button" class="analytics-report-dl" data-report-export="overdue-loans" aria-label="Descargar préstamos vencidos">
@@ -130,7 +124,7 @@
                             </div>
                             <div>
                                 <div class="analytics-report-row__title">Resumen fiscal</div>
-                                <div class="analytics-report-row__meta">Actualizado 30 sep 2023 · PDF · 0,9 MB</div>
+                                <div class="analytics-report-row__meta" data-analytics-report-meta>Exportación JSON desde tu cartera</div>
                             </div>
                         </div>
                         <button type="button" class="analytics-report-dl" data-report-export="payments-history" aria-label="Descargar historial de pagos">
