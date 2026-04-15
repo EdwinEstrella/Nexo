@@ -1,5 +1,22 @@
 const { app, BrowserWindow, ipcMain } = require('electron/main')
+const { nativeImage } = require('electron')
+const fs = require('node:fs')
 const path = require('node:path')
+
+function resolveWindowIcon () {
+  const pngPath = path.join(__dirname, 'Logo.png')
+  const icoPath = path.join(__dirname, 'Logo.ico')
+  try {
+    if (fs.existsSync(pngPath)) {
+      const img = nativeImage.createFromPath(pngPath)
+      if (!img.isEmpty()) return img
+    }
+  } catch (_) {}
+  try {
+    if (fs.existsSync(icoPath)) return nativeImage.createFromPath(icoPath)
+  } catch (_) {}
+  return undefined
+}
 
 /**
  * El entry CJS del SDK hace require("@insforge/shared-schemas"), que es solo ESM y falla en Electron.
@@ -239,7 +256,7 @@ function createWindow () {
     minWidth: 360,
     minHeight: 480,
     title: 'Nexo',
-    icon: path.join(__dirname, 'Logo.ico'),
+    icon: resolveWindowIcon(),
     frame: false,
     titleBarStyle: 'hidden',
     show: false,

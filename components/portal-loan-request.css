@@ -325,6 +325,71 @@
     margin-top: 8px;
 }
 
+.lr-card--profit {
+    border-color: rgba(0, 35, 75, 0.12);
+    background: linear-gradient(165deg, #f8fafc 0%, #ffffff 55%);
+}
+
+.lr-profit-intro {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #515f74;
+    margin: 0 0 16px;
+    max-width: 40rem;
+}
+
+.lr-profit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.lr-profit-kpi {
+    background: #fff;
+    border: 1px solid rgba(196, 198, 208, 0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0, 14, 36, 0.04);
+}
+
+.lr-profit-kpi__label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7891;
+    margin: 0 0 6px;
+}
+
+.lr-profit-kpi__value {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: #000e24;
+    margin: 0 0 6px;
+    word-break: break-word;
+}
+
+.lr-profit-kpi__meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #74777f;
+    margin: 0;
+}
+
+.lr-profit-footnote {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #74777f;
+    margin: 16px 0 0;
+    max-width: 42rem;
+}
+
 .lr-check {
     display: flex;
     align-items: flex-start;

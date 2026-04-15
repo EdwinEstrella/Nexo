@@ -294,12 +294,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: conic-gradient(
-        from -90deg,
-        #00234b 0deg 234deg,
-        #85f8c4 234deg 324deg,
-        #d8e3fb 324deg 360deg
-    );
+    background: conic-gradient(from -90deg, #e2e8f0 0deg 360deg);
 }
 
 .analytics-donut__hole {

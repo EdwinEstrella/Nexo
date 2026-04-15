@@ -1,9 +1,9 @@
 <div class="lr-wrap">
-<main class="lr-canvas" aria-label="Nueva solicitud de préstamo">
+<main class="lr-canvas" aria-label="Nuevo préstamo">
     <header class="lr-canvas__head">
         <div>
-            <h1 class="lr-canvas__title">Nueva solicitud de préstamo</h1>
-            <p class="lr-canvas__subtitle">Registro integral del solicitante y de la operación crediticia en un solo flujo. Los datos se validan en el cliente; el envío definitivo se conectará a tu backend (InsForge u otro).</p>
+            <h1 class="lr-canvas__title">Nuevo préstamo</h1>
+            <p class="lr-canvas__subtitle">Registro del cliente y de la operación en un solo flujo. Al crear el préstamo, los datos se guardan en la base local de este equipo (cartera y cuotas).</p>
         </div>
         <div class="lr-canvas__actions">
             <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="loans" aria-label="Volver a la cartera de préstamos">Cartera</button>
@@ -14,7 +14,7 @@
     <nav class="lr-progress" aria-label="Secciones del formulario">
         <a class="lr-progress__link" href="#lr-solicitante">1 · Solicitante</a>
         <a class="lr-progress__link" href="#lr-operacion">2 · Operación</a>
-        <a class="lr-progress__link" href="#lr-cierre">3 · Declaraciones</a>
+        <a class="lr-progress__link" href="#lr-calculadora">3 · Estimación de ingresos</a>
     </nav>
 
     <form id="loan-request-form" class="lr-form" novalidate>
@@ -70,7 +70,7 @@
 
                     <div class="lr-field">
                         <label class="lr-label" for="lr-telefono">Teléfono <span class="lr-req" aria-hidden="true">*</span></label>
-                        <input type="tel" id="lr-telefono" name="telefono" class="lr-input" required autocomplete="tel" placeholder="+57 300 000 0000">
+                        <input type="tel" id="lr-telefono" name="telefono" class="lr-input" required autocomplete="tel" placeholder="+1 300 000 0000">
                     </div>
 
                     <div class="lr-field">
@@ -193,43 +193,49 @@
                         <textarea id="lr-notas" name="notas" class="lr-textarea" rows="2" placeholder="Contexto, referido, urgencia, documentación pendiente…"></textarea>
                     </div>
                 </div>
-                <p class="lr-callout" role="note">Esta solicitud no constituye aprobación. Un oficial revisará capacidad de pago, historial y cumplimiento normativo antes de emitir oferta vinculante.</p>
+                <p class="lr-callout" role="note">Revisa montos y plazo antes de crear el préstamo. Puedes usar «Guardar en borrador» para retomar el formulario más tarde en este mismo equipo.</p>
             </div>
         </section>
 
-        <section id="lr-cierre" class="lr-card" aria-labelledby="lr-h-cierre">
+        <section id="lr-calculadora" class="lr-card lr-card--profit" aria-labelledby="lr-h-calculadora">
             <div class="lr-card__head">
                 <span class="lr-card__step" aria-hidden="true">Paso 3</span>
-                <h2 id="lr-h-cierre" class="lr-card__title">Declaraciones y envío</h2>
-                <p class="lr-card__desc">Confirma la veracidad de la información. Puedes guardar un borrador local antes de enviar.</p>
+                <h2 id="lr-h-calculadora" class="lr-card__title">Estimación de ingresos por este préstamo</h2>
+                <p class="lr-card__desc">Proyección en vivo según el monto, plazo, tasa y frecuencia de pago del paso 2 (mismo criterio de cuotas que usará la cartera al crear el préstamo).</p>
             </div>
             <div class="lr-card__body">
-                <div class="lr-check">
-                    <input type="checkbox" id="lr-veracidad" name="declara_veracidad" value="1" required>
-                    <label for="lr-veracidad">Declaro que los datos suministrados son veraces y autorizo a la institución a verificarlos con fuentes legítimas, de acuerdo con la política de privacidad aplicable.</label>
+                <p class="lr-profit-intro">Indica un monto válido en el paso 2 para ver números. El interés se calcula por periodo sobre saldo insoluto; el capital se reparte en cuotas iguales por periodo.</p>
+                <div class="lr-profit-grid" role="list">
+                    <article class="lr-profit-kpi" role="listitem">
+                        <p class="lr-profit-kpi__label">Interés total estimado</p>
+                        <p class="lr-profit-kpi__value" id="lr-profit-interest">—</p>
+                        <p class="lr-profit-kpi__meta">Suma de intereses si paga en fecha</p>
+                    </article>
+                    <article class="lr-profit-kpi" role="listitem">
+                        <p class="lr-profit-kpi__label">Total estimado a cobrar</p>
+                        <p class="lr-profit-kpi__value" id="lr-profit-total">—</p>
+                        <p class="lr-profit-kpi__meta">Capital + intereses del cronograma</p>
+                    </article>
+                    <article class="lr-profit-kpi" role="listitem">
+                        <p class="lr-profit-kpi__label">Primera cuota orientativa</p>
+                        <p class="lr-profit-kpi__value" id="lr-profit-first">—</p>
+                        <p class="lr-profit-kpi__meta">Interés del 1.er periodo + capital del periodo</p>
+                    </article>
+                    <article class="lr-profit-kpi" role="listitem">
+                        <p class="lr-profit-kpi__label">Rendimiento / plazo</p>
+                        <p class="lr-profit-kpi__value" id="lr-profit-yield">—</p>
+                        <p class="lr-profit-kpi__meta"><span id="lr-profit-periods">—</span> pagos · margen sobre capital prestado</p>
+                    </article>
                 </div>
-                <div class="lr-check">
-                    <input type="checkbox" id="lr-comunicaciones" name="acepta_comunicaciones" value="1">
-                    <label for="lr-comunicaciones">Acepto recibir comunicaciones operativas sobre esta solicitud por los canales indicados (correo / teléfono).</label>
-                </div>
-                <div class="lr-field" style="margin-top: 14px;">
-                    <label class="lr-label" for="lr-documents">Documentos del cliente</label>
-                    <input type="file" id="lr-documents" name="documents" class="lr-input" multiple>
-                </div>
-                <div class="lr-field" style="margin-top: 12px;">
-                    <label class="lr-label" for="lr-signer">Firmante del contrato (opcional)</label>
-                    <input type="text" id="lr-signer" name="contract_signer" class="lr-input" placeholder="Nombre completo del firmante">
-                </div>
+                <p class="lr-profit-footnote" role="note">No incluye moras, comisiones ni impuestos. Es una referencia interna; revisa política de crédito y tasas vigentes antes de formalizar.</p>
             </div>
         </section>
 
-        <p class="lr-legal" role="note">Tratamiento de datos personales conforme a la normativa vigente en tu jurisdicción. Conserva evidencia de consentimiento cuando conectes el flujo a producción.</p>
-
         <div class="lr-footer-actions">
-            <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="clients">Salir sin enviar</button>
+            <button type="button" class="lr-btn lr-btn--ghost" data-portal-view="clients">Salir</button>
             <div class="lr-footer-actions__right">
-                <button type="button" class="lr-btn lr-btn--mint" data-loan-save-draft>Guardar borrador</button>
-                <button type="submit" class="lr-btn lr-btn--primary">Enviar solicitud</button>
+                <button type="button" class="lr-btn lr-btn--mint" data-loan-save-draft>Guardar en borrador</button>
+                <button type="submit" class="lr-btn lr-btn--primary">Crear préstamo</button>
             </div>
         </div>
     </form>

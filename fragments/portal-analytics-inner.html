@@ -52,7 +52,7 @@
                 <div class="analytics-chart-card__top">
                     <div>
                         <h2 class="analytics-chart-card__title" id="analytics-chart-title">Volumen de originación de préstamos</h2>
-                        <p class="analytics-chart-card__subtitle">Valor agregado de nuevas aprobaciones en el periodo fiscal.</p>
+                        <p class="analytics-chart-card__subtitle">Monto principal de préstamos creados en el periodo. Directo: hipotecario y similares; brokers: comercial / PYME.</p>
                     </div>
                     <div class="analytics-legend">
                         <span class="analytics-legend__item"><span class="analytics-legend__dot analytics-legend__dot--navy" aria-hidden="true"></span> Préstamo directo</span>
@@ -60,13 +60,11 @@
                     </div>
                 </div>
                 <div class="analytics-chart-body">
-                    <svg class="analytics-line-svg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-hidden="true">
-                        <path d="M0,130 C100,170 180,50 280,95 S460,35 560,88 S680,45 800,25" fill="none" stroke="#000e24" stroke-width="2" stroke-opacity="0.35"/>
-                        <path d="M0,145 C110,185 200,65 300,105 S480,40 590,92 S700,48 800,32" fill="none" stroke="#85f8c4" stroke-width="2.5"/>
+                    <svg class="analytics-line-svg" id="analytics-origination-svg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-hidden="true">
+                        <path id="analytics-origination-path-direct" fill="none" stroke="#000e24" stroke-width="2" stroke-opacity="0.35"/>
+                        <path id="analytics-origination-path-broker" fill="none" stroke="#85f8c4" stroke-width="2.5"/>
                     </svg>
-                    <div class="analytics-months">
-                        <span>ENE</span><span>FEB</span><span>MAR</span><span>ABR</span><span>MAY</span><span>JUN</span>
-                    </div>
+                    <div class="analytics-months" id="analytics-origination-labels"></div>
                 </div>
             </section>
 
@@ -75,49 +73,19 @@
                     <h2 class="analytics-subcard__title" id="donut-title">Distribución de cartera por grado de riesgo</h2>
                     <div class="analytics-donut-row">
                         <div class="analytics-donut" aria-hidden="true">
-                            <div class="analytics-donut__ring"></div>
+                            <div class="analytics-donut__ring" id="analytics-risk-ring"></div>
                             <div class="analytics-donut__hole"></div>
                             <div class="analytics-donut__center">
-                                <span class="analytics-donut__grade">A+</span>
-                                <span class="analytics-donut__sub">Grado principal</span>
+                                <span class="analytics-donut__grade" id="analytics-risk-grade">—</span>
+                                <span class="analytics-donut__sub" id="analytics-risk-sub">Exposición activa</span>
                             </div>
                         </div>
-                        <div class="analytics-donut-legend">
-                            <div class="analytics-donut-legend__row">
-                                <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#00234b"></span> Grado A–A+</span>
-                                <span class="analytics-donut-legend__pct">65%</span>
-                            </div>
-                            <div class="analytics-donut-legend__row">
-                                <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#85f8c4"></span> Grado B</span>
-                                <span class="analytics-donut-legend__pct">25%</span>
-                            </div>
-                            <div class="analytics-donut-legend__row">
-                                <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#d8e3fb"></span> Grado C y otros</span>
-                                <span class="analytics-donut-legend__pct">10%</span>
-                            </div>
-                        </div>
+                        <div class="analytics-donut-legend" id="analytics-risk-legend"></div>
                     </div>
                 </section>
                 <section class="analytics-subcard" aria-labelledby="geo-title">
                     <h2 class="analytics-subcard__title" id="geo-title">Concentración geográfica</h2>
-                    <div class="analytics-geo">
-                        <div class="analytics-geo__row">
-                            <div class="analytics-geo__head"><span>California</span><span>38%</span></div>
-                            <div class="analytics-geo__track"><div class="analytics-geo__fill" style="width:38%"></div></div>
-                        </div>
-                        <div class="analytics-geo__row">
-                            <div class="analytics-geo__head"><span>Texas</span><span>24%</span></div>
-                            <div class="analytics-geo__track"><div class="analytics-geo__fill" style="width:24%"></div></div>
-                        </div>
-                        <div class="analytics-geo__row">
-                            <div class="analytics-geo__head"><span>Florida</span><span>18%</span></div>
-                            <div class="analytics-geo__track"><div class="analytics-geo__fill" style="width:18%"></div></div>
-                        </div>
-                        <div class="analytics-geo__row">
-                            <div class="analytics-geo__head"><span>New York</span><span>12%</span></div>
-                            <div class="analytics-geo__track"><div class="analytics-geo__fill" style="width:12%"></div></div>
-                        </div>
-                    </div>
+                    <div class="analytics-geo" id="analytics-geo-body"></div>
                 </section>
             </div>
 
@@ -125,7 +93,7 @@
                 <section class="analytics-reports" aria-labelledby="reports-title">
                     <div class="analytics-reports__head">
                         <h2 class="analytics-reports__title" id="reports-title">Informes financieros estándar</h2>
-                        <span class="analytics-reports__badge">Fiscal Q3 disponible</span>
+                        <span class="analytics-reports__badge" id="analytics-reports-badge">Informes JSON</span>
                     </div>
                     <div class="analytics-report-row">
                         <div class="analytics-report-row__left">

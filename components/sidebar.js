@@ -110,7 +110,6 @@ class Sidebar {
     }
 
     renderPortal () {
-        const { name, role, initials } = this.portalProfile
         const sidebarHTML = `
             <aside class="sidebar sidebar--portal" id="sidebar" data-node-id="1:1281" data-sidebar-variant="portal">
                 <div class="sidebar-portal-head">
@@ -136,13 +135,6 @@ class Sidebar {
                 </nav>
 
                 <div class="sidebar-portal-footer">
-                    <div class="sidebar-portal-profile">
-                        <div class="sidebar-portal-avatar" id="portal-avatar" aria-hidden="true">${initials}</div>
-                        <div class="sidebar-portal-user">
-                            <span class="sidebar-portal-name" id="portal-user-name">${name}</span>
-                            <span class="sidebar-portal-role" id="portal-user-role">${role}</span>
-                        </div>
-                    </div>
                     <button type="button" class="sidebar-portal-signout" data-action="signout">
                         Cerrar sesión
                     </button>
@@ -225,18 +217,9 @@ class Sidebar {
     }
 
     updatePortalProfile ({ name, role, initials }) {
-        if (name != null) {
-            const el = document.getElementById('portal-user-name')
-            if (el) el.textContent = name
-        }
-        if (role != null) {
-            const el = document.getElementById('portal-user-role')
-            if (el) el.textContent = role
-        }
-        if (initials != null) {
-            const el = document.getElementById('portal-avatar')
-            if (el) el.textContent = initials
-        }
+        if (name != null) this.portalProfile.name = name
+        if (role != null) this.portalProfile.role = role
+        if (initials != null) this.portalProfile.initials = initials
     }
 
     handleAction (action) {

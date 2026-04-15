@@ -66,7 +66,7 @@
                 <div class="dash-card__head">
                     <div>
                         <h2 class="dash-card__title" id="chart-title">Distribución de préstamos</h2>
-                        <p class="dash-card__subtitle">Calidad de activos por estado</p>
+                        <p class="dash-card__subtitle">Por periodo de originación: principal coloreado según estado vigente (al día, atraso, mora).</p>
                     </div>
                     <div class="chart-legend">
                         <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--current"></span> Al día</span>
@@ -74,40 +74,7 @@
                         <span class="chart-legend__item"><span class="chart-legend__dot chart-legend__dot--default"></span> Incumplimiento</span>
                     </div>
                 </div>
-                <div class="chart-bars" role="img" aria-label="Distribución por trimestre: barras apiladas simuladas">
-                    <div class="chart-q">
-                        <div class="chart-stack">
-                            <div class="chart-seg chart-seg--default" style="flex: 18 0 0"></div>
-                            <div class="chart-seg chart-seg--late" style="flex: 27 0 0"></div>
-                            <div class="chart-seg chart-seg--current" style="flex: 55 0 0"></div>
-                        </div>
-                        <span class="chart-label">Q1 2023</span>
-                    </div>
-                    <div class="chart-q">
-                        <div class="chart-stack">
-                            <div class="chart-seg chart-seg--default" style="flex: 15 0 0"></div>
-                            <div class="chart-seg chart-seg--late" style="flex: 28 0 0"></div>
-                            <div class="chart-seg chart-seg--current" style="flex: 57 0 0"></div>
-                        </div>
-                        <span class="chart-label">Q2 2023</span>
-                    </div>
-                    <div class="chart-q">
-                        <div class="chart-stack">
-                            <div class="chart-seg chart-seg--default" style="flex: 14 0 0"></div>
-                            <div class="chart-seg chart-seg--late" style="flex: 24 0 0"></div>
-                            <div class="chart-seg chart-seg--current" style="flex: 62 0 0"></div>
-                        </div>
-                        <span class="chart-label">Q3 2023</span>
-                    </div>
-                    <div class="chart-q">
-                        <div class="chart-stack">
-                            <div class="chart-seg chart-seg--default" style="flex: 12 0 0"></div>
-                            <div class="chart-seg chart-seg--late" style="flex: 22 0 0"></div>
-                            <div class="chart-seg chart-seg--current" style="flex: 66 0 0"></div>
-                        </div>
-                        <span class="chart-label chart-label--emphasis">Actual (Q4)</span>
-                    </div>
-                </div>
+                <div class="chart-bars" id="dash-distribution-chart" role="img" aria-label="Distribución de préstamos por periodo y estado"></div>
             </section>
 
             <section class="repayments-card" aria-labelledby="repay-title">

@@ -149,6 +149,109 @@
             color: #5b6880;
             font-size: 12px;
         }
+        .app-header__notif-wrap {
+            position: relative;
+        }
+        .app-header__notif-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #ba1a1a;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 18px;
+            text-align: center;
+            pointer-events: none;
+        }
+        .app-header__notif-badge[hidden] {
+            display: none;
+        }
+        .portal-header-notifications[hidden] {
+            display: none;
+        }
+        .portal-header-notifications {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: min(100vw - 24px, 360px);
+            z-index: 1250;
+            background: #ffffff;
+            border: 1px solid rgba(0, 14, 36, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 22px 48px rgba(0, 14, 36, 0.2);
+            max-height: min(70vh, 440px);
+            overflow-y: auto;
+        }
+        .portal-header-notifications__head {
+            padding: 12px 14px 8px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 800;
+            font-size: 13px;
+            color: #000e24;
+            border-bottom: 1px solid #edf2ff;
+        }
+        .portal-header-notifications__empty {
+            padding: 16px 14px;
+            color: #6b7891;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .portal-header-notifications__item {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #edf2ff;
+            background: #fff;
+            text-align: left;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+        .portal-header-notifications__item:last-child {
+            border-bottom: none;
+        }
+        .portal-header-notifications__item:hover {
+            background: #f3f6ff;
+        }
+        .portal-header-notifications__title {
+            color: #0f1f3b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .portal-header-notifications__amount {
+            color: #000e24;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .portal-header-notifications__meta {
+            font-size: 12px;
+            color: #5b6880;
+        }
+        .portal-header-notifications__meta--warn {
+            color: #93000a;
+            font-weight: 600;
+        }
+        .portal-header-notifications__pill {
+            display: inline-block;
+            margin-top: 2px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: #ffdad6;
+            color: #93000a;
+        }
         @media (max-width: 900px) {
             .titlebar { left: 0; }
             .main-content {
@@ -187,25 +290,16 @@
         </div>
         <div class="app-header__actions">
             <div class="app-header__icon-btns">
-                <button type="button" class="app-header__icon-btn" aria-label="Notificaciones">
-                    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M8 2C5.2 2 3 4.2 3 7v4l-2 2v1h14v-1l-2-2V7c0-2.8-2.2-5-5-5z"/>
-                        <path d="M5.5 16a2.5 2.5 0 005 0"/>
-                    </svg>
-                </button>
-                <button type="button" class="app-header__icon-btn" aria-label="Mensajes">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
-                    </svg>
-                </button>
-                <button type="button" class="app-header__icon-btn" aria-label="Cartera">
-                    <svg width="19" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M2 6l2-3h16l2 3"/>
-                        <rect x="2" y="6" width="20" height="14" rx="2"/>
-                        <path d="M2 10h20"/>
-                        <path d="M16 14h.01"/>
-                    </svg>
-                </button>
+                <div class="app-header__notif-wrap">
+                    <button type="button" class="app-header__icon-btn" id="app-header-notif-btn" aria-label="Notificaciones de cobranza" aria-expanded="false" aria-haspopup="menu" aria-controls="portal-header-notifications">
+                        <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 2C5.2 2 3 4.2 3 7v4l-2 2v1h14v-1l-2-2V7c0-2.8-2.2-5-5-5z"/>
+                            <path d="M5.5 16a2.5 2.5 0 005 0"/>
+                        </svg>
+                        <span class="app-header__notif-badge" id="app-header-notif-badge" hidden aria-live="polite">0</span>
+                    </button>
+                    <div class="portal-header-notifications" id="portal-header-notifications" hidden role="menu" aria-label="Clientes con saldo pendiente"></div>
+                </div>
             </div>
             <div class="app-header__divider" aria-hidden="true"></div>
             <div class="app-header__user">
@@ -222,13 +316,29 @@
         <div id="portal-main" class="portal-main-root"></div>
     </div>
 
+    <dialog id="client-history-dialog" class="loan-installments-dialog client-history-dialog" aria-labelledby="client-history-dialog-title">
+        <div class="loan-installments-dialog__panel" role="document">
+            <header class="loan-installments-dialog__head">
+                <div class="loan-installments-dialog__head-text">
+                    <h2 id="client-history-dialog-title" class="loan-installments-dialog__title">Historial del cliente</h2>
+                    <p id="client-history-dialog-sub" class="loan-installments-dialog__sub"></p>
+                </div>
+                <button type="button" class="loan-installments-dialog__close" id="client-history-dialog-close" aria-label="Cerrar historial">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>
+                </button>
+            </header>
+            <div id="client-history-dialog-body" class="loan-installments-dialog__body"></div>
+        </div>
+    </dialog>
+
     <script src="components/auth-roles.js"></script>
     <script src="components/sidebar.js"></script>
     <script>
-        const PORTAL_VIEWS = new Set(['dashboard', 'loans', 'analytics', 'clients', 'loan-request', 'settings'])
+        const PORTAL_VIEWS = new Set(['dashboard', 'loans', 'loan-detail', 'analytics', 'clients', 'loan-request', 'settings'])
         const PORTAL_FRAGMENTS = {
             dashboard: 'fragments/empresa-dashboard-inner.html',
             loans: 'fragments/portal-loans-inner.html',
+            'loan-detail': 'fragments/portal-loan-detail-inner.html',
             analytics: 'fragments/portal-analytics-inner.html',
             clients: 'fragments/portal-clients-inner.html',
             'loan-request': 'fragments/portal-loan-request-inner.html',
@@ -237,16 +347,19 @@
         const PORTAL_TITLES = {
             dashboard: 'Lending Ledger — Portal',
             loans: 'Lending Ledger — Préstamos',
+            'loan-detail': 'Lending Ledger — Detalle de préstamo',
             analytics: 'Lending Ledger — Análisis',
             clients: 'Lending Ledger — Clientes',
-            'loan-request': 'Lending Ledger — Nueva solicitud',
+            'loan-request': 'Lending Ledger — Nuevo préstamo',
             settings: 'Lending Ledger — Configuración'
         }
 
         function getInitialPortalView () {
             try {
-                let v = new URL(window.location.href).searchParams.get('view')
+                const u = new URL(window.location.href)
+                let v = u.searchParams.get('view')
                 if (v === 'documents') v = 'loan-request'
+                if (v === 'loan-detail' && !u.searchParams.get('loanId')) return 'loans'
                 if (v && PORTAL_VIEWS.has(v)) return v
             } catch (_) {}
             return 'dashboard'
@@ -271,7 +384,7 @@
             { id: 'loans-list', title: 'Préstamos', meta: 'Ver cartera y estados de préstamo', view: 'loans', keywords: 'cartera cuotas mora pagos' },
             { id: 'loans-pay', title: 'Registrar pago', meta: 'Aplicar pago a cuota (mora, interés, capital)', view: 'loans', focusSelector: '#loan-payment-form', keywords: 'abono capital interes mora cuota' },
             { id: 'clients', title: 'Clientes', meta: 'Directorio de clientes y estado', view: 'clients', keywords: 'personas cedula telefono historial' },
-            { id: 'new-loan', title: 'Nuevo préstamo', meta: 'Crear solicitud nueva', view: 'loan-request', focusSelector: '#loan-request-form', keywords: 'solicitud crear prestamo nuevo' },
+            { id: 'new-loan', title: 'Nuevo préstamo', meta: 'Crear préstamo y guardar en cartera', view: 'loan-request', focusSelector: '#loan-request-form', keywords: 'solicitud crear prestamo nuevo borrador' },
             { id: 'analytics', title: 'Análisis', meta: 'Reportes y métricas', view: 'analytics', keywords: 'reportes ganancias morosos exportar' },
             { id: 'settings-account', title: 'Configuración · Cuenta y perfil', meta: 'Nombre, correo, teléfono, idioma', view: 'settings', settingsTab: 'cuenta', keywords: 'perfil cuenta usuario idioma zona horaria' },
             { id: 'settings-org', title: 'Configuración · Institución', meta: 'Datos legales, sector, contacto', view: 'settings', settingsTab: 'institucion', keywords: 'empresa institucion razon social direccion slug' },
@@ -365,8 +478,13 @@
                 if (tabBtn) tabBtn.click()
             }
             if (item.focusSelector) {
-                const target = document.querySelector(`#portal-main ${item.focusSelector}`)
-                if (target && typeof target.focus === 'function') target.focus()
+                const pm = document.getElementById('portal-main')
+                if (item.focusSelector === '#loan-payment-form' && pm) {
+                    focusLoanPaymentForm(pm, '')
+                } else {
+                    const target = document.querySelector(`#portal-main ${item.focusSelector}`)
+                    if (target && typeof target.focus === 'function') target.focus()
+                }
             }
             const searchInput = document.getElementById('app-header-search')
             if (searchInput) searchInput.value = ''
@@ -411,9 +529,55 @@
             return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
         }
 
+        function nextLoanReference (state) {
+            const nums = (state.loans || []).map((l) => {
+                const m = String(l.reference || '').match(/^CR-(\d+)$/i)
+                return m ? parseInt(m[1], 10) : 0
+            })
+            const next = (nums.length ? Math.max(...nums, 0) : 0) + 1
+            return `CR-${String(next).padStart(5, '0')}`
+        }
+
+        function ensureLoanReferences (state) {
+            if (!Array.isArray(state.loans) || !state.loans.length) return false
+            const needs = state.loans.some((l) => !String(l.reference || '').trim())
+            if (!needs) return false
+            let seq = state.loans.reduce((m, l) => {
+                const x = String(l.reference || '').match(/^CR-(\d+)$/i)
+                return x ? Math.max(m, parseInt(x[1], 10)) : m
+            }, 0)
+            const ordered = [...state.loans].sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+            let changed = false
+            for (const l of ordered) {
+                if (String(l.reference || '').trim()) continue
+                seq += 1
+                l.reference = `CR-${String(seq).padStart(5, '0')}`
+                changed = true
+            }
+            return changed
+        }
+
+        function displayLoanRef (loan) {
+            if (!loan) return '—'
+            const r = String(loan.reference || '').trim()
+            return r || '—'
+        }
+
+        function loanRefById (state, loanId) {
+            const loan = (state.loans || []).find((l) => l.id === loanId)
+            return loan ? displayLoanRef(loan) : String(loanId || '—')
+        }
+
         function fmtMoney (value) {
             const n = Number(value) || 0
             return `RD$${n.toLocaleString('es-DO', { maximumFractionDigits: 2, minimumFractionDigits: n % 1 ? 2 : 0 })}`
+        }
+
+        function escapeHtml (s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/"/g, '&quot;')
         }
 
         function isoToday () {
@@ -496,6 +660,88 @@
                 })
             }
             return out
+        }
+
+        function estimateScheduledInterestTotal (loanInput) {
+            const principal = Number(loanInput.principal) || 0
+            if (principal <= 0) return null
+            const installments = generateInstallments(loanInput)
+            if (!installments.length) return null
+            const loan = {
+                principal,
+                term_months: Number(loanInput.term_months) || 1,
+                interest_rate_pct: Number(loanInput.interest_rate_pct) || 0,
+                interest_mode: loanInput.interest_mode || 'annual',
+                payment_frequency: loanInput.payment_frequency || 'monthly',
+                start_date: loanInput.start_date || isoToday()
+            }
+            const periodRate = periodicRateForLoan(loan)
+            let remaining = principal
+            let totalInterest = 0
+            let firstCuota = 0
+            for (let i = 0; i < installments.length; i++) {
+                const inst = installments[i]
+                const interestDue = Math.max(0, Number((remaining * periodRate).toFixed(2)))
+                const pt = Math.max(0, Math.min(remaining, Number(inst.principal_target) || 0))
+                if (i === 0) firstCuota = Number((interestDue + pt).toFixed(2))
+                totalInterest += interestDue
+                remaining = Math.max(0, Number((remaining - pt).toFixed(2)))
+            }
+            const totalInterestN = Number(totalInterest.toFixed(2))
+            const totalCollected = Number((principal + totalInterestN).toFixed(2))
+            const yieldPct = principal > 0 ? Number(((totalInterestN / principal) * 100).toFixed(2)) : 0
+            return {
+                totalInterest: totalInterestN,
+                totalCollected,
+                periods: installments.length,
+                firstCuota,
+                avgCuota: installments.length ? Number((totalCollected / installments.length).toFixed(2)) : 0,
+                yieldPct
+            }
+        }
+
+        function updateLoanProfitPreview () {
+            const form = document.getElementById('loan-request-form')
+            if (!form) return
+            const q = (sel) => form.querySelector(sel)
+            const set = (id, text) => { const el = q(id); if (el) el.textContent = text }
+            const principal = Number(String(q('#lr-monto')?.value || '').replace(/[^\d.-]/g, '')) || 0
+            const term_months = Number(q('#lr-plazo')?.value) || 12
+            const interest_rate_pct = Number(q('#lr-interes')?.value) || 0
+            const interest_mode = q('#lr-interest-mode')?.value || 'annual'
+            const payment_frequency = q('#lr-payment-frequency')?.value || 'monthly'
+            const start_date = q('#lr-fecha-inicio')?.value || isoToday()
+            const dash = '—'
+            if (principal <= 0) {
+                set('#lr-profit-interest', dash)
+                set('#lr-profit-total', dash)
+                set('#lr-profit-first', dash)
+                set('#lr-profit-yield', dash)
+                set('#lr-profit-periods', dash)
+                return
+            }
+            const r = estimateScheduledInterestTotal({
+                principal,
+                term_months,
+                interest_rate_pct,
+                interest_mode,
+                payment_frequency,
+                start_date
+            })
+            if (!r) {
+                set('#lr-profit-interest', dash)
+                set('#lr-profit-total', dash)
+                set('#lr-profit-first', dash)
+                set('#lr-profit-yield', dash)
+                set('#lr-profit-periods', dash)
+                return
+            }
+            set('#lr-profit-interest', fmtMoney(r.totalInterest))
+            set('#lr-profit-total', fmtMoney(r.totalCollected))
+            set('#lr-profit-first', fmtMoney(r.firstCuota))
+            set('#lr-profit-yield', `${r.yieldPct}%`)
+            const freqLabel = payment_frequency === 'weekly' ? 'semanales' : 'mensuales'
+            set('#lr-profit-periods', `${r.periods} pagos ${freqLabel}`)
         }
 
         function normalizeInstallmentRecord (inst, fallbackPrincipalTarget = 0) {
@@ -631,6 +877,9 @@
 
         function getOrCreateLoanSystemState () {
             const state = readLoanSystemState()
+            if (ensureLoanReferences(state)) {
+                writeLoanSystemState(state)
+            }
             if (!state.clients.length && !state.loans.length) {
                 const demoClient = {
                     id: randomId('cli'),
@@ -644,6 +893,7 @@
                 }
                 const demoLoan = {
                     id: randomId('loan'),
+                    reference: nextLoanReference(state),
                     client_id: demoClient.id,
                     client_name: demoClient.name,
                     product: 'hipotecario',
@@ -750,7 +1000,7 @@
             try {
                 localStorage.setItem('nexo_loan_request_draft', JSON.stringify(obj))
             } catch (_) {}
-            alert('Borrador guardado en este equipo.')
+            alert('Guardado en borrador en este equipo. Puedes retomar el formulario cuando vuelvas a Nuevo préstamo.')
         }
 
         function hydrateLoanRequestDraft () {
@@ -794,6 +1044,382 @@
             if (status === 'moroso') return { cls: 'loan-badge--mora', text: 'Moroso' }
             if (status === 'finalizado') return { cls: 'loan-badge--paid', text: 'Finalizado' }
             return { cls: 'loan-badge--ok', text: 'Activo' }
+        }
+
+        function badgeForInstallmentStatus (status) {
+            if (status === 'pagado') return { cls: 'loan-badge--paid', text: 'Pagada' }
+            if (status === 'mora') return { cls: 'loan-badge--mora', text: 'Mora' }
+            if (status === 'atrasado') return { cls: 'loan-badge--process', text: 'Atrasada' }
+            return { cls: 'loan-badge--ok', text: 'Pendiente' }
+        }
+
+        function renderLoanInstallmentsModalHtml (loan, sum, state) {
+            const loanBadge = badgeForLoanStatus(sum.status)
+            const pendientes = sum.items.filter((it) => it.status !== 'pagado')
+            const pagadas = sum.items.filter((it) => it.status === 'pagado')
+            const rows = sum.items.map((it) => {
+                const b = badgeForInstallmentStatus(it.status)
+                const paid = (Number(it.paid_interest) || 0) + (Number(it.paid_principal) || 0) + (Number(it.paid_late_fee) || 0)
+                return `
+                    <tr>
+                        <td class="loan-inst-td-num">${it.n}</td>
+                        <td>${dateLabel(it.due_date)}</td>
+                        <td class="text-right">${fmtMoney(it.total_due)}</td>
+                        <td class="text-right">${fmtMoney(paid)}</td>
+                        <td class="text-right">${fmtMoney(it.pendingTotal)}</td>
+                        <td class="text-right loan-inst-td-meta">${fmtMoney(it.pending_interest)} / ${fmtMoney(it.pending_principal)}</td>
+                        <td><span class="loan-badge ${b.cls}">${b.text}</span></td>
+                    </tr>
+                `
+            }).join('')
+
+            const loanPayments = [...state.payments].filter((p) => p.loan_id === loan.id).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+            const payBlock = loanPayments.length
+                ? `<section class="loan-inst-section" aria-label="Pagos registrados en este préstamo">
+                    <h3 class="loan-inst-section__title">Pagos registrados</h3>
+                    <ul class="loan-inst-pay-list">
+                        ${loanPayments.slice(0, 12).map((p) => `
+                            <li class="loan-inst-pay-item">
+                                <span class="loan-inst-pay-item__amt">${fmtMoney(p.amount)}</span>
+                                <span class="loan-inst-pay-item__meta">Cuota ${p.installment_n} · ${new Date(p.created_at).toLocaleString('es-DO')}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </section>`
+                : ''
+
+            return `
+                <div class="loan-inst-hero">
+                    <div class="loan-inst-hero__main">
+                        <div class="loan-inst-hero__label">Referencia</div>
+                        <div class="loan-inst-hero__ref" title="Identificador interno (sistema): ${loan.id}">${displayLoanRef(loan)}</div>
+                        <div class="loan-inst-hero__product">${loan.product || 'hipotecario'} · ${loan.payment_frequency === 'monthly' ? 'mensual' : (loan.payment_frequency || 'periódico')}</div>
+                    </div>
+                    <span class="loan-badge ${loanBadge.cls}">${loanBadge.text}</span>
+                </div>
+                <div class="loan-inst-kpi-grid" role="list">
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${fmtMoney(loan.principal)}</div>
+                        <div class="loan-inst-kpi__lab">Monto original</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${pagadas.length} / ${sum.totalInstallments}</div>
+                        <div class="loan-inst-kpi__lab">Cuotas pagadas</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${pendientes.length}</div>
+                        <div class="loan-inst-kpi__lab">Cuotas por pagar</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${fmtMoney(sum.pending)}</div>
+                        <div class="loan-inst-kpi__lab">Saldo pendiente total</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${fmtMoney(sum.mora)}</div>
+                        <div class="loan-inst-kpi__lab">Mora pendiente</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${fmtMoney(sum.paidTotal)}</div>
+                        <div class="loan-inst-kpi__lab">Total cobrado a la fecha</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${fmtMoney(sum.principalOutstanding)}</div>
+                        <div class="loan-inst-kpi__lab">Capital vivo estimado</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${sum.next ? `#${sum.next.n} · ${dateLabel(sum.next.due_date)}` : '—'}</div>
+                        <div class="loan-inst-kpi__lab">Próxima cuota</div>
+                    </div>
+                </div>
+                <section class="loan-inst-section" aria-label="Calendario de cuotas">
+                    <h3 class="loan-inst-section__title">Detalle por cuota</h3>
+                    <p class="loan-inst-section__hint">Interés y capital pendientes por fila. Los pagos se aplican primero a mora, luego interés y capital según el flujo de registro.</p>
+                    <div class="loan-inst-table-scroll">
+                        <table class="loan-inst-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Vencimiento</th>
+                                    <th scope="col" class="text-right">Cuota</th>
+                                    <th scope="col" class="text-right">Pagado</th>
+                                    <th scope="col" class="text-right">Pendiente</th>
+                                    <th scope="col" class="text-right">Int. pend. / Cap. pend.</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </section>
+                <div class="loan-inst-actions">
+                    <button type="button" class="loans-btn loans-btn--primary" data-go-register-pay data-loan-id="${loan.id}">Ir a registrar pago</button>
+                </div>
+                ${payBlock}
+            `
+        }
+
+        function hydrateLoanDetailView (loanId) {
+            const root = document.getElementById('portal-main')
+            const mount = root?.querySelector('#loan-detail-body')
+            if (!mount || !loanId) return
+            const state = getOrCreateLoanSystemState()
+            const loan = state.loans.find((l) => l.id === loanId)
+            const titleEl = root.querySelector('#loan-detail-title')
+            const subEl = root.querySelector('#loan-detail-sub')
+            if (!loan) {
+                if (titleEl) titleEl.textContent = 'Préstamo no encontrado'
+                if (subEl) subEl.textContent = 'El identificador no existe en la cartera local.'
+                mount.innerHTML = '<p class="loans-empty-note">Vuelve a la cartera e inténtalo de nuevo.</p>'
+                document.title = PORTAL_TITLES['loan-detail'] || PORTAL_TITLES.loans
+                return
+            }
+            const sum = summarizeLoan(loan, state, new Date())
+            if (titleEl) titleEl.textContent = loan.client_name
+            if (subEl) {
+                subEl.textContent = `${displayLoanRef(loan)} · ${loan.product || 'hipotecario'} · ${fmtMoney(loan.principal)} · ${loan.interest_rate_pct ?? '—'}% anual · ${loan.term_months} meses`
+            }
+            mount.innerHTML = renderLoanInstallmentsModalHtml(loan, sum, state)
+            document.title = `${loan.client_name} — ${displayLoanRef(loan)} · Lending Ledger`
+        }
+
+        function navigateToLoanDetail (loanId) {
+            if (!loanId) return
+            void loadPortalView('loan-detail', { pushState: true, loanId })
+        }
+
+        function renderClientHistoryModalHtml (client, loanRows, payments, state) {
+            const loansTable = loanRows.length
+                ? `<section class="loan-inst-section" aria-label="Préstamos del cliente">
+                    <h3 class="loan-inst-section__title">Préstamos</h3>
+                    <div class="loan-inst-table-scroll">
+                        <table class="loan-inst-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Referencia</th>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col" class="text-right">Capital</th>
+                                    <th scope="col" class="text-right">Pendiente</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${loanRows.map(({ loan, sum }) => {
+                                    const b = badgeForLoanStatus(sum.status)
+                                    return `<tr>
+                                        <td class="loan-inst-td-num">${displayLoanRef(loan)}</td>
+                                        <td>${loan.product || '—'}</td>
+                                        <td class="text-right">${fmtMoney(loan.principal)}</td>
+                                        <td class="text-right">${fmtMoney(sum.pending)}</td>
+                                        <td><span class="loan-badge ${b.cls}">${b.text}</span></td>
+                                    </tr>`
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>`
+                : `<p class="loan-inst-section__hint" style="margin:0 0 16px;">Este cliente aún no tiene préstamos registrados.</p>`
+
+            const paymentsTable = payments.length
+                ? `<section class="loan-inst-section" aria-label="Pagos registrados">
+                    <h3 class="loan-inst-section__title">Historial de pagos</h3>
+                    <p class="loan-inst-section__hint">Ordenados del más reciente al más antiguo.</p>
+                    <div class="loan-inst-table-scroll">
+                        <table class="loan-inst-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Fecha</th>
+                                    <th scope="col">Préstamo</th>
+                                    <th scope="col">Cuota</th>
+                                    <th scope="col" class="text-right">Monto</th>
+                                    <th scope="col" class="text-right">Desglose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${payments.map((p) => {
+                                    const br = p.breakdown || {}
+                                    const desglose = `${fmtMoney(br.late_fee || 0)} mora · ${fmtMoney(br.interest || 0)} int. · ${fmtMoney(br.principal || 0)} cap.`
+                                    return `<tr>
+                                        <td>${new Date(p.created_at).toLocaleString('es-DO')}</td>
+                                        <td class="loan-inst-td-num">${loanRefById(state, p.loan_id)}</td>
+                                        <td>#${p.installment_n}</td>
+                                        <td class="text-right">${fmtMoney(p.amount)}</td>
+                                        <td class="text-right loan-inst-td-meta">${desglose}</td>
+                                    </tr>`
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>`
+                : `<section class="loan-inst-section" aria-label="Pagos"><h3 class="loan-inst-section__title">Historial de pagos</h3><p class="loan-inst-section__hint" style="margin:0;">No hay pagos registrados para los préstamos de este cliente.</p></section>`
+
+            return `
+                <div class="loan-inst-hero">
+                    <div class="loan-inst-hero__main">
+                        <div class="loan-inst-hero__label">Cliente</div>
+                        <div class="loan-inst-hero__ref">${client.name}</div>
+                        <div class="loan-inst-hero__product">${client.email || 'Sin correo'}</div>
+                    </div>
+                </div>
+                ${loansTable}
+                ${paymentsTable}
+            `
+        }
+
+        function openClientHistoryModal (clientId) {
+            const dlg = document.getElementById('client-history-dialog')
+            const body = document.getElementById('client-history-dialog-body')
+            const sub = document.getElementById('client-history-dialog-sub')
+            if (!dlg || !body || !sub) return
+            const state = getOrCreateLoanSystemState()
+            const client = state.clients.find((c) => c.id === clientId)
+            if (!client) return
+            const now = new Date()
+            const loanRows = state.loans.filter((l) => l.client_id === clientId).map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+            const loanIds = new Set(loanRows.map(({ loan }) => loan.id))
+            const payments = [...state.payments].filter((p) => loanIds.has(p.loan_id)).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+            sub.textContent = `${client.document_type || 'Doc'} · ${client.document_number || '—'} · ${client.phone || 'Sin teléfono'}`
+            body.innerHTML = renderClientHistoryModalHtml(client, loanRows, payments, state)
+            if (typeof dlg.showModal === 'function') {
+                dlg.showModal()
+            } else {
+                dlg.setAttribute('open', '')
+            }
+            document.getElementById('client-history-dialog-close')?.focus()
+        }
+
+        function closeClientHistoryModal () {
+            const dlg = document.getElementById('client-history-dialog')
+            if (!dlg) return
+            if (typeof dlg.close === 'function' && dlg.open) dlg.close()
+            else dlg.removeAttribute('open')
+        }
+
+        function wireClientHistoryDialog () {
+            const dlg = document.getElementById('client-history-dialog')
+            if (!dlg || dlg.dataset.nexoWired === '1') return
+            dlg.dataset.nexoWired = '1'
+            dlg.querySelector('#client-history-dialog-close')?.addEventListener('click', () => closeClientHistoryModal())
+            dlg.addEventListener('click', (e) => {
+                if (e.target === dlg) closeClientHistoryModal()
+            })
+        }
+
+        function getHeaderPaymentDueRows () {
+            const state = getOrCreateLoanSystemState()
+            const now = new Date()
+            const map = new Map()
+            state.loans.forEach((loan) => {
+                const client = state.clients.find((c) => c.id === loan.client_id)
+                if (!client) return
+                const sum = summarizeLoan(loan, state, now)
+                if (sum.pending <= 0.009) return
+                const moraAmt = Number(sum.mora) || 0
+                const moroso = sum.status === 'moroso' || moraAmt > 0.009
+                const existing = map.get(loan.client_id)
+                if (!existing) {
+                    map.set(loan.client_id, {
+                        clientId: loan.client_id,
+                        name: client.name,
+                        pending: sum.pending,
+                        mora: moraAmt,
+                        moroso,
+                        primaryLoanId: loan.id,
+                        _primaryLoanPending: sum.pending,
+                        _primaryLoanMoroso: moroso
+                    })
+                    return
+                }
+                existing.pending += sum.pending
+                existing.mora += moraAmt
+                existing.moroso = existing.moroso || moroso
+                const preferThis =
+                    sum.pending > existing._primaryLoanPending + 0.005 ||
+                    (Math.abs(sum.pending - existing._primaryLoanPending) <= 0.005 &&
+                        moroso && !existing._primaryLoanMoroso)
+                if (preferThis) {
+                    existing.primaryLoanId = loan.id
+                    existing._primaryLoanPending = sum.pending
+                    existing._primaryLoanMoroso = moroso
+                }
+            })
+            return [...map.values()]
+                .map(({ _primaryLoanPending, _primaryLoanMoroso, ...r }) => r)
+                .sort((a, b) => b.pending - a.pending)
+                .slice(0, 25)
+        }
+
+        function hideHeaderNotifications () {
+            const panel = document.getElementById('portal-header-notifications')
+            const btn = document.getElementById('app-header-notif-btn')
+            if (panel) panel.hidden = true
+            if (btn) btn.setAttribute('aria-expanded', 'false')
+        }
+
+        function renderHeaderNotificationsContent (panel) {
+            const rows = getHeaderPaymentDueRows()
+            if (!rows.length) {
+                panel.innerHTML = '<div class="portal-header-notifications__head">Cobranza</div><div class="portal-header-notifications__empty">No hay saldos pendientes en cartera.</div>'
+                return
+            }
+            const head = '<div class="portal-header-notifications__head">Clientes con saldo pendiente</div>'
+            const body = rows.map((r) => {
+                const moraLine = r.mora > 0.009
+                    ? `<span class="portal-header-notifications__meta portal-header-notifications__meta--warn">Mora pendiente ${fmtMoney(r.mora)}</span>`
+                    : '<span class="portal-header-notifications__meta">Sin mora pendiente</span>'
+                const pill = r.moroso ? '<span class="portal-header-notifications__pill">Moroso</span>' : ''
+                return `<button type="button" class="portal-header-notifications__item" data-notif-loan-id="${r.primaryLoanId}" role="menuitem">
+                    <span class="portal-header-notifications__title">${r.name}</span>
+                    <span class="portal-header-notifications__amount">Debe ${fmtMoney(r.pending)}</span>
+                    ${pill}
+                    ${moraLine}
+                </button>`
+            }).join('')
+            panel.innerHTML = head + body
+        }
+
+        function refreshHeaderNotificationBadge () {
+            const badge = document.getElementById('app-header-notif-badge')
+            if (!badge) return
+            const n = getHeaderPaymentDueRows().length
+            badge.textContent = String(n)
+            badge.hidden = n === 0
+        }
+
+        function wireHeaderNotifications () {
+            const btn = document.getElementById('app-header-notif-btn')
+            const panel = document.getElementById('portal-header-notifications')
+            if (!btn || !panel || btn.dataset.nexoNotifWired === '1') return
+            btn.dataset.nexoNotifWired = '1'
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                const isOpen = !panel.hidden
+                if (isOpen) {
+                    hideHeaderNotifications()
+                    return
+                }
+                hidePortalSearchResults()
+                renderHeaderNotificationsContent(panel)
+                panel.hidden = false
+                btn.setAttribute('aria-expanded', 'true')
+            })
+            panel.addEventListener('click', (e) => {
+                const row = e.target.closest('[data-notif-loan-id]')
+                if (!row) return
+                e.preventDefault()
+                const lid = row.getAttribute('data-notif-loan-id')
+                if (lid) {
+                    hideHeaderNotifications()
+                    navigateToLoanDetail(lid)
+                }
+            })
+            document.addEventListener('click', (e) => {
+                if (panel.hidden) return
+                if (e.target.closest('.app-header__notif-wrap')) return
+                hideHeaderNotifications()
+            })
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') hideHeaderNotifications()
+            })
         }
 
         function renderClientsView () {
@@ -843,7 +1469,7 @@
                         </td>
                         <td><span class="clients-badge ${badgeCls}">${status}</span></td>
                         <td class="clients-row-actions">
-                            <button type="button" class="clients-menu-btn" aria-label="Más opciones, ${c.name}">
+                            <button type="button" class="clients-menu-btn" data-client-id="${c.id}" aria-haspopup="dialog" aria-label="Ver historial de préstamos y pagos, ${c.name}">
                                 <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
                             </button>
                         </td>
@@ -852,7 +1478,205 @@
             })
             body.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="loans-empty-note">Sin clientes registrados.</td></tr>'
             const countEl = root.querySelector('.clients-filters__count')
-            if (countEl) countEl.textContent = `Mostrando ${rows.length} de ${rows.length} clientes`
+            if (countEl) countEl.textContent = `Mostrando ${rows.length} de ${state.clients.length} clientes`
+
+            const totalClients = state.clients.length
+            let withActiveLoan = 0
+            state.clients.forEach((c) => {
+                const clientLoans = state.loans.filter((l) => l.client_id === c.id)
+                const hasActive = clientLoans.some((loan) => summarizeLoan(loan, state, now).status !== 'finalizado')
+                if (hasActive) withActiveLoan += 1
+            })
+            const noLoanCount = state.clients.filter((c) => !state.loans.some((l) => l.client_id === c.id)).length
+            const pct = totalClients > 0 ? Math.round((withActiveLoan / totalClients) * 1000) / 10 : 0
+
+            const setClientMetric = (sel, v) => { const el = root.querySelector(sel); if (el) el.textContent = v }
+            setClientMetric('#clients-kpi-total', String(totalClients))
+            setClientMetric('#clients-kpi-with-active-loan', String(withActiveLoan))
+            setClientMetric('#clients-kpi-no-loan', String(noLoanCount))
+            setClientMetric('#clients-active-loans-pct', `${pct}%`)
+            const pctDesc = root.querySelector('#clients-active-loans-pct-desc')
+            if (pctDesc) {
+                pctDesc.textContent = totalClients === 0
+                    ? 'No hay clientes en cartera. Cuando agregues clientes y préstamos, aquí verás qué porcentaje tiene al menos un préstamo no finalizado (activo o en mora).'
+                    : `Se toman todos los clientes en cartera (${totalClients}) y se cuenta cuántos tienen al menos un préstamo con saldo pendiente, es decir, estado distinto de finalizado (${withActiveLoan}). Porcentaje = (${withActiveLoan} ÷ ${totalClients}) × 100 = ${pct}%.`
+            }
+        }
+
+        const MONTH_SHORT_ES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
+
+        function loanOriginationDate (loan) {
+            const raw = loan.created_at || loan.start_date
+            if (!raw) return new Date()
+            const d = new Date(String(raw).slice(0, 10) + 'T12:00:00')
+            return Number.isNaN(d.getTime()) ? new Date() : d
+        }
+
+        function loanQualityBucket (sum) {
+            if (sum.pending <= 0.009) return 'current'
+            if (sum.status === 'moroso') return 'default'
+            if (sum.items.some((it) => it.status === 'atrasado')) return 'late'
+            return 'current'
+        }
+
+        function isBrokerProductLoan (loan) {
+            const p = String(loan.product || '').toLowerCase()
+            return p === 'comercial' || p === 'pyme'
+        }
+
+        function regionFromClientAddress (address) {
+            if (!address || !String(address).trim()) return 'Sin ubicación'
+            const first = String(address).split(',')[0].trim()
+            return first.slice(0, 48) || 'Sin ubicación'
+        }
+
+        function getDashboardTimeRanges (period, now) {
+            const n = 4
+            if (period === 'yearly') {
+                const y0 = now.getFullYear()
+                return [...Array(n)].map((_, i) => {
+                    const y = y0 - (n - 1 - i)
+                    const start = new Date(y, 0, 1, 0, 0, 0, 0)
+                    const end = new Date(y, 11, 31, 23, 59, 59, 999)
+                    const isCurrent = i === n - 1
+                    return { start, end, label: isCurrent ? `Actual (${y})` : String(y), isCurrent }
+                })
+            }
+            if (period === 'monthly') {
+                return [...Array(n)].map((_, i) => {
+                    const d = new Date(now.getFullYear(), now.getMonth() - (n - 1 - i), 1)
+                    const y = d.getFullYear()
+                    const m = d.getMonth()
+                    const start = new Date(y, m, 1, 0, 0, 0, 0)
+                    const end = new Date(y, m + 1, 0, 23, 59, 59, 999)
+                    const isCurrent = i === n - 1
+                    return {
+                        start,
+                        end,
+                        label: isCurrent ? `Actual (${MONTH_SHORT_ES[m]})` : `${MONTH_SHORT_ES[m]} ${y}`,
+                        isCurrent
+                    }
+                })
+            }
+            const qStack = []
+            let yy = now.getFullYear()
+            let qq = Math.floor(now.getMonth() / 3) + 1
+            for (let i = 0; i < n; i++) {
+                qStack.push({ yy, qq })
+                qq -= 1
+                if (qq < 1) {
+                    qq = 4
+                    yy -= 1
+                }
+            }
+            return qStack.reverse().map((r, idx) => {
+                const start = new Date(r.yy, (r.qq - 1) * 3, 1, 0, 0, 0, 0)
+                const end = new Date(r.yy, r.qq * 3, 0, 23, 59, 59, 999)
+                const isCurrent = idx === n - 1
+                return { start, end, label: isCurrent ? `Actual (Q${r.qq})` : `Q${r.qq} ${r.yy}`, isCurrent }
+            })
+        }
+
+        function renderDashDistributionChart (root, state, now) {
+            const mount = root.querySelector('#dash-distribution-chart')
+            if (!mount) return
+            const periodBtn = root.querySelector('.period-toggle__btn.is-active[data-period]')
+            const period = periodBtn?.getAttribute('data-period') || 'monthly'
+            const ranges = getDashboardTimeRanges(period, now)
+            const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
+            const parts = []
+            let ariaBits = []
+            for (const r of ranges) {
+                let wCur = 0
+                let wLate = 0
+                let wDef = 0
+                for (const { loan, sum } of summaries) {
+                    const od = loanOriginationDate(loan)
+                    if (od < r.start || od > r.end) continue
+                    const pr = Number(loan.principal) || 0
+                    const b = loanQualityBucket(sum)
+                    if (b === 'default') wDef += pr
+                    else if (b === 'late') wLate += pr
+                    else wCur += pr
+                }
+                const tot = wCur + wLate + wDef
+                const flex = (v) => (tot < 1 ? 1 : Math.max(1, Math.round((v / tot) * 1000)))
+                const labelCls = r.isCurrent ? 'chart-label chart-label--emphasis' : 'chart-label'
+                parts.push(`
+                    <div class="chart-q">
+                        <div class="chart-stack">
+                            <div class="chart-seg chart-seg--default" style="flex: ${flex(wDef)} 0 0" title="Incumplimiento ${fmtMoney(wDef)}"></div>
+                            <div class="chart-seg chart-seg--late" style="flex: ${flex(wLate)} 0 0" title="Atraso ${fmtMoney(wLate)}"></div>
+                            <div class="chart-seg chart-seg--current" style="flex: ${flex(wCur)} 0 0" title="Al día ${fmtMoney(wCur)}"></div>
+                        </div>
+                        <span class="${labelCls}">${r.label}</span>
+                    </div>`)
+                ariaBits.push(`${r.label}: al día ${fmtMoney(wCur)}, atraso ${fmtMoney(wLate)}, incumplimiento ${fmtMoney(wDef)}`)
+            }
+            mount.innerHTML = parts.join('')
+            mount.setAttribute('aria-label', `Distribución por ${period === 'monthly' ? 'mes' : (period === 'yearly' ? 'año' : 'trimestre')} (monto originado). ${ariaBits.join('; ')}`)
+        }
+
+        function buildSmoothLinePathD (values, w, h, padY) {
+            const n = values.length
+            if (n === 0) return ''
+            const mx = Math.max(...values, 1)
+            const padX = 8
+            const innerW = w - padX * 2
+            const innerH = h - padY * 2
+            const pts = values.map((v, i) => {
+                const x = n === 1 ? w / 2 : padX + (i / (n - 1)) * innerW
+                const y = padY + innerH - (v / mx) * innerH
+                return [x, y]
+            })
+            if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
+            let d = `M ${pts[0][0]},${pts[0][1]}`
+            for (let i = 0; i < pts.length - 1; i++) {
+                const [x0, y0] = pts[i]
+                const [x1, y1] = pts[i + 1]
+                const cx = (x0 + x1) / 2
+                d += ` C ${cx},${y0} ${cx},${y1} ${x1},${y1}`
+            }
+            return d
+        }
+
+        function getAnalyticsPeriodDays (periodKey) {
+            if (periodKey === '30d') return 30
+            if (periodKey === 'q') return 90
+            return 365
+        }
+
+        function getAnalyticsSliceRanges (periodKey, now) {
+            const days = getAnalyticsPeriodDays(periodKey)
+            const segments = 6
+            const sliceMs = (days * 86400000) / segments
+            const tEnd = now.getTime()
+            const tStart = tEnd - days * 86400000
+            const ranges = []
+            for (let i = 0; i < segments; i++) {
+                const a = tStart + i * sliceMs
+                const b = tStart + (i + 1) * sliceMs
+                ranges.push({ start: new Date(a), end: new Date(b) })
+            }
+            const labels = ranges.map((r) => {
+                const m = r.start.getMonth()
+                const d = r.start.getDate()
+                if (periodKey === 'y') return `${MONTH_SHORT_ES[m]}`
+                if (periodKey === 'q') return `${d} ${MONTH_SHORT_ES[m]}`
+                return `${d}/${String(m + 1).padStart(2, '0')}`
+            })
+            return { ranges, labels }
+        }
+
+        function conicRiskGradient (pctA, pctB, pctC) {
+            const t = pctA + pctB + pctC
+            if (t < 0.5) return 'conic-gradient(from -90deg, #e2e8f0 0deg 360deg)'
+            const a = (pctA / t) * 360
+            const b = (pctB / t) * 360
+            const c = (pctC / t) * 360
+            const d1 = a
+            const d2 = a + b
+            return `conic-gradient(from -90deg, #00234b 0deg ${d1}deg, #85f8c4 ${d1}deg ${d2}deg, #d8e3fb ${d2}deg 360deg)`
         }
 
         function renderDashboardView () {
@@ -886,13 +1710,14 @@
                 ? installments.map(({ loan, it }) => `
                     <tr>
                         <td><div class="cell-user"><span class="cell-avatar" aria-hidden="true">${initials(loan.client_name)}</span><span class="cell-name">${loan.client_name}</span></div></td>
-                        <td class="cell-ref">${loan.id}</td>
+                        <td class="cell-ref">${displayLoanRef(loan)}</td>
                         <td class="cell-amount text-right">${fmtMoney(it.total_due)}</td>
                         <td class="cell-date">${dateLabel(it.due_date)}</td>
                         <td><span class="dash-badge ${it.status === 'mora' ? 'dash-badge--followup' : 'dash-badge--autopay'}">${it.status}</span></td>
                     </tr>
                 `).join('')
                 : '<tr><td colspan="5" class="loans-empty-note">Sin cuotas pendientes.</td></tr>'
+            renderDashDistributionChart(root, state, now)
         }
 
         function renderAnalyticsView () {
@@ -903,12 +1728,121 @@
             const summaries = state.loans.map((loan) => ({ loan, sum: summarizeLoan(loan, state, now) }))
             const overdue = summaries.filter((x) => x.sum.items.some((i) => i.status === 'atrasado' || i.status === 'mora')).length
             const active = summaries.filter((x) => x.sum.status === 'activo' || x.sum.status === 'moroso').length
-            const monthlyProfit = summaries.reduce((s, x) => s + x.sum.mora, 0)
+            const y = now.getFullYear()
+            const m = now.getMonth()
+            const monthProfit = state.payments.filter((p) => {
+                const d = new Date(p.created_at)
+                return d.getFullYear() === y && d.getMonth() === m
+            }).reduce((s, p) => {
+                const br = p.breakdown || {}
+                return s + (Number(br.interest) || 0) + (Number(br.late_fee) || 0)
+            }, 0)
             const setText = (id, v) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = v }
             setText('analytics-kpi-active-loans', String(active))
             setText('analytics-kpi-overdue-loans', String(overdue))
             setText('analytics-kpi-payments', String(state.payments.length))
-            setText('analytics-kpi-monthly-profit', fmtMoney(monthlyProfit))
+            setText('analytics-kpi-monthly-profit', fmtMoney(monthProfit))
+
+            const periodBtn = root.querySelector('.analytics-period__btn.is-active[data-period]')
+            const periodKey = periodBtn?.getAttribute('data-period') || '30d'
+            const { ranges, labels } = getAnalyticsSliceRanges(periodKey, now)
+            const directSeries = []
+            const brokerSeries = []
+            for (const r of ranges) {
+                let d = 0
+                let b = 0
+                for (const loan of state.loans) {
+                    const od = loanOriginationDate(loan)
+                    if (od < r.start || od > r.end) continue
+                    const pr = Number(loan.principal) || 0
+                    if (isBrokerProductLoan(loan)) b += pr
+                    else d += pr
+                }
+                directSeries.push(d)
+                brokerSeries.push(b)
+            }
+            const pathDirect = root.querySelector('#analytics-origination-path-direct')
+            const pathBroker = root.querySelector('#analytics-origination-path-broker')
+            if (pathDirect) pathDirect.setAttribute('d', buildSmoothLinePathD(directSeries, 800, 200, 24))
+            if (pathBroker) pathBroker.setAttribute('d', buildSmoothLinePathD(brokerSeries, 800, 200, 24))
+            const labMount = root.querySelector('#analytics-origination-labels')
+            if (labMount) labMount.innerHTML = labels.map((t) => `<span>${t}</span>`).join('')
+
+            const openLoans = summaries.filter((x) => x.sum.pending > 0.009)
+            let expA = 0
+            let expB = 0
+            let expC = 0
+            for (const { sum } of openLoans) {
+                const w = sum.pending
+                if (sum.status === 'moroso') expC += w
+                else if (sum.items.some((it) => it.status === 'atrasado')) expB += w
+                else expA += w
+            }
+            const riskTot = expA + expB + expC
+            const pct = (x) => (riskTot > 0 ? Math.round((x / riskTot) * 100) : 0)
+            const pA = pct(expA)
+            const pB = pct(expB)
+            const pC = pct(expC)
+            const ring = root.querySelector('#analytics-risk-ring')
+            if (ring) ring.style.background = conicRiskGradient(pA, pB, pC)
+            const gradeEl = root.querySelector('#analytics-risk-grade')
+            const subEl = root.querySelector('#analytics-risk-sub')
+            let grade = '—'
+            if (riskTot > 0.02) {
+                if (expC >= expA && expC >= expB) grade = 'C'
+                else if (expB >= expA && expB >= expC) grade = 'B'
+                else grade = 'A+'
+            } else {
+                grade = openLoans.length ? 'A+' : '—'
+            }
+            if (gradeEl) gradeEl.textContent = grade
+            if (subEl) subEl.textContent = riskTot > 0.02 ? 'Por exposición vigente' : (openLoans.length ? 'Exposición baja' : 'Sin cartera activa')
+
+            const leg = root.querySelector('#analytics-risk-legend')
+            if (leg) {
+                leg.innerHTML = `
+                    <div class="analytics-donut-legend__row">
+                        <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#00234b"></span> Grado A–A+ (al día)</span>
+                        <span class="analytics-donut-legend__pct">${pA}%</span>
+                    </div>
+                    <div class="analytics-donut-legend__row">
+                        <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#85f8c4"></span> Grado B (atraso sin mora)</span>
+                        <span class="analytics-donut-legend__pct">${pB}%</span>
+                    </div>
+                    <div class="analytics-donut-legend__row">
+                        <span class="analytics-donut-legend__left"><span class="analytics-donut-legend__dot" style="background:#d8e3fb"></span> Grado C (mora)</span>
+                        <span class="analytics-donut-legend__pct">${pC}%</span>
+                    </div>`
+            }
+
+            const geoMap = new Map()
+            for (const { loan, sum } of summaries) {
+                if (sum.pending <= 0.009) continue
+                const client = state.clients.find((c) => c.id === loan.client_id)
+                const reg = regionFromClientAddress(client?.address || '')
+                geoMap.set(reg, (geoMap.get(reg) || 0) + sum.pending)
+            }
+            const geoTotal = [...geoMap.values()].reduce((a, b) => a + b, 0)
+            const geoSorted = [...geoMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+            const geoBody = root.querySelector('#analytics-geo-body')
+            if (geoBody) {
+                geoBody.innerHTML = geoSorted.length
+                    ? geoSorted.map(([name, amt]) => {
+                        const pc = geoTotal > 0 ? Math.round((amt / geoTotal) * 100) : 0
+                        const safe = escapeHtml(name)
+                        return `<div class="analytics-geo__row">
+                            <div class="analytics-geo__head"><span>${safe}</span><span>${pc}%</span></div>
+                            <div class="analytics-geo__track"><div class="analytics-geo__fill" style="width:${pc}%"></div></div>
+                        </div>`
+                    }).join('')
+                    : '<p class="loans-empty-note" style="margin:0">Sin exposición geográfica (agrega direcciones en clientes).</p>'
+            }
+
+            const badge = root.querySelector('#analytics-reports-badge')
+            if (badge) {
+                const fq = Math.floor(now.getMonth() / 3) + 1
+                badge.textContent = `Datos locales · Q${fq} ${now.getFullYear()}`
+            }
         }
 
         function exportSystemReport (type) {
@@ -945,6 +1879,25 @@
             instSel.innerHTML = options.join('')
         }
 
+        function focusLoanPaymentForm (root, preselectLoanId) {
+            if (!root) return
+            const form = root.querySelector('#loan-payment-form')
+            const loanSel = root.querySelector('#payment-loan-select')
+            const section = root.querySelector('#loan-payment-section')
+            if (!form || !loanSel) return
+            if (preselectLoanId && [...loanSel.options].some((o) => o.value === preselectLoanId)) {
+                loanSel.value = preselectLoanId
+                populatePaymentInstallmentSelect(preselectLoanId)
+            }
+            const scrollTarget = section || form
+            scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            window.setTimeout(() => {
+                const amt = root.querySelector('#payment-amount-input')
+                if (amt) amt.focus({ preventScroll: true })
+                else loanSel.focus({ preventScroll: true })
+            }, 320)
+        }
+
         function renderLoansView () {
             const root = document.getElementById('portal-main')
             const tableBody = root?.querySelector('#loans-table-body')
@@ -965,14 +1918,14 @@
                             <td>
                                 <div class="loan-cell-user">
                                     <div class="loan-avatar loan-avatar--${['a', 'b', 'c', 'd'][idx % 4]}" aria-hidden="true">${initials(loan.client_name)}</div>
-                                    <div><div class="loan-name">${loan.client_name}</div><div class="loan-ref">${loan.id}</div></div>
+                                    <div><div class="loan-name">${loan.client_name}</div><div class="loan-ref" title="ID interno: ${loan.id}">${displayLoanRef(loan)}</div></div>
                                 </div>
                             </td>
                             <td><span class="loan-type">${loan.product || 'hipotecario'}</span></td>
                             <td><div class="loan-amount">${fmtMoney(loan.principal)}</div><div class="loan-pend">Pend: ${fmtMoney(sum.pending)}</div></td>
                             <td>${nextText}</td>
                             <td><span class="loan-badge ${badge.cls}">${badge.text}</span></td>
-                            <td class="loan-row-actions"><button type="button" class="loan-menu-btn" aria-label="Más opciones, ${loan.client_name}"><svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg></button></td>
+                            <td class="loan-row-actions"><button type="button" class="loan-menu-btn" data-loan-id="${loan.id}" aria-label="Abrir ficha del préstamo, ${loan.client_name}"><svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg></button></td>
                         </tr>
                     `
                 }).join('')
@@ -992,26 +1945,9 @@
             const count = root.querySelector('#loans-record-count')
             if (count) count.textContent = `Mostrando ${summaries.length} de ${state.loans.length} registros`
 
-            const scheduleBody = root.querySelector('#loans-schedule-body')
-            if (scheduleBody) {
-                const schedule = summaries.flatMap(({ loan, sum }) => sum.items.map((i) => ({ loan, i })))
-                    .sort((a, b) => a.i.due_date.localeCompare(b.i.due_date))
-                    .slice(0, 20)
-                scheduleBody.innerHTML = schedule.length ? schedule.map(({ loan, i }) => `
-                    <tr>
-                        <td>${loan.id}</td>
-                        <td>#${i.n}</td>
-                        <td>${dateLabel(i.due_date)}</td>
-                        <td>${fmtMoney(i.pendingTotal)}</td>
-                        <td>${fmtMoney(i.lateFeeAccrued)}</td>
-                        <td><span class="loan-badge ${i.status === 'mora' ? 'loan-badge--mora' : (i.status === 'pagado' ? 'loan-badge--paid' : 'loan-badge--ok')}">${i.status}</span></td>
-                    </tr>
-                `).join('') : '<tr><td colspan="6" class="loans-empty-note">Sin calendario disponible.</td></tr>'
-            }
-
             const payLoanSel = root.querySelector('#payment-loan-select')
             if (payLoanSel) {
-                payLoanSel.innerHTML = state.loans.map((l) => `<option value="${l.id}">${l.id} · ${l.client_name}</option>`).join('')
+                payLoanSel.innerHTML = state.loans.map((l) => `<option value="${l.id}">${displayLoanRef(l)} · ${l.client_name}</option>`).join('')
                 if (payLoanSel.value) populatePaymentInstallmentSelect(payLoanSel.value)
             }
 
@@ -1019,7 +1955,7 @@
             if (activityFeed) {
                 const recent = [...state.payments].slice(-6).reverse()
                 activityFeed.innerHTML = recent.length
-                    ? recent.map((p) => `<div class="loans-act-item"><div class="loans-act-item__dot loans-act-item__dot--pay" aria-hidden="true"><svg width="13" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5l4 4 8-8" stroke="currentColor" stroke-width="1.5"/></svg></div><div class="loans-act-item__title">Pago aplicado</div><div class="loans-act-item__body">${p.loan_id} · cuota ${p.installment_n} · ${fmtMoney(p.amount)}</div><div class="loans-act-item__time">${new Date(p.created_at).toLocaleString('es-DO')}</div></div>`).join('')
+                    ? recent.map((p) => `<div class="loans-act-item"><div class="loans-act-item__dot loans-act-item__dot--pay" aria-hidden="true"><svg width="13" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5l4 4 8-8" stroke="currentColor" stroke-width="1.5"/></svg></div><div class="loans-act-item__title">Pago aplicado</div><div class="loans-act-item__body">${loanRefById(state, p.loan_id)} · cuota ${p.installment_n} · ${fmtMoney(p.amount)}</div><div class="loans-act-item__time">${new Date(p.created_at).toLocaleString('es-DO')}</div></div>`).join('')
                     : '<p class="loans-empty-note">Sin actividad de pagos todavía.</p>'
             }
 
@@ -1038,6 +1974,17 @@
             root._nexoDelegated = true
 
             root.addEventListener('click', (e) => {
+                const goRegPay = e.target.closest('[data-go-register-pay]')
+                if (goRegPay && root.contains(goRegPay)) {
+                    e.preventDefault()
+                    const presetLid = goRegPay.getAttribute('data-loan-id') || ''
+                    try {
+                        sessionStorage.setItem('nexo_payment_loan_preset', presetLid)
+                    } catch (_) {}
+                    if (portalSidebar) portalSidebar.setActiveNavOnly('loans')
+                    void loadPortalView('loans', { pushState: true })
+                    return
+                }
                 const portalNav = e.target.closest('[data-portal-view]')
                 if (portalNav && root.contains(portalNav)) {
                     e.preventDefault()
@@ -1117,16 +2064,39 @@
                     void loadPortalView('loans', { pushState: true })
                     return
                 }
+                const payFocusBtn = e.target.closest('[data-loans-focus-payment]')
+                if (payFocusBtn && root.contains(payFocusBtn)) {
+                    e.preventDefault()
+                    focusLoanPaymentForm(root, '')
+                    return
+                }
                 const pbtn = e.target.closest('.period-toggle__btn')
                 if (pbtn && root.contains(pbtn)) {
                     root.querySelectorAll('.period-toggle__btn').forEach((b) => b.classList.remove('is-active'))
                     pbtn.classList.add('is-active')
+                    renderDashboardView()
                     return
                 }
                 const ap = e.target.closest('.analytics-period__btn')
                 if (ap && root.contains(ap)) {
                     root.querySelectorAll('.analytics-period__btn').forEach((b) => b.classList.remove('is-active'))
                     ap.classList.add('is-active')
+                    renderAnalyticsView()
+                    return
+                }
+                const loanMenuBtn = e.target.closest('.loan-menu-btn[data-loan-id]')
+                if (loanMenuBtn && root.contains(loanMenuBtn)) {
+                    e.preventDefault()
+                    const lid = loanMenuBtn.getAttribute('data-loan-id')
+                    if (lid) navigateToLoanDetail(lid)
+                    return
+                }
+                const clientHistBtn = e.target.closest('.clients-menu-btn[data-client-id]')
+                if (clientHistBtn && root.contains(clientHistBtn)) {
+                    e.preventDefault()
+                    const cid = clientHistBtn.getAttribute('data-client-id')
+                    if (cid) openClientHistoryModal(cid)
+                    return
                 }
             })
 
@@ -1190,6 +2160,7 @@
                     }))
                     const loan = {
                         id: randomId('loan'),
+                        reference: nextLoanReference(state),
                         client_id: client.id,
                         client_name: client.name,
                         product: payload.producto || 'hipotecario',
@@ -1207,11 +2178,12 @@
                     }
                     state.loans.unshift(loan)
                     writeLoanSystemState(state)
-                    console.info('[Nexo] Solicitud de préstamo creada', loan)
+                    refreshHeaderNotificationBadge()
+                    console.info('[Nexo] Préstamo creado en cartera local', loan)
                     try {
                         localStorage.removeItem('nexo_loan_request_draft')
                     } catch (_) {}
-                    alert(`Solicitud registrada. Se generaron ${loan.installments.length} cuotas automáticas para ${client.name}.`)
+                    alert(`Préstamo creado y guardado. Se generaron ${loan.installments.length} cuotas para ${client.name}.`)
                     form.reset()
                     const defaultFreq = form.querySelector('#lr-payment-frequency')
                     if (defaultFreq) defaultFreq.value = state.settings.payment_frequency || 'monthly'
@@ -1263,6 +2235,7 @@
                     renderDashboardView()
                     renderAnalyticsView()
                     renderClientsView()
+                    refreshHeaderNotificationBadge()
                     return
                 }
                 if (!form.id || !form.id.startsWith('settings-form-')) return
@@ -1354,13 +2327,42 @@
             })
         }
 
-        async function loadPortalView (pageId, { pushState = true } = {}) {
+        async function loadPortalView (pageId, { pushState = true, loanId: loanIdOpt = null } = {}) {
             const url = PORTAL_FRAGMENTS[pageId]
             if (!url) return
             const main = document.getElementById('portal-main')
             if (!main) return
 
+            let resolvedLoanId = loanIdOpt
+            if (pageId === 'loan-detail') {
+                if (!resolvedLoanId) {
+                    try {
+                        resolvedLoanId = new URL(window.location.href).searchParams.get('loanId')
+                    } catch (_) {
+                        resolvedLoanId = null
+                    }
+                }
+                const stCheck = getOrCreateLoanSystemState()
+                if (!resolvedLoanId || !stCheck.loans.some((l) => l.id === resolvedLoanId)) {
+                    await loadPortalView('loans', { pushState: true })
+                    return
+                }
+            }
+
             portalCurrentView = pageId
+
+            if (pushState) {
+                try {
+                    const u = new URL(window.location.href)
+                    u.searchParams.set('view', pageId)
+                    if (pageId === 'loan-detail' && resolvedLoanId) u.searchParams.set('loanId', resolvedLoanId)
+                    else u.searchParams.delete('loanId')
+                    history.pushState({ view: pageId, loanId: pageId === 'loan-detail' ? resolvedLoanId : undefined }, '', u.toString())
+                } catch (err) {
+                    console.warn('[portal] pushState', err)
+                }
+            }
+
             try {
                 const res = await fetch(url, { cache: 'no-store' })
                 if (!res.ok) throw new Error(String(res.status))
@@ -1372,16 +2374,6 @@
             }
 
             document.title = PORTAL_TITLES[pageId] || PORTAL_TITLES.dashboard
-
-            if (pushState) {
-                try {
-                    const u = new URL(window.location.href)
-                    u.searchParams.set('view', pageId)
-                    history.pushState({ view: pageId }, '', u.toString())
-                } catch (err) {
-                    console.warn('[portal] pushState', err)
-                }
-            }
 
             ensurePortalMainDelegation()
 
@@ -1396,11 +2388,31 @@
                 const modeEl = root?.querySelector('#lr-interest-mode')
                 if (modeEl) modeEl.value = state.settings.interest_mode || 'annual'
                 hydrateLoanRequestDraft()
+                const lrForm = document.getElementById('loan-request-form')
+                if (lrForm) {
+                    const onProfit = () => updateLoanProfitPreview()
+                    lrForm.addEventListener('input', onProfit)
+                    lrForm.addEventListener('change', onProfit)
+                    updateLoanProfitPreview()
+                }
             }
             if (pageId === 'dashboard') renderDashboardView()
             if (pageId === 'clients') renderClientsView()
-            if (pageId === 'loans') renderLoansView()
+            if (pageId === 'loans') {
+                renderLoansView()
+                try {
+                    const preset = sessionStorage.getItem('nexo_payment_loan_preset')
+                    if (preset) {
+                        sessionStorage.removeItem('nexo_payment_loan_preset')
+                        window.requestAnimationFrame(() => {
+                            const r = document.getElementById('portal-main')
+                            if (r) focusLoanPaymentForm(r, preset)
+                        })
+                    }
+                } catch (_) {}
+            }
             if (pageId === 'analytics') renderAnalyticsView()
+            if (pageId === 'loan-detail') hydrateLoanDetailView(resolvedLoanId)
 
             const dashboardLike = pageId === 'dashboard'
             if (dashboardLike) {
@@ -1410,28 +2422,30 @@
                     sessionLine.hidden = false
                 }
             }
+
+            if (portalSidebar) {
+                const navHighlight = pageId === 'loan-detail' ? 'loans' : pageId
+                portalSidebar.setActiveNavOnly(navHighlight)
+            }
+            refreshHeaderNotificationBadge()
         }
 
         window.addEventListener('popstate', () => {
             if (!portalSidebar) return
-            const v = getInitialPortalView()
-            portalSidebar.setActiveNavOnly(v)
-            void loadPortalView(v, { pushState: false })
+            void loadPortalView(getInitialPortalView(), { pushState: false })
         })
 
         window.addEventListener('DOMContentLoaded', async () => {
             const initialView = getInitialPortalView()
             getOrCreateLoanSystemState()
             wirePortalSearch()
+            wireClientHistoryDialog()
+            wireHeaderNotifications()
+            refreshHeaderNotificationBadge()
 
             portalSidebar = new Sidebar({
                 variant: 'portal',
-                activePage: initialView,
-                portalProfile: {
-                    name: 'Marcus Thorne',
-                    role: 'Analista senior — underwriting',
-                    initials: 'MT'
-                },
+                activePage: initialView === 'loan-detail' ? 'loans' : initialView,
                 onNavigate: portalNavigate
             })
 

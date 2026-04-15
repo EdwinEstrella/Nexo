@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "build:ico": "node scripts/build-windows-icon.cjs"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
@@ -18,7 +19,9 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron/fuses": "^1.8.0",
-    "electron": "^41.1.1"
+    "electron": "^41.1.1",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5"
   },
   "dependencies": {
     "@insforge/sdk": "^1.2.4"
