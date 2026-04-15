@@ -45,6 +45,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return Promise.resolve({ ok: false, error: 'Payload de impresión inválido' })
     }
     return ipcRenderer.invoke('print:thermal', opts)
+  },
+  checkForUpdates: () => ipcRenderer.send('update:check-for-updates'),
+  downloadUpdate: () => ipcRenderer.send('update:download-update'),
+  installUpdate: () => ipcRenderer.send('update:install-update'),
+  getUpdateState: () => ipcRenderer.invoke('update:get-state'),
+  onUpdateEvents: (handlers = {}) => {
+    const subs = []
+    const bind = (channel, key, map = (x) => x) => {
+      if (typeof handlers[key] !== 'function') return
+      const fn = (_event, payload) => handlers[key](map(payload))
+      ipcRenderer.on(channel, fn)
+      subs.push(() => ipcRenderer.removeListener(channel, fn))
+    }
+    bind('update:checking', 'onChecking')
+    bind('update:available', 'onUpdateAvailable')
+    bind('update:not-available', 'onUpdateNotAvailable')
+    bind('update:download-progress', 'onDownloadProgress')
+    bind('update:downloaded', 'onUpdateDownloaded')
+    bind('update:error', 'onUpdateError', (x) => String(x || 'Error desconocido'))
+    return () => {
+      subs.forEach((unsub) => {
+        try { unsub() } catch (_) {}
+      })
+    }
   }
 })
 

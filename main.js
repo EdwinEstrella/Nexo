@@ -2,6 +2,83 @@ const { app, BrowserWindow, ipcMain } = require('electron/main')
 const { nativeImage } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
+const { autoUpdater } = require('electron-updater')
+const log = require('electron-log')
+
+const UPDATE_STATE_FILE = 'updater-state.json'
+
+function normalizeVersion (value) {
+  return String(value || '').trim().replace(/^v/i, '')
+}
+
+function getUpdateStateFilePath () {
+  return path.join(app.getPath('userData'), UPDATE_STATE_FILE)
+}
+
+function loadPersistedUpdateState () {
+  try {
+    const fp = getUpdateStateFilePath()
+    if (!fs.existsSync(fp)) return {}
+    const raw = fs.readFileSync(fp, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') return parsed
+    return {}
+  } catch (_) {
+    return {}
+  }
+}
+
+function savePersistedUpdateState (partial) {
+  try {
+    const fp = getUpdateStateFilePath()
+    const current = loadPersistedUpdateState()
+    const next = { ...current, ...partial }
+    fs.writeFileSync(fp, JSON.stringify(next, null, 2), 'utf8')
+    return next
+  } catch (err) {
+    console.warn('[updater:save-state]', err?.message || err)
+    return null
+  }
+}
+
+function clearPersistedUpdateState () {
+  try {
+    const fp = getUpdateStateFilePath()
+    if (fs.existsSync(fp)) fs.unlinkSync(fp)
+  } catch (err) {
+    console.warn('[updater:clear-state]', err?.message || err)
+  }
+}
+
+const updateRuntimeState = {
+  phase: 'idle',
+  remoteVersion: null,
+  percent: 0,
+  downloadedVersion: null,
+  releaseDate: null,
+  releaseNotes: null,
+  error: null,
+  updatedAt: null
+}
+
+function setUpdateState (patch) {
+  Object.assign(updateRuntimeState, patch || {}, { updatedAt: new Date().toISOString() })
+}
+
+function getTargetWindow () {
+  const focused = BrowserWindow.getFocusedWindow()
+  if (focused && !focused.isDestroyed()) return focused
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow
+  const all = BrowserWindow.getAllWindows()
+  return all.find((w) => !w.isDestroyed()) || null
+}
+
+function sendUpdateEvent (channel, payload) {
+  const w = getTargetWindow()
+  if (w) w.webContents.send(channel, payload)
+}
+
+let autoUpdaterConfigured = false
 
 function resolveWindowIcon () {
   const pngPath = path.join(__dirname, 'Logo.png')
@@ -284,6 +361,176 @@ function createWindow () {
 
   mainWindow.on('unmaximize', () => {
     mainWindow.webContents.send('window-maximized', false)
+  })
+}
+
+function setupAutoUpdater () {
+  if (autoUpdaterConfigured) return
+  autoUpdaterConfigured = true
+
+  autoUpdater.logger = log
+  autoUpdater.logger.transports.file.level = 'info'
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = false
+
+  if (process.platform === 'win32' && !process.env.CSC_LINK && !process.env.WIN_CSC_LINK) {
+    autoUpdater.verifyUpdateCodeSignature = false
+  }
+
+  const persisted = loadPersistedUpdateState()
+  const currentVersion = normalizeVersion(app.getVersion())
+  const cachedDownloaded = normalizeVersion(persisted.downloadedVersion)
+  if (cachedDownloaded && cachedDownloaded !== currentVersion) {
+    setUpdateState({
+      phase: 'ready',
+      downloadedVersion: cachedDownloaded,
+      remoteVersion: cachedDownloaded,
+      releaseDate: persisted.releaseDate || null,
+      releaseNotes: persisted.releaseNotes || null,
+      percent: 100,
+      error: null
+    })
+  } else if (cachedDownloaded && cachedDownloaded === currentVersion) {
+    clearPersistedUpdateState()
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    if (updateRuntimeState.phase === 'ready') return
+    setUpdateState({ phase: 'checking', error: null })
+    sendUpdateEvent('update:checking')
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    setUpdateState({
+      phase: 'available',
+      remoteVersion: normalizeVersion(info.version),
+      releaseDate: info.releaseDate || null,
+      releaseNotes: info.releaseNotes || null,
+      error: null,
+      percent: 0
+    })
+    sendUpdateEvent('update:available', {
+      version: normalizeVersion(info.version),
+      releaseDate: info.releaseDate,
+      releaseNotes: info.releaseNotes
+    })
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    if (updateRuntimeState.phase === 'ready') {
+      sendUpdateEvent('update:downloaded', {
+        version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
+        releaseDate: updateRuntimeState.releaseDate,
+        releaseNotes: updateRuntimeState.releaseNotes
+      })
+      return
+    }
+    setUpdateState({
+      phase: 'idle',
+      remoteVersion: null,
+      percent: 0,
+      error: null
+    })
+    sendUpdateEvent('update:not-available')
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    const pct = Math.max(0, Math.min(100, Math.round(progress.percent || 0)))
+    setUpdateState({
+      phase: 'downloading',
+      percent: pct,
+      error: null
+    })
+    sendUpdateEvent('update:download-progress', {
+      percent: pct,
+      transferred: progress.transferred,
+      total: progress.total,
+      bytesPerSecond: progress.bytesPerSecond
+    })
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    const v = normalizeVersion(info.version)
+    setUpdateState({
+      phase: 'ready',
+      downloadedVersion: v,
+      remoteVersion: v,
+      percent: 100,
+      releaseDate: info.releaseDate || null,
+      releaseNotes: info.releaseNotes || null,
+      error: null
+    })
+    savePersistedUpdateState({
+      downloadedVersion: v,
+      releaseDate: info.releaseDate || null,
+      releaseNotes: info.releaseNotes || null,
+      downloadedAt: new Date().toISOString()
+    })
+    sendUpdateEvent('update:downloaded', {
+      version: v,
+      releaseDate: info.releaseDate,
+      releaseNotes: info.releaseNotes
+    })
+  })
+
+  autoUpdater.on('error', (err) => {
+    const msg = err?.message ? String(err.message) : String(err)
+    setUpdateState({
+      phase: updateRuntimeState.phase === 'ready' ? 'ready' : 'idle',
+      error: msg
+    })
+    sendUpdateEvent('update:error', msg)
+  })
+
+  ipcMain.on('update:check-for-updates', () => {
+    if (!app.isPackaged) {
+      setUpdateState({ phase: 'unsupported', error: 'Actualizaciones disponibles solo en app empaquetada' })
+      sendUpdateEvent('update:error', 'Actualizaciones disponibles solo en app empaquetada')
+      return
+    }
+    if (updateRuntimeState.phase === 'ready') {
+      sendUpdateEvent('update:downloaded', {
+        version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
+        releaseDate: updateRuntimeState.releaseDate,
+        releaseNotes: updateRuntimeState.releaseNotes
+      })
+      return
+    }
+    void autoUpdater.checkForUpdates().catch((err) => {
+      const msg = err?.message ? String(err.message) : String(err)
+      setUpdateState({ phase: 'idle', error: msg })
+      sendUpdateEvent('update:error', msg)
+    })
+  })
+
+  ipcMain.on('update:download-update', () => {
+    if (!app.isPackaged) {
+      sendUpdateEvent('update:error', 'Actualizaciones disponibles solo en app empaquetada')
+      return
+    }
+    if (updateRuntimeState.phase === 'ready') {
+      sendUpdateEvent('update:downloaded', {
+        version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
+        releaseDate: updateRuntimeState.releaseDate,
+        releaseNotes: updateRuntimeState.releaseNotes
+      })
+      return
+    }
+    if (updateRuntimeState.phase === 'available' || updateRuntimeState.phase === 'downloading') {
+      void autoUpdater.downloadUpdate().catch((err) => {
+        const msg = err?.message ? String(err.message) : String(err)
+        setUpdateState({ phase: 'idle', error: msg })
+        sendUpdateEvent('update:error', msg)
+      })
+    }
+  })
+
+  ipcMain.on('update:install-update', () => {
+    autoUpdater.quitAndInstall(false, true)
+  })
+
+  ipcMain.handle('update:get-state', async () => {
+    return { ...updateRuntimeState }
   })
 }
 
@@ -1012,6 +1259,16 @@ bootstrap()
   .then(() => {
     app.whenReady().then(() => {
       createWindow()
+      setupAutoUpdater()
+      if (app.isPackaged && updateRuntimeState.phase !== 'ready') {
+        setTimeout(() => {
+          void autoUpdater.checkForUpdates().catch((err) => {
+            console.warn('[updater:auto-check]', err?.message || err)
+          })
+        }, 3500)
+      } else if (!app.isPackaged) {
+        setUpdateState({ phase: 'unsupported' })
+      }
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

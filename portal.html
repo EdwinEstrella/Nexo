@@ -252,6 +252,75 @@
             background: #ffdad6;
             color: #93000a;
         }
+        .app-update-card {
+            position: fixed;
+            right: 20px;
+            bottom: 18px;
+            width: min(360px, calc(100vw - 28px));
+            z-index: 2200;
+            border-radius: 14px;
+            border: 1px solid #d8e3fb;
+            background: #ffffff;
+            box-shadow: 0 16px 40px rgba(0, 14, 36, 0.2);
+            padding: 14px;
+            display: none;
+        }
+        .app-update-card.is-visible {
+            display: block;
+        }
+        .app-update-card__title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            color: #001a38;
+            margin-bottom: 6px;
+        }
+        .app-update-card__meta {
+            font-size: 13px;
+            color: #4f5c72;
+            line-height: 1.45;
+        }
+        .app-update-progress {
+            margin-top: 12px;
+            background: #e9eef8;
+            border-radius: 999px;
+            overflow: hidden;
+            height: 8px;
+        }
+        .app-update-progress__bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00357a, #85f8c4);
+            transition: width 0.2s ease-out;
+        }
+        .app-update-card__row {
+            margin-top: 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .app-update-btn {
+            border: 0;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+        .app-update-btn--ghost {
+            background: #edf1fa;
+            color: #29405f;
+        }
+        .app-update-btn--primary {
+            background: #00234b;
+            color: #fff;
+        }
+        .app-update-btn[disabled] {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
         @media (max-width: 900px) {
             .titlebar { left: 0; }
             .main-content {
@@ -331,6 +400,18 @@
         </div>
     </dialog>
 
+    <aside id="app-update-card" class="app-update-card" aria-live="polite" aria-label="Actualizaciones de la aplicación">
+        <div class="app-update-card__title" id="app-update-title">Actualización disponible</div>
+        <div class="app-update-card__meta" id="app-update-meta"></div>
+        <div class="app-update-progress" id="app-update-progress" hidden>
+            <div class="app-update-progress__bar" id="app-update-progress-bar"></div>
+        </div>
+        <div class="app-update-card__row">
+            <button type="button" class="app-update-btn app-update-btn--ghost" id="app-update-secondary-btn"></button>
+            <button type="button" class="app-update-btn app-update-btn--primary" id="app-update-primary-btn"></button>
+        </div>
+    </aside>
+
     <script src="components/auth-roles.js"></script>
     <script src="components/sidebar.js"></script>
     <script src="thermal-invoice.js"></script>
@@ -396,6 +477,164 @@
             { id: 'settings-data', title: 'Configuración · Datos y privacidad', meta: 'Retención y privacidad', view: 'settings', settingsTab: 'datos', keywords: 'datos privacidad retencion dpo exportar' },
             { id: 'settings-credit', title: 'Configuración · Políticas de crédito', meta: 'Mora, días de gracia, frecuencia, interés', view: 'settings', settingsTab: 'avanzado', focusSelector: '#settings-form-credit-policy', keywords: 'mora gracia interes frecuencia credito politicas' }
         ]
+
+        const appUpdateUi = {
+            phase: 'idle',
+            version: null,
+            percent: 0,
+            accepted: false
+        }
+
+        function renderAppUpdateCard () {
+            const card = document.getElementById('app-update-card')
+            const title = document.getElementById('app-update-title')
+            const meta = document.getElementById('app-update-meta')
+            const progress = document.getElementById('app-update-progress')
+            const progressBar = document.getElementById('app-update-progress-bar')
+            const primary = document.getElementById('app-update-primary-btn')
+            const secondary = document.getElementById('app-update-secondary-btn')
+            if (!card || !title || !meta || !progress || !progressBar || !primary || !secondary) return
+
+            const v = appUpdateUi.version ? `v${appUpdateUi.version}` : 'nueva versión'
+            const phase = appUpdateUi.phase
+            let visible = false
+
+            progress.hidden = true
+            progressBar.style.width = `${Math.max(0, Math.min(100, appUpdateUi.percent || 0))}%`
+            secondary.hidden = false
+            secondary.disabled = false
+            primary.disabled = false
+
+            if (phase === 'available') {
+                visible = true
+                title.textContent = `Hay una actualización (${v})`
+                meta.textContent = 'Se detectó una nueva versión. Si aceptas, inicia la descarga en segundo plano.'
+                primary.textContent = 'Aceptar'
+                secondary.textContent = 'Más tarde'
+            } else if (phase === 'downloading') {
+                visible = true
+                title.textContent = `Descargando ${v}`
+                meta.textContent = `Progreso ${Math.round(appUpdateUi.percent || 0)}%. Puedes seguir usando la app.`
+                progress.hidden = false
+                primary.textContent = 'Descargando…'
+                primary.disabled = true
+                secondary.textContent = 'Ocultar'
+            } else if (phase === 'ready') {
+                visible = true
+                title.textContent = `Listo para actualizar (${v})`
+                meta.textContent = 'La actualización ya se descargó. No volverá a descargarse al abrir de nuevo.'
+                progress.hidden = false
+                progressBar.style.width = '100%'
+                primary.textContent = 'Actualizar ahora'
+                secondary.textContent = 'Después'
+            } else if (phase === 'error') {
+                visible = true
+                title.textContent = 'No se pudo actualizar'
+                meta.textContent = 'Hubo un problema al buscar o descargar la actualización.'
+                primary.textContent = 'Reintentar'
+                secondary.textContent = 'Cerrar'
+            }
+
+            card.classList.toggle('is-visible', visible)
+        }
+
+        function setAppUpdatePhase (phase, extra = {}) {
+            appUpdateUi.phase = phase
+            if (extra.version !== undefined) appUpdateUi.version = extra.version
+            if (extra.percent !== undefined) appUpdateUi.percent = Number(extra.percent) || 0
+            if (extra.accepted !== undefined) appUpdateUi.accepted = !!extra.accepted
+            renderAppUpdateCard()
+        }
+
+        async function hydrateAppUpdaterState () {
+            const api = window.electronAPI
+            if (!api?.getUpdateState) return
+            try {
+                const state = await api.getUpdateState()
+                if (!state || typeof state !== 'object') return
+                if (state.remoteVersion) appUpdateUi.version = String(state.remoteVersion)
+                if (state.downloadedVersion) appUpdateUi.version = String(state.downloadedVersion)
+                if (state.phase === 'ready') {
+                    setAppUpdatePhase('ready', { percent: 100 })
+                } else if (state.phase === 'downloading') {
+                    setAppUpdatePhase('downloading', { percent: Number(state.percent) || 0 })
+                } else if (state.phase === 'available') {
+                    setAppUpdatePhase('available', { accepted: false, percent: 0 })
+                } else if (state.phase === 'error') {
+                    setAppUpdatePhase('error')
+                }
+            } catch (_) {}
+        }
+
+        function wireAppUpdaterEvents () {
+            const api = window.electronAPI
+            if (!api?.onUpdateEvents) return () => {}
+            return api.onUpdateEvents({
+                onChecking: () => {},
+                onUpdateAvailable: (info) => {
+                    setAppUpdatePhase('available', {
+                        version: info?.version ? String(info.version) : appUpdateUi.version,
+                        accepted: false,
+                        percent: 0
+                    })
+                },
+                onUpdateNotAvailable: () => {
+                    if (appUpdateUi.phase !== 'ready') setAppUpdatePhase('idle')
+                },
+                onDownloadProgress: (p) => {
+                    setAppUpdatePhase('downloading', {
+                        percent: Number(p?.percent) || 0
+                    })
+                },
+                onUpdateDownloaded: (info) => {
+                    setAppUpdatePhase('ready', {
+                        version: info?.version ? String(info.version) : appUpdateUi.version,
+                        percent: 100
+                    })
+                },
+                onUpdateError: () => {
+                    if (appUpdateUi.phase !== 'ready') setAppUpdatePhase('error')
+                }
+            })
+        }
+
+        function wireAppUpdaterActions () {
+            const card = document.getElementById('app-update-card')
+            const primary = document.getElementById('app-update-primary-btn')
+            const secondary = document.getElementById('app-update-secondary-btn')
+            if (!card || !primary || !secondary || card.dataset.wired === '1') return
+            card.dataset.wired = '1'
+
+            primary.addEventListener('click', () => {
+                const api = window.electronAPI
+                if (!api) return
+                if (appUpdateUi.phase === 'available') {
+                    setAppUpdatePhase('downloading', { accepted: true, percent: 0 })
+                    api.downloadUpdate?.()
+                    return
+                }
+                if (appUpdateUi.phase === 'ready') {
+                    api.installUpdate?.()
+                    return
+                }
+                if (appUpdateUi.phase === 'error') {
+                    setAppUpdatePhase('idle')
+                    api.checkForUpdates?.()
+                }
+            })
+
+            secondary.addEventListener('click', () => {
+                if (appUpdateUi.phase === 'downloading') {
+                    card.classList.remove('is-visible')
+                    return
+                }
+                if (appUpdateUi.phase === 'ready') {
+                    card.classList.remove('is-visible')
+                    return
+                }
+                setAppUpdatePhase('idle')
+            })
+        }
 
         function readProfilePrefs () {
             try {
@@ -2856,6 +3095,8 @@
             wireClientHistoryDialog()
             wireHeaderNotifications()
             refreshHeaderNotificationBadge()
+            wireAppUpdaterActions()
+            const stopUpdateEvents = wireAppUpdaterEvents()
 
             portalSidebar = new Sidebar({
                 variant: 'portal',
@@ -2912,7 +3153,16 @@
                 console.warn('[Nexo cartera]', loadRes.error)
             }
 
+            await hydrateAppUpdaterState()
+            if (window.electronAPI?.checkForUpdates && appUpdateUi.phase !== 'ready') {
+                window.electronAPI.checkForUpdates()
+            }
+
             await loadPortalView(initialView, { pushState: false })
+
+            window.addEventListener('beforeunload', () => {
+                try { stopUpdateEvents?.() } catch (_) {}
+            }, { once: true })
         })
 
         const updateMaximizeIcon = (isMaximized) => {
