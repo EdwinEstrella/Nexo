@@ -1311,9 +1311,10 @@
 
             const msDay = 1000 * 60 * 60 * 24
             const rawDaysLate = basePending > 0 ? Math.floor((now - due) / msDay) : 0
-            const grace = Number(policy.grace_days) || 0
+            const grace = loan?.grace_days != null ? Number(loan.grace_days) || 0 : (Number(policy.grace_days) || 0)
+            const lateFeePercent = loan?.late_fee_percent != null ? Number(loan.late_fee_percent) || 0 : (Number(policy.late_fee_percent) || 0)
             const lateDays = Math.max(0, rawDaysLate - grace)
-            const lateFeeAccrued = basePending > 0 ? basePending * ((Number(policy.late_fee_percent) || 0) / 100) * lateDays : 0
+            const lateFeeAccrued = basePending > 0 ? basePending * (lateFeePercent / 100) * lateDays : 0
             const pendingLateFee = Math.max(0, lateFeeAccrued - paidLateFee)
             const pendingTotal = basePending + pendingLateFee
 
@@ -1334,7 +1335,9 @@
                 pendingTotal: Number(pendingTotal.toFixed(2)),
                 status,
                 daysLate: rawDaysLate,
-                lateDays
+                lateDays,
+                graceDays: grace,
+                lateFeePercent
             }
         }
 
@@ -1383,17 +1386,26 @@
 
         function buildAutoNotifications (state, now = new Date()) {
             const out = []
-            const reminderDays = Number(state.settings.reminder_days) || 0
-            const msDay = 1000 * 60 * 60 * 24
+            const nowDate = now.toISOString().slice(0, 10)
             state.loans.forEach((loan) => {
                 const loanSummary = summarizeLoan(loan, state, now)
                 loanSummary.items.forEach((inst) => {
                     if (inst.status === 'pagado') return
-                    const due = new Date(`${inst.due_date}T00:00:00`)
-                    const days = Math.ceil((due - now) / msDay)
-                    if (days === reminderDays) out.push({ type: 'recordatorio', text: `Recordatorio: cuota ${inst.n} de ${loan.client_name} vence en ${days} día(s).` })
-                    if (inst.status === 'atrasado') out.push({ type: 'atraso', text: `Atraso detectado: cuota ${inst.n} de ${loan.client_name} está vencida.` })
-                    if (inst.status === 'mora') out.push({ type: 'mora', text: `Mora generada: cuota ${inst.n} de ${loan.client_name}, recargo ${fmtMoney(inst.lateFeeAccrued)}.` })
+                    const dueIso = String(inst.due_date || '').slice(0, 10)
+                    const isDueToday = inst.status === 'pendiente' && dueIso === nowDate
+                    if (inst.status === 'atrasado' || inst.status === 'mora') {
+                        out.push({
+                            type: 'atraso',
+                            text: `Actualización de atraso: cuota ${inst.n} de ${loan.client_name} pendiente por ${fmtMoney(inst.pendingTotal)}.`
+                        })
+                        return
+                    }
+                    if (isDueToday) {
+                        out.push({
+                            type: 'pago_hoy',
+                            text: `Pago exigible hoy: cuota ${inst.n} de ${loan.client_name} por ${fmtMoney(inst.pendingTotal)}.`
+                        })
+                    }
                 })
             })
             return out.slice(0, 8)
@@ -1690,6 +1702,18 @@
                         <div class="loan-inst-kpi__val">${sum.next ? `#${sum.next.n} · ${dateLabel(sum.next.due_date)}` : '—'}</div>
                         <div class="loan-inst-kpi__lab">Próxima cuota</div>
                     </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${Number(loan.interest_rate_pct || 0).toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%</div>
+                        <div class="loan-inst-kpi__lab">Interés personalizado</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${Number(loan.grace_days != null ? loan.grace_days : state.settings.grace_days) || 0} día(s)</div>
+                        <div class="loan-inst-kpi__lab">Días de gracia</div>
+                    </div>
+                    <div class="loan-inst-kpi" role="listitem">
+                        <div class="loan-inst-kpi__val">${Number(loan.late_fee_percent != null ? loan.late_fee_percent : state.settings.late_fee_percent || 0).toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%</div>
+                        <div class="loan-inst-kpi__lab">Mora diaria</div>
+                    </div>
                 </div>
                 <section class="loan-inst-section" aria-label="Calendario de cuotas">
                     <h3 class="loan-inst-section__title">Detalle por cuota</h3>
@@ -1736,7 +1760,9 @@
             const sum = summarizeLoan(loan, state, new Date())
             if (titleEl) titleEl.textContent = loan.client_name
             if (subEl) {
-                subEl.textContent = `${displayLoanRef(loan)} · ${loan.product || 'hipotecario'} · ${fmtMoney(loan.principal)} · ${loan.interest_rate_pct ?? '—'}% anual · ${loan.term_months} meses`
+                const graceDays = Number(loan.grace_days != null ? loan.grace_days : state.settings.grace_days) || 0
+                const lateFeePercent = Number(loan.late_fee_percent != null ? loan.late_fee_percent : state.settings.late_fee_percent) || 0
+                subEl.textContent = `${displayLoanRef(loan)} · ${loan.product || 'hipotecario'} · ${fmtMoney(loan.principal)} · ${loan.interest_rate_pct ?? '—'}% anual · gracia ${graceDays} día(s) · mora ${lateFeePercent}% diario · ${loan.term_months} meses`
             }
             mount.innerHTML = renderLoanInstallmentsModalHtml(loan, sum, state)
             document.title = `${loan.client_name} — ${displayLoanRef(loan)} · Lending Ledger`
@@ -1867,44 +1893,61 @@
         function getHeaderPaymentDueRows () {
             const state = getLoanState()
             const now = new Date()
+            const todayIso = now.toISOString().slice(0, 10)
             const map = new Map()
             state.loans.forEach((loan) => {
                 const client = state.clients.find((c) => c.id === loan.client_id)
                 if (!client) return
                 const sum = summarizeLoan(loan, state, now)
-                if (sum.pending <= 0.009) return
+                const overdueItems = sum.items.filter((it) => it.status === 'atrasado' || it.status === 'mora')
+                const dueTodayItems = sum.items.filter((it) => it.status === 'pendiente' && String(it.due_date || '').slice(0, 10) === todayIso)
+                if (!overdueItems.length && !dueTodayItems.length) return
+                const overdueTotal = overdueItems.reduce((s, it) => s + (Number(it.pendingTotal) || 0), 0)
+                const dueTodayTotal = dueTodayItems.reduce((s, it) => s + (Number(it.pendingTotal) || 0), 0)
                 const moraAmt = Number(sum.mora) || 0
-                const moroso = sum.status === 'moroso' || moraAmt > 0.009
+                const hasOverdue = overdueTotal > 0.009
+                const hasDueToday = dueTodayTotal > 0.009
+                const notifyAmount = hasOverdue ? overdueTotal : dueTodayTotal
                 const existing = map.get(loan.client_id)
                 if (!existing) {
                     map.set(loan.client_id, {
                         clientId: loan.client_id,
                         name: client.name,
-                        pending: sum.pending,
+                        pending: notifyAmount,
+                        overdue: Number(overdueTotal.toFixed(2)),
+                        dueToday: Number(dueTodayTotal.toFixed(2)),
                         mora: moraAmt,
-                        moroso,
+                        hasOverdue,
+                        hasDueToday,
                         primaryLoanId: loan.id,
-                        _primaryLoanPending: sum.pending,
-                        _primaryLoanMoroso: moroso
+                        _primaryLoanPending: notifyAmount,
+                        _primaryLoanOverdue: hasOverdue
                     })
                     return
                 }
-                existing.pending += sum.pending
+                existing.pending += notifyAmount
+                existing.overdue += overdueTotal
+                existing.dueToday += dueTodayTotal
                 existing.mora += moraAmt
-                existing.moroso = existing.moroso || moroso
+                existing.hasOverdue = existing.hasOverdue || hasOverdue
+                existing.hasDueToday = existing.hasDueToday || hasDueToday
                 const preferThis =
-                    sum.pending > existing._primaryLoanPending + 0.005 ||
-                    (Math.abs(sum.pending - existing._primaryLoanPending) <= 0.005 &&
-                        moroso && !existing._primaryLoanMoroso)
+                    notifyAmount > existing._primaryLoanPending + 0.005 ||
+                    (Math.abs(notifyAmount - existing._primaryLoanPending) <= 0.005 &&
+                        hasOverdue && !existing._primaryLoanOverdue)
                 if (preferThis) {
                     existing.primaryLoanId = loan.id
-                    existing._primaryLoanPending = sum.pending
-                    existing._primaryLoanMoroso = moroso
+                    existing._primaryLoanPending = notifyAmount
+                    existing._primaryLoanOverdue = hasOverdue
                 }
             })
             return [...map.values()]
-                .map(({ _primaryLoanPending, _primaryLoanMoroso, ...r }) => r)
-                .sort((a, b) => b.pending - a.pending)
+                .map(({ _primaryLoanPending, _primaryLoanOverdue, ...r }) => r)
+                .sort((a, b) => {
+                    const scoreA = (a.hasOverdue ? 1_000_000 : 0) + a.pending
+                    const scoreB = (b.hasOverdue ? 1_000_000 : 0) + b.pending
+                    return scoreB - scoreA
+                })
                 .slice(0, 25)
         }
 
@@ -1918,18 +1961,21 @@
         function renderHeaderNotificationsContent (panel) {
             const rows = getHeaderPaymentDueRows()
             if (!rows.length) {
-                panel.innerHTML = '<div class="portal-header-notifications__head">Cobranza</div><div class="portal-header-notifications__empty">No hay saldos pendientes en cartera.</div>'
+                panel.innerHTML = '<div class="portal-header-notifications__head">Cobranza</div><div class="portal-header-notifications__empty">No hay atrasos ni cuotas exigibles hoy.</div>'
                 return
             }
-            const head = '<div class="portal-header-notifications__head">Clientes con saldo pendiente</div>'
+            const head = '<div class="portal-header-notifications__head">Cobranza: atrasos y pagos de hoy</div>'
             const body = rows.map((r) => {
                 const moraLine = r.mora > 0.009
                     ? `<span class="portal-header-notifications__meta portal-header-notifications__meta--warn">Mora pendiente ${fmtMoney(r.mora)}</span>`
-                    : '<span class="portal-header-notifications__meta">Sin mora pendiente</span>'
-                const pill = r.moroso ? '<span class="portal-header-notifications__pill">Moroso</span>' : ''
+                    : ''
+                const modeLine = r.hasOverdue
+                    ? `<span class="portal-header-notifications__amount">En atraso ${fmtMoney(r.overdue || r.pending)}</span>`
+                    : `<span class="portal-header-notifications__amount">Pago de hoy ${fmtMoney(r.dueToday || r.pending)}</span>`
+                const pill = r.hasOverdue ? '<span class="portal-header-notifications__pill">Atraso</span>' : '<span class="portal-header-notifications__pill">Pago hoy</span>'
                 return `<button type="button" class="portal-header-notifications__item" data-notif-loan-id="${r.primaryLoanId}" role="menuitem">
                     <span class="portal-header-notifications__title">${r.name}</span>
-                    <span class="portal-header-notifications__amount">Debe ${fmtMoney(r.pending)}</span>
+                    ${modeLine}
                     ${pill}
                     ${moraLine}
                 </button>`
@@ -2849,6 +2895,8 @@
                         principal: parseCurrencyAmount(payload.monto_solicitado || '0'),
                         term_months: Number(payload.plazo_meses) || 12,
                         interest_rate_pct: Number(payload.interes_porcentaje) || 0,
+                        late_fee_percent: Number(payload.late_fee_percent) || Number(state.settings.late_fee_percent) || 0,
+                        grace_days: Math.max(0, Number(payload.grace_days)),
                         interest_mode: interestMode,
                         payment_frequency: paymentFrequency,
                         start_date: payload.fecha_inicio || isoToday()
@@ -2868,6 +2916,8 @@
                         principal: loanInput.principal,
                         term_months: loanInput.term_months,
                         interest_rate_pct: loanInput.interest_rate_pct,
+                        late_fee_percent: loanInput.late_fee_percent,
+                        grace_days: Number.isFinite(loanInput.grace_days) ? loanInput.grace_days : (Number(state.settings.grace_days) || 0),
                         interest_mode: loanInput.interest_mode,
                         payment_frequency: loanInput.payment_frequency,
                         start_date: loanInput.start_date,
@@ -3219,6 +3269,10 @@
                 if (freqEl) freqEl.value = state.settings.payment_frequency || 'monthly'
                 const modeEl = root?.querySelector('#lr-interest-mode')
                 if (modeEl) modeEl.value = state.settings.interest_mode || 'annual'
+                const graceEl = root?.querySelector('#lr-grace-days')
+                if (graceEl) graceEl.value = String(Number(state.settings.grace_days) || 0)
+                const lateFeeEl = root?.querySelector('#lr-late-fee-percent')
+                if (lateFeeEl) lateFeeEl.value = String(Number(state.settings.late_fee_percent) || 0)
                 hydrateLoanRequestDraft()
                 const lrForm = document.getElementById('loan-request-form')
                 if (lrForm) {
