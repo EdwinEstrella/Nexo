@@ -650,6 +650,7 @@
         // Checkbox functionality
         const checkbox = document.getElementById('remember-checkbox')
         const REMEMBER_LOGIN_KEY = 'nexo_remember_login'
+        const REMEMBER_CREDENTIALS_KEY = 'nexo_remember_credentials'
         const RUNTIME_SESSION_KEY = 'nexo_runtime_session'
 
         function readRememberPreference () {
@@ -668,11 +669,52 @@
             } catch (_) {}
         }
 
+        function readRememberCredentials () {
+            try {
+                const raw = localStorage.getItem(REMEMBER_CREDENTIALS_KEY)
+                if (!raw) return null
+                const parsed = JSON.parse(raw)
+                if (!parsed || typeof parsed !== 'object') return null
+                const email = typeof parsed.email === 'string' ? parsed.email : ''
+                const password = typeof parsed.password === 'string' ? parsed.password : ''
+                if (!email || !password) return null
+                return { email, password }
+            } catch (_) {
+                return null
+            }
+        }
+
+        function writeRememberCredentials ({ email, password }) {
+            try {
+                localStorage.setItem(REMEMBER_CREDENTIALS_KEY, JSON.stringify({
+                    email: String(email || '').trim(),
+                    password: String(password || '')
+                }))
+            } catch (_) {}
+        }
+
+        function clearRememberCredentials () {
+            try {
+                localStorage.removeItem(REMEMBER_CREDENTIALS_KEY)
+            } catch (_) {}
+        }
+
         const initialRemember = readRememberPreference()
         checkbox.classList.toggle('checked', initialRemember)
+        if (initialRemember) {
+            const remembered = readRememberCredentials()
+            if (remembered) {
+                const emailInput = document.getElementById('email')
+                const passwordInput = document.getElementById('password')
+                if (emailInput) emailInput.value = remembered.email
+                if (passwordInput) passwordInput.value = remembered.password
+            }
+        }
         checkbox.addEventListener('click', () => {
             checkbox.classList.toggle('checked')
-            writeRememberPreference(checkbox.classList.contains('checked'))
+            const rememberChecked = checkbox.classList.contains('checked')
+            writeRememberPreference(rememberChecked)
+            if (!rememberChecked) clearRememberCredentials()
         })
 
         // Password toggle functionality
@@ -771,8 +813,10 @@
                     writeRememberPreference(remember)
                     if (remember) {
                         sessionStorage.removeItem(RUNTIME_SESSION_KEY)
+                        writeRememberCredentials({ email, password })
                     } else {
                         sessionStorage.setItem(RUNTIME_SESSION_KEY, '1')
+                        clearRememberCredentials()
                     }
                     const fresh = await window.electronAPI.auth.getCurrentUser()
                     const user = fresh.success && fresh.user ? fresh.user : (result.data?.user ?? result.data)

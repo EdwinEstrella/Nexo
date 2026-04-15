@@ -252,7 +252,7 @@
                         </select>
                     </label>
                 </div>
-                <p class="admin-note">Bloquear una empresa corta acceso al portal de todos sus usuarios empresa hasta desbloquearla.</p>
+                <p class="admin-note">Solo super admin puede bloquear, desbloquear o eliminar empresas. El borrado elimina datos relacionados en cascada.</p>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead>
@@ -260,7 +260,7 @@
                                 <th>Organización</th>
                                 <th>Slug</th>
                                 <th>Estado</th>
-                                <th>Acción</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="companies-table-body">
@@ -400,9 +400,14 @@
                         <td>${c.slug || '—'}</td>
                         <td><span class="admin-pill ${statusClass}">${statusLabel}</span></td>
                         <td>
-                            <button type="button" class="admin-action-btn" data-company-action="${actionIntent}" data-company-id="${c.id}" style="padding:8px 12px;font-size:12px;" ${canToggle ? '' : 'disabled title="Solo disponible cuando existe nexo_tenants"'}>
-                                ${canToggle ? actionLabel : 'No disponible'}
-                            </button>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="admin-action-btn" data-company-action="${actionIntent}" data-company-id="${c.id}" style="padding:8px 12px;font-size:12px;" ${canToggle ? '' : 'disabled title="Solo disponible cuando existe nexo_tenants"'}>
+                                    ${canToggle ? actionLabel : 'No disponible'}
+                                </button>
+                                <button type="button" class="admin-action-btn" data-company-action="delete" data-company-id="${c.id}" style="padding:8px 12px;font-size:12px;background:#fff2f2;border-color:#e5b5b5;color:#8c1d1d;" ${canToggle ? '' : 'disabled title="Solo disponible cuando existe nexo_tenants"'}>
+                                    Eliminar
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `
@@ -466,6 +471,36 @@
             await loadCompanies()
         }
 
+        async function deleteCompanyCascade (companyId) {
+            if (!window.electronAPI?.admin?.deleteCompany) {
+                await AdminModal.notify({
+                    title: 'Acción no disponible',
+                    message: 'El backend aún no expone la acción para eliminar empresas.'
+                })
+                return
+            }
+            const confirmed = await AdminModal.confirm({
+                title: 'Eliminar empresa',
+                message: 'Esta acción es irreversible. Se eliminarán en cascada clientes, préstamos, pagos, configuración y membresías de esa empresa. ¿Deseas continuar?',
+                confirmText: 'Sí, eliminar todo',
+                cancelText: 'Cancelar'
+            })
+            if (!confirmed) return
+            const result = await window.electronAPI.admin.deleteCompany(companyId)
+            if (!result?.success) {
+                await AdminModal.notify({
+                    title: 'No se pudo eliminar',
+                    message: result?.error || 'No se pudo eliminar la empresa.'
+                })
+                return
+            }
+            await AdminModal.notify({
+                title: 'Empresa eliminada',
+                message: 'La empresa y sus datos relacionados fueron eliminados correctamente.'
+            })
+            await loadCompanies()
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             if (!window.electronAPI) return
             const result = await window.electronAPI.auth.getCurrentUser()
@@ -506,6 +541,10 @@
             const companyId = btn.getAttribute('data-company-id')
             const action = btn.getAttribute('data-company-action')
             if (!companyId || !action) return
+            if (action === 'delete') {
+                void deleteCompanyCascade(companyId)
+                return
+            }
             void toggleCompanyBlocked(companyId, action === 'block')
         })
 

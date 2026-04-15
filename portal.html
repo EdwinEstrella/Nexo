@@ -460,7 +460,13 @@
         let portalSidebar = null
         let portalUserEmail = ''
         let portalCurrentView = 'dashboard'
-        const nexoPortalProfile = { email: '', displayName: '', company: '', roleLine: '' }
+        const nexoPortalProfile = { email: '', displayName: '', company: '', roleLine: '', securityTimeoutMin: null }
+        const inactivityLogoutState = {
+            timerId: null,
+            timeoutMin: 30,
+            wired: false,
+            hasTriggered: false
+        }
         const PORTAL_SEARCH_INDEX = [
             { id: 'dash', title: 'Dashboard general', meta: 'KPIs, cartera y próximos pagos', view: 'dashboard', keywords: 'inicio resumen panel principal' },
             { id: 'loans-list', title: 'Préstamos', meta: 'Ver cartera y estados de préstamo', view: 'loans', keywords: 'cartera cuotas mora pagos' },
@@ -482,7 +488,18 @@
             phase: 'idle',
             version: null,
             percent: 0,
-            accepted: false
+            accepted: false,
+            errorDetail: ''
+        }
+
+        function extractUpdateErrorDetail (payload) {
+            if (!payload) return ''
+            if (typeof payload === 'string') return payload.trim()
+            if (typeof payload === 'object') {
+                if (payload.message) return String(payload.message).trim()
+                if (payload.error) return String(payload.error).trim()
+            }
+            return ''
         }
 
         function renderAppUpdateCard () {
@@ -530,7 +547,11 @@
             } else if (phase === 'error') {
                 visible = true
                 title.textContent = 'No se pudo actualizar'
-                meta.textContent = 'Hubo un problema al buscar o descargar la actualización.'
+                const detail = String(appUpdateUi.errorDetail || '').trim()
+                const shortDetail = detail ? detail.slice(0, 220) : ''
+                meta.textContent = shortDetail
+                    ? `Hubo un problema al buscar o descargar la actualización. Detalle: ${shortDetail}`
+                    : 'Hubo un problema al buscar o descargar la actualización.'
                 primary.textContent = 'Reintentar'
                 secondary.textContent = 'Cerrar'
             }
@@ -543,6 +564,8 @@
             if (extra.version !== undefined) appUpdateUi.version = extra.version
             if (extra.percent !== undefined) appUpdateUi.percent = Number(extra.percent) || 0
             if (extra.accepted !== undefined) appUpdateUi.accepted = !!extra.accepted
+            if (extra.errorDetail !== undefined) appUpdateUi.errorDetail = String(extra.errorDetail || '')
+            if (phase !== 'error' && extra.errorDetail === undefined) appUpdateUi.errorDetail = ''
             renderAppUpdateCard()
         }
 
@@ -561,7 +584,9 @@
                 } else if (state.phase === 'available') {
                     setAppUpdatePhase('available', { accepted: false, percent: 0 })
                 } else if (state.phase === 'error') {
-                    setAppUpdatePhase('error')
+                    setAppUpdatePhase('error', { errorDetail: state.error || '' })
+                } else if (state.phase === 'unsupported') {
+                    setAppUpdatePhase('idle')
                 }
             } catch (_) {}
         }
@@ -592,8 +617,10 @@
                         percent: 100
                     })
                 },
-                onUpdateError: () => {
-                    if (appUpdateUi.phase !== 'ready') setAppUpdatePhase('error')
+                onUpdateError: (payload) => {
+                    const detail = extractUpdateErrorDetail(payload)
+                    console.error('[updater:renderer:error]', payload)
+                    if (appUpdateUi.phase !== 'ready') setAppUpdatePhase('error', { errorDetail: detail })
                 }
             })
         }
@@ -644,11 +671,61 @@
             }
         }
 
+        function normalizeSessionTimeoutMin (value) {
+            const raw = Number(value)
+            if (raw === 0 || raw === 15 || raw === 30 || raw === 60 || raw === 120) return raw
+            return 30
+        }
+
         function writeProfilePrefs (partial) {
             try {
                 const cur = readProfilePrefs()
                 localStorage.setItem('nexo_ui_profile', JSON.stringify({ ...cur, ...partial }))
             } catch (_) {}
+        }
+
+        async function signOutByInactivity () {
+            if (inactivityLogoutState.hasTriggered) return
+            inactivityLogoutState.hasTriggered = true
+            if (inactivityLogoutState.timerId) {
+                window.clearTimeout(inactivityLogoutState.timerId)
+                inactivityLogoutState.timerId = null
+            }
+            try {
+                await window.electronAPI?.auth?.signOut?.()
+            } catch (_) {}
+            alert('Se cerró la sesión por inactividad.')
+            window.location.href = 'index.html'
+        }
+
+        function armInactivityTimer () {
+            if (inactivityLogoutState.timerId) {
+                window.clearTimeout(inactivityLogoutState.timerId)
+                inactivityLogoutState.timerId = null
+            }
+            if (inactivityLogoutState.timeoutMin <= 0) return
+            inactivityLogoutState.timerId = window.setTimeout(() => {
+                void signOutByInactivity()
+            }, inactivityLogoutState.timeoutMin * 60 * 1000)
+        }
+
+        function wireInactivityListeners () {
+            if (inactivityLogoutState.wired) return
+            inactivityLogoutState.wired = true
+            const markActivity = () => {
+                if (inactivityLogoutState.hasTriggered) return
+                armInactivityTimer()
+            }
+            ;['mousedown', 'keydown', 'mousemove', 'scroll', 'touchstart', 'focus'].forEach((ev) => {
+                window.addEventListener(ev, markActivity, { passive: true })
+            })
+        }
+
+        function applySessionTimeoutPolicy (timeoutMin) {
+            inactivityLogoutState.timeoutMin = normalizeSessionTimeoutMin(timeoutMin)
+            inactivityLogoutState.hasTriggered = false
+            wireInactivityListeners()
+            armInactivityTimer()
         }
 
         function readOrgPrefs () {
@@ -1328,7 +1405,10 @@
             setCb('#settings-form-appearance', 'ui_animations', true)
             setCb('#settings-form-appearance', 'ui_reduce_motion', false)
 
-            setVal('#settings-session-timeout', prefs.session_timeout_min || '30')
+            const timeoutPref = nexoPortalProfile.securityTimeoutMin != null
+                ? nexoPortalProfile.securityTimeoutMin
+                : prefs.session_timeout_min
+            setVal('#settings-session-timeout', String(normalizeSessionTimeoutMin(timeoutPref)))
             const loanState = getLoanState()
             setVal('#settings-late-fee-percent', loanState.settings.late_fee_percent)
             setVal('#settings-grace-days', loanState.settings.grace_days)
@@ -2903,6 +2983,68 @@
                 const fd = new FormData(form)
                 const payload = Object.fromEntries(fd.entries())
                 console.info('[Nexo] Configuración', form.id, payload)
+                if (form.id === 'settings-form-security') {
+                    const timeoutMin = normalizeSessionTimeoutMin(payload.session_timeout_min)
+                    writeProfilePrefs({ session_timeout_min: String(timeoutMin) })
+                    applySessionTimeoutPolicy(timeoutMin)
+
+                    if (window.electronAPI?.auth?.updateSecuritySettings) {
+                        const persisted = await window.electronAPI.auth.updateSecuritySettings({
+                            session_timeout_min: timeoutMin,
+                            twofa_enabled: false
+                        })
+                        if (!persisted?.success) {
+                            alert(persisted?.error || 'No se pudo guardar la política de inactividad en el servidor.')
+                            return
+                        }
+                    }
+
+                    const currentPassword = form.querySelector('[name="password_current"]')?.value || ''
+                    const newPassword = form.querySelector('[name="password_new"]')?.value || ''
+                    if (!newPassword) {
+                        alert('Configuración de seguridad guardada.')
+                        ;['password_current', 'password_new', 'password_confirm'].forEach((n) => {
+                            const i = form.querySelector(`[name="${n}"]`)
+                            if (i) i.value = ''
+                        })
+                        return
+                    }
+                    if (!currentPassword) {
+                        alert('Debes escribir tu contraseña actual para cambiarla.')
+                        return
+                    }
+                    if (!window.electronAPI?.auth?.requestPasswordChange || !window.electronAPI?.auth?.confirmPasswordChange) {
+                        alert('La API de cambio de contraseña no está disponible.')
+                        return
+                    }
+                    const start = await window.electronAPI.auth.requestPasswordChange(currentPassword)
+                    if (!start?.success) {
+                        alert(start?.error || 'No se pudo iniciar el cambio de contraseña.')
+                        return
+                    }
+                    if (start.flow === 'link') {
+                        alert('Se envió un enlace de cambio de contraseña a tu correo. Ábrelo para completar el cambio.')
+                        ;['password_current', 'password_new', 'password_confirm'].forEach((n) => {
+                            const i = form.querySelector(`[name="${n}"]`)
+                            if (i) i.value = ''
+                        })
+                        return
+                    }
+                    const code = window.prompt('Ingresa el código recibido por correo para confirmar el cambio de contraseña:')
+                    if (!code || !String(code).trim()) {
+                        alert('Cambio de contraseña cancelado: no ingresaste el código de verificación.')
+                        return
+                    }
+                    const done = await window.electronAPI.auth.confirmPasswordChange(String(code).trim(), newPassword)
+                    if (!done?.success) {
+                        alert(done?.error || 'No se pudo completar el cambio de contraseña.')
+                        return
+                    }
+                    alert('Contraseña actualizada. Debes iniciar sesión nuevamente.')
+                    try { await window.electronAPI.auth.signOut() } catch (_) {}
+                    window.location.href = 'index.html'
+                    return
+                }
                 if (form.id === 'settings-form-profile') {
                     writeProfilePrefs({
                         display_name: payload.display_name,
@@ -2932,9 +3074,6 @@
                         ui_animations: !!form.querySelector('[name="ui_animations"]')?.checked,
                         ui_reduce_motion: !!form.querySelector('[name="ui_reduce_motion"]')?.checked
                     })
-                }
-                if (form.id === 'settings-form-security') {
-                    writeProfilePrefs({ session_timeout_min: payload.session_timeout_min })
                 }
                 if (form.id === 'settings-form-advanced') {
                     writeProfilePrefs({
@@ -2968,12 +3107,6 @@
                 }
                 if (form.id === 'settings-form-privacy') writeOrgPrefs({ dpo_email: payload.dpo_email })
                 alert('Cambios guardados.')
-                if (form.id === 'settings-form-security') {
-                    ;['password_current', 'password_new', 'password_confirm'].forEach((n) => {
-                        const i = form.querySelector(`[name="${n}"]`)
-                        if (i) i.value = ''
-                    })
-                }
             })
         }
 
@@ -3129,6 +3262,17 @@
             nexoPortalProfile.displayName = display
             nexoPortalProfile.company = p.company || ''
             nexoPortalProfile.roleLine = roleLine
+            if (p.session_timeout_min !== undefined && p.session_timeout_min !== null) {
+                nexoPortalProfile.securityTimeoutMin = normalizeSessionTimeoutMin(p.session_timeout_min)
+                writeProfilePrefs({ session_timeout_min: String(nexoPortalProfile.securityTimeoutMin) })
+            } else {
+                nexoPortalProfile.securityTimeoutMin = null
+            }
+            applySessionTimeoutPolicy(
+                nexoPortalProfile.securityTimeoutMin != null
+                    ? nexoPortalProfile.securityTimeoutMin
+                    : readProfilePrefs().session_timeout_min
+            )
 
             portalSidebar.updatePortalProfile({
                 name: display,
@@ -3154,7 +3298,7 @@
             }
 
             await hydrateAppUpdaterState()
-            if (window.electronAPI?.checkForUpdates && appUpdateUi.phase !== 'ready') {
+            if (window.electronAPI?.checkForUpdates && appUpdateUi.phase !== 'ready' && appUpdateUi.phase !== 'unsupported') {
                 window.electronAPI.checkForUpdates()
             }
 
