@@ -1073,6 +1073,51 @@
             return `RD$${n.toLocaleString('es-DO', { maximumFractionDigits: 2, minimumFractionDigits: n % 1 ? 2 : 0 })}`
         }
 
+        function parseCurrencyAmount (rawValue) {
+            const raw = String(rawValue || '').trim()
+            if (!raw) return 0
+            let s = raw.replace(/[^\d.,-]/g, '')
+            if (!s) return 0
+            const lastComma = s.lastIndexOf(',')
+            const lastDot = s.lastIndexOf('.')
+            let decimalSep = ''
+            if (lastComma >= 0 || lastDot >= 0) {
+                decimalSep = lastComma > lastDot ? ',' : '.'
+            }
+            if (!decimalSep) {
+                const n = Number(s.replace(/[^\d-]/g, ''))
+                return Number.isFinite(n) ? n : 0
+            }
+            const intPart = s.slice(0, Math.max(lastComma, lastDot)).replace(/[^\d-]/g, '')
+            const decPart = s.slice(Math.max(lastComma, lastDot) + 1).replace(/[^\d]/g, '')
+            const normalized = `${intPart || '0'}.${decPart}`
+            const n = Number(normalized)
+            return Number.isFinite(n) ? n : 0
+        }
+
+        function formatCurrencyInputValue (value) {
+            const n = Number(value) || 0
+            return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        }
+
+        function wireLoanAmountInputMask (root = document) {
+            const amountInput = root.querySelector('#lr-monto')
+            if (!amountInput || amountInput.dataset.maskWired === '1') return
+            amountInput.dataset.maskWired = '1'
+            amountInput.addEventListener('input', () => {
+                const cleaned = String(amountInput.value || '').replace(/[^\d.,]/g, '')
+                if (cleaned !== amountInput.value) amountInput.value = cleaned
+            })
+            amountInput.addEventListener('blur', () => {
+                const value = parseCurrencyAmount(amountInput.value)
+                if (!Number.isFinite(value) || value <= 0) {
+                    amountInput.value = ''
+                    return
+                }
+                amountInput.value = formatCurrencyInputValue(value)
+            })
+        }
+
         function escapeHtml (s) {
             return String(s)
                 .replace(/&/g, '&amp;')
@@ -1184,7 +1229,7 @@
             if (!form) return
             const q = (sel) => form.querySelector(sel)
             const set = (id, text) => { const el = q(id); if (el) el.textContent = text }
-            const principal = Number(String(q('#lr-monto')?.value || '').replace(/[^\d.-]/g, '')) || 0
+            const principal = parseCurrencyAmount(q('#lr-monto')?.value || '')
             const term_months = Number(q('#lr-plazo')?.value) || 12
             const interest_rate_pct = Number(q('#lr-interes')?.value) || 0
             const interest_mode = q('#lr-interest-mode')?.value || 'annual'
@@ -2801,7 +2846,7 @@
                     const interestMode = payload.interest_mode || state.settings.interest_mode || 'annual'
                     const paymentFrequency = payload.payment_frequency || state.settings.payment_frequency || 'monthly'
                     const loanInput = {
-                        principal: Number(String(payload.monto_solicitado || '0').replace(/[^\d.-]/g, '')),
+                        principal: parseCurrencyAmount(payload.monto_solicitado || '0'),
                         term_months: Number(payload.plazo_meses) || 12,
                         interest_rate_pct: Number(payload.interes_porcentaje) || 0,
                         interest_mode: interestMode,
@@ -3177,6 +3222,7 @@
                 hydrateLoanRequestDraft()
                 const lrForm = document.getElementById('loan-request-form')
                 if (lrForm) {
+                    wireLoanAmountInputMask(root)
                     const onProfit = () => updateLoanProfitPreview()
                     lrForm.addEventListener('input', onProfit)
                     lrForm.addEventListener('change', onProfit)
