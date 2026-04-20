@@ -9,7 +9,7 @@
                 <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><path d="M5 0v8M2 5l3 3 3-3M0 10h10" stroke="currentColor" stroke-width="1.2"/></svg>
                 Exportar reporte
             </button>
-            <button type="button" class="loans-btn loans-btn--ghost" data-loans-focus-payment aria-label="Ir al formulario para registrar un pago de cliente">
+            <button type="button" class="loans-btn loans-btn--ghost" data-portal-view="payment-registration" aria-label="Ir a la pantalla dedicada para registrar un pago de cliente">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                 Registrar pago
             </button>
@@ -88,7 +88,7 @@
                 <div class="loans-payment-card__head">
                     <div>
                         <h2 id="loan-payment-heading" class="loans-activity__title">Registrar pago</h2>
-                        <p class="loans-payment-card__intro">Elige el préstamo y la cuota con saldo; el monto se aplica en este orden: <strong>mora</strong>, luego <strong>interés</strong> y <strong>capital</strong>.</p>
+                        <p class="loans-payment-card__intro">Selecciona préstamo y cuota. El monto se aplica: mora → interés → capital. Si pagas de más, el exceso se abona proporcionalmente a interés y capital.</p>
                     </div>
                 </div>
                 <form id="loan-payment-form" class="loans-payment-form-grid">
@@ -103,6 +103,12 @@
                     <div class="loans-payment-field loans-payment-field--amount">
                         <label class="loans-payment-field__label" for="payment-amount-input">Monto recibido (DOP)</label>
                         <input id="payment-amount-input" name="amount" class="loans-inline-input loans-payment-field__control" type="number" min="0.01" step="0.01" placeholder="0.00" required inputmode="decimal">
+                    </div>
+                    <div class="loans-payment-field">
+                        <label class="loans-payment-field__label">
+                            <input type="checkbox" id="payment-waive-mora" name="waive_late_fee" class="loans-inline-checkbox">
+                            <span>Exonerar mora</span>
+                        </label>
                     </div>
                     <div class="loans-payment-field loans-payment-field--submit">
                         <button type="submit" class="loans-btn loans-btn--primary loans-payment-submit">Aplicar pago</button>

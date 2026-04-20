@@ -1582,6 +1582,16 @@ function registerPortfolioIpc () {
       if (pErr) {
         return { success: false, error: pErr.message || 'No se pudo registrar el pago' }
       }
+
+      const liquidated = payload?.liquidated === true
+      if (liquidated) {
+        await insforge.database
+          .from('nexo_loan_installments')
+          .delete()
+          .eq('loan_id', loanId)
+          .gt('n', n)
+      }
+
       return { success: true }
     } catch (err) {
       return { success: false, error: err.message || 'Error al aplicar pago' }

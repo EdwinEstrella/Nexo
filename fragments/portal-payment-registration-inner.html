@@ -1,0 +1,123 @@
+<main class="loans-canvas" aria-label="Registro dedicado de pagos">
+    <div class="loans-canvas__head">
+        <div class="loans-canvas__titles">
+            <h1 class="loans-canvas__title">Registrar Pago</h1>
+            <p class="loans-canvas__subtitle">Pantalla dedicada para aplicar pagos. Selecciona préstamo y cuota para ver cálculos automáticos.</p>
+        </div>
+        <div class="loans-canvas__actions">
+            <button type="button" class="loans-btn loans-btn--ghost" data-portal-view="loans" aria-label="Volver a la cartera de préstamos">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M12 7H2M7 12l-5-5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Cartera
+            </button>
+        </div>
+    </div>
+
+    <div class="loans-layout">
+        <div class="loans-main" style="max-width: 900px;">
+            <section class="loans-table-card" aria-labelledby="pay-section-title">
+                <div class="loans-payment-card__head">
+                    <h2 id="pay-section-title" class="loans-activity__title">Aplicar Pago</h2>
+                    <p class="loans-payment-card__intro">El monto se aplica en este orden: mora → interés → capital. Si pagas de más, el exceso se abona proporcionalmente.</p>
+                </div>
+
+                <form id="payment-registration-form" class="loans-payment-form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px;">
+                    
+                    <div class="loans-payment-field lr-grid__full" style="grid-column: 1 / -1;">
+                        <label class="loans-payment-field__label" for="preg-loan-select">Seleccionar préstamo</label>
+                        <select id="preg-loan-select" name="loan_id" class="loans-filter-chip loans-filter-chip--select loans-payment-field__control" required>
+                            <option value="">— Seleccionar —</option>
+                        </select>
+                    </div>
+
+                    <div class="loans-payment-field" style="display: none;">
+                        <!-- Mantenemos el campo invisible para que el backend tenga compatibilidad con 'cuota n', se autoasignará en JS -->
+                        <input type="hidden" id="preg-installment-select" name="installment_n" value="">
+                    </div>
+
+                    <div class="loans-payment-field">
+                        <label class="loans-payment-field__label" for="preg-amount-input">Monto a recibir (DOP)</label>
+                        <input id="preg-amount-input" name="amount" class="loans-inline-input loans-payment-field__control" type="number" min="0.01" step="0.01" placeholder="0.00" required inputmode="decimal">
+                    </div>
+
+                    <div class="loans-payment-field">
+                        <label class="loans-payment-field__label">
+                            <input type="checkbox" id="preg-waive-mora" name="waive_late_fee" class="loans-inline-checkbox">
+                            <span>Exonerar mora</span>
+                        </label>
+                    </div>
+
+                    <!-- Información calculada automáticamente -->
+                    <div class="loans-payment-field lr-grid__full" id="preg-info-block" style="grid-column: 1 / -1; display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #d5d8e0;">
+                        <h3 style="margin-bottom: 16px; font-weight: 600; color: #000e24; font-size: 18px;">Balance de la Cuenta</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; font-size: 14px;">
+                            <div style="background: #fff0f0; padding: 12px; border-radius: 6px;">
+                                <div style="color: #d32f2f; font-weight: 600; margin-bottom: 4px;">PAGO PARA ESTAR AL DÍA</div>
+                                <div style="color: #000e24; font-weight: 500;" id="preg-pending-mora">RD$0.00 de Mora</div>
+                                <div style="color: #000e24; font-weight: 500;" id="preg-pending-interest">RD$0.00 de Interés</div>
+                                <div style="color: #000e24; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);" id="preg-total-pending">Mínimo: RD$0.00</div>
+                            </div>
+                            <div style="background: #f5f7fb; padding: 12px; border-radius: 6px;">
+                                <div style="color: #6b7891; font-weight: 600; margin-bottom: 4px;">CAPITAL DEL PRÉSTAMO</div>
+                                <div style="color: #000e24; font-weight: 500; font-size: 20px;" id="preg-pending-principal">RD$0.00</div>
+                                <div style="color: #6b7891; font-weight: 400; font-size: 12px; margin-top: 4px;">El saldo remanente que genera interés</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desglose del pago a aplicar -->
+                    <div class="loans-payment-field lr-grid__full" id="preg-breakdown-block" style="grid-column: 1 / -1; display: none; margin-top: 20px; padding: 16px; background: #f5f7fb; border-radius: 6px;">
+                        <h3 style="margin-bottom: 12px; font-weight: 600; color: #000e24;">Ejecución del pago</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+                            <div>
+                                <div style="color: #6b7891; font-weight: 500;">Aplicar a mora:</div>
+                                <div style="color: #000e24; font-weight: 600;" id="preg-apply-mora">RD$0.00</div>
+                            </div>
+                            <div>
+                                <div style="color: #6b7891; font-weight: 500;">Aplicar a interés:</div>
+                                <div style="color: #000e24; font-weight: 600;" id="preg-apply-interest">RD$0.00</div>
+                            </div>
+                            <div>
+                                <div style="color: #6b7891; font-weight: 500;">Aplicar a capital:</div>
+                                <div style="color: #000e24; font-weight: 600;" id="preg-apply-principal">RD$0.00</div>
+                            </div>
+                            <div>
+                                <div style="color: #6b7891; font-weight: 500;">Restante/Exceso:</div>
+                                <div style="color: #000e24; font-weight: 600;" id="preg-remaining">RD$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="loans-payment-field lr-grid__full" style="grid-column: 1 / -1;">
+                        <button type="submit" class="loans-btn loans-btn--primary loans-btn--massive" style="width: 100%; padding: 18px 24px; font-size: 16px;">
+                            <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            Aplicar pago
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <aside class="loans-aside" aria-label="Información de soporte">
+            <div class="loans-activity">
+                <div class="loans-activity__head">
+                    <h2 class="loans-activity__title">Últimos pagos</h2>
+                </div>
+                <div class="loans-activity__feed" id="preg-recent-payments" style="font-size: 12px;"></div>
+            </div>
+
+            <div class="loans-activity">
+                <div class="loans-activity__head">
+                    <h2 class="loans-activity__title">Instrucciones</h2>
+                </div>
+                <div style="padding: 12px; font-size: 12px; color: #515f74; line-height: 1.6;">
+                    <p>✓ Selecciona el préstamo del cliente</p>
+                    <p>✓ El sistema calcula automáticamente la deuda atrasada más antigua</p>
+                    <p>✓ Ingresa el monto total o parcial recibido</p>
+                    <p>✓ Usa "Exonerar mora" si vas a perdonar los atrasos</p>
+                    <p>✓ Si el monto excede "PAGO PARA ESTAR AL DÍA", abona al Capital bajando tus intereses futuros</p>
+                    <p>✓ Haz clic en "Aplicar pago"</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
