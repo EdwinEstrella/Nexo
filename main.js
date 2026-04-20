@@ -1598,122 +1598,187 @@ function registerPortfolioIpc () {
     }
   })
 
-  ipcMain.handle('portfolio:importLegacyState', async (event, state) => {
+  // Delete loan only if no payments exist
+  ipcMain.handle('portfolio:deleteLoan', async (event, loanId) => {
     try {
-      if (!state || typeof state !== 'object') {
-        return { success: false, error: 'Estado inválido' }
-      }
       const t = await getPortfolioTenantId()
       if (t.error) {
         return { success: false, error: t.error }
       }
       const tenantId = t.tenantId
-
-      if (state.settings && typeof state.settings === 'object') {
-        await insforge.database.from('nexo_portfolio_settings').upsert([{
-          ...portfolioDefaultSettingsRow(tenantId),
-          ...state.settings,
-          tenant_id: tenantId,
-          updated_at: new Date().toISOString()
-        }], { onConflict: 'tenant_id' })
+      const id = String(loanId || '')
+      if (!id) {
+        return { success: false, error: 'Id de préstamo no provisto' }
       }
 
-      for (const c of state.clients || []) {
-        const clientRow = {
-          id: String(c.id),
-          tenant_id: tenantId,
-          name: String(c.name || ''),
-          document_type: c.document_type || null,
-          document_number: c.document_number || null,
-          phone: c.phone || null,
-          address: c.address || null,
-          email: c.email || null,
-          created_at: c.created_at || new Date().toISOString()
-        }
-        const clientOwnership = await assertScopedIdOwnership({
-          table: 'nexo_clients',
-          id: clientRow.id,
-          tenantId
-        })
-        if (!clientOwnership.success) {
-          return { success: false, error: clientOwnership.error }
-        }
-        await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
+      // Verify loan exists
+      const { data: loanCheck } = await insforge.database
+        .from('nexo_loans')
+        .select('id')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .maybeSingle()
+      if (!loanCheck) {
+        return { success: false, error: 'Préstamo no encontrado' }
       }
 
-      for (const loan of state.loans || []) {
-        const installments = loan.installments || []
-        const { installments: _x, ...lf } = loan
-        const loanRow = {
-          id: String(lf.id),
-          tenant_id: tenantId,
-          client_id: String(lf.client_id),
-          reference: lf.reference || null,
-          client_name: String(lf.client_name || ''),
-          product: lf.product || 'hipotecario',
-          purpose: lf.purpose || '',
-          principal: Number(lf.principal) || 0,
-          term_months: Number(lf.term_months) || 12,
-          interest_rate_pct: lf.interest_rate_pct != null ? Number(lf.interest_rate_pct) : null,
-          late_fee_percent: lf.late_fee_percent != null ? Number(lf.late_fee_percent) : null,
-          grace_days: lf.grace_days != null ? Number(lf.grace_days) : null,
-          interest_mode: lf.interest_mode || 'annual',
-          payment_frequency: lf.payment_frequency || 'monthly',
-          start_date: lf.start_date || null,
-          created_at: lf.created_at || new Date().toISOString(),
-          contract_signer: lf.contract_signer || '',
-          documents: Array.isArray(lf.documents) ? lf.documents : []
-        }
-        const loanOwnership = await assertScopedIdOwnership({
-          table: 'nexo_loans',
-          id: loanRow.id,
-          tenantId
-        })
-        if (!loanOwnership.success) {
-          return { success: false, error: loanOwnership.error }
-        }
-        await insforge.database.from('nexo_loans').upsert([loanRow], { onConflict: 'id' })
-        await insforge.database.from('nexo_loan_installments').delete().eq('loan_id', loanRow.id)
-        const instPayload = installments.map((i) => ({
-          loan_id: loanRow.id,
-          n: Number(i.n),
-          due_date: i.due_date,
-          principal_target: Number(i.principal_target) || 0,
-          paid_interest: Number(i.paid_interest) || 0,
-          paid_principal: Number(i.paid_principal) || 0,
-          paid_late_fee: Number(i.paid_late_fee) || 0
-        }))
-        if (instPayload.length) {
-          await insforge.database.from('nexo_loan_installments').insert(instPayload)
-        }
+      // Check for any payments linked to this loan
+      const { data: payments, error: pErr } = await insforge.database
+        .from('nexo_payments')
+        .select('id')
+        .eq('loan_id', id)
+        .eq('tenant_id', tenantId)
+
+      if (pErr) {
+        return { success: false, error: pErr.message || 'Error al verificar pagos' }
+      }
+      if (payments && payments.length > 0) {
+        return { success: false, error: 'No se puede eliminar: existen pagos registrados' }
       }
 
-      for (const p of state.payments || []) {
-        const payRow = {
-          id: String(p.id),
-          tenant_id: tenantId,
-          loan_id: String(p.loan_id),
-          installment_n: Number(p.installment_n),
-          amount: Number(p.amount) || 0,
-          breakdown: p.breakdown || {},
-          created_at: p.created_at || new Date().toISOString()
-        }
-        const paymentOwnership = await assertScopedIdOwnership({
-          table: 'nexo_payments',
-          id: payRow.id,
-          tenantId
-        })
-        if (!paymentOwnership.success) {
-          return { success: false, error: paymentOwnership.error }
-        }
-        await insforge.database.from('nexo_payments').upsert([payRow], { onConflict: 'id' })
+      // No payments; proceed to delete installments then loan
+      const { error: delInstErr } = await insforge.database
+        .from('nexo_loan_installments')
+        .delete()
+        .eq('loan_id', id)
+
+      if (delInstErr) {
+        return { success: false, error: delInstErr.message || 'Error al eliminar cuotas' }
+      }
+
+      const { error: delLoanErr } = await insforge.database
+        .from('nexo_loans')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+
+      if (delLoanErr) {
+        return { success: false, error: delLoanErr.message || 'Error al eliminar préstamo' }
       }
 
       return { success: true }
     } catch (err) {
-      return { success: false, error: err.message || 'Error al importar' }
+      return { success: false, error: err.message || 'Error al eliminar préstamo' }
     }
   })
+
+ipcMain.handle('portfolio:importLegacyState', async (event, state) => {
+      try {
+        if (!state || typeof state !== 'object') {
+          return { success: false, error: 'Estado inválido' }
+        }
+
+        const t = await getPortfolioTenantId()
+        if (t.error) {
+          return { success: false, error: t.error }
+        }
+        const tenantId = t.tenantId
+
+        if (state.settings && typeof state.settings === 'object') {
+          await insforge.database.from('nexo_portfolio_settings').upsert([{ 
+            ...portfolioDefaultSettingsRow(tenantId),
+            ...state.settings,
+            tenant_id: tenantId,
+            updated_at: new Date().toISOString()
+          }], { onConflict: 'tenant_id' })
+        }
+
+        for (const c of state.clients || []) {
+          const clientRow = {
+            id: String(c.id),
+            tenant_id: tenantId,
+            name: String(c.name || ''),
+            document_type: c.document_type || null,
+            document_number: c.document_number || null,
+            phone: c.phone || null,
+            address: c.address || null,
+            email: c.email || null,
+            created_at: c.created_at || new Date().toISOString()
+          }
+          const clientOwnership = await assertScopedIdOwnership({
+            table: 'nexo_clients',
+            id: clientRow.id,
+            tenantId
+          })
+          if (!clientOwnership.success) {
+            return { success: false, error: clientOwnership.error }
+          }
+          await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
+        }
+
+        for (const loan of state.loans || []) {
+          const installments = loan.installments || []
+          const { installments: _x, ...lf } = loan
+          const loanRow = {
+            id: String(lf.id),
+            tenant_id: tenantId,
+            client_id: String(lf.client_id),
+            reference: lf.reference || null,
+            client_name: String(lf.client_name || ''),
+            product: lf.product || 'hipotecario',
+            purpose: lf.purpose || '',
+            principal: Number(lf.principal) || 0,
+            term_months: Number(lf.term_months) || 12,
+            interest_rate_pct: lf.interest_rate_pct != null ? Number(lf.interest_rate_pct) : null,
+            late_fee_percent: lf.late_fee_percent != null ? Number(lf.late_fee_percent) : null,
+            grace_days: lf.grace_days != null ? Number(lf.grace_days) : null,
+            interest_mode: lf.interest_mode || 'annual',
+            payment_frequency: lf.payment_frequency || 'monthly',
+            start_date: lf.start_date || null,
+            created_at: lf.created_at || new Date().toISOString(),
+            contract_signer: lf.contract_signer || '',
+            documents: Array.isArray(lf.documents) ? lf.documents : []
+          }
+          const loanOwnership = await assertScopedIdOwnership({
+            table: 'nexo_loans',
+            id: loanRow.id,
+            tenantId
+          })
+          if (!loanOwnership.success) {
+            return { success: false, error: loanOwnership.error }
+          }
+          await insforge.database.from('nexo_loans').upsert([loanRow], { onConflict: 'id' })
+          await insforge.database.from('nexo_loan_installments').delete().eq('loan_id', loanRow.id)
+          const instPayload = installments.map((i) => ({
+            loan_id: loanRow.id,
+            n: Number(i.n),
+            due_date: i.due_date,
+            principal_target: Number(i.principal_target) || 0,
+            paid_interest: Number(i.paid_interest) || 0,
+            paid_principal: Number(i.paid_principal) || 0,
+            paid_late_fee: Number(i.paid_late_fee) || 0
+          }))
+          if (instPayload.length) {
+            await insforge.database.from('nexo_loan_installments').insert(instPayload)
+          }
+        }
+
+        for (const p of state.payments || []) {
+          const payRow = {
+            id: String(p.id),
+            tenant_id: tenantId,
+            loan_id: String(p.loan_id),
+            installment_n: Number(p.installment_n),
+            amount: Number(p.amount) || 0,
+            breakdown: p.breakdown || {},
+            created_at: p.created_at || new Date().toISOString()
+          }
+          const paymentOwnership = await assertScopedIdOwnership({
+            table: 'nexo_payments',
+            id: payRow.id,
+            tenantId
+          })
+          if (!paymentOwnership.success) {
+            return { success: false, error: paymentOwnership.error }
+          }
+          await insforge.database.from('nexo_payments').upsert([payRow], { onConflict: 'id' })
+        }
+
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: err.message || 'Error al importar' }
+      }
+    })
 }
 
 async function bootstrap () {

@@ -44,7 +44,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveSettings: (partial) => ipcRenderer.invoke('portfolio:saveSettings', partial),
     createLoan: (payload) => ipcRenderer.invoke('portfolio:createLoan', payload),
     applyPayment: (payload) => ipcRenderer.invoke('portfolio:applyPayment', payload),
-    importLegacyState: (state) => ipcRenderer.invoke('portfolio:importLegacyState', state)
+    importLegacyState: (state) => ipcRenderer.invoke('portfolio:importLegacyState', state),
+    deleteLoan: (loanId) => ipcRenderer.invoke('portfolio:deleteLoan', loanId)
   },
   listPrinters: () => ipcRenderer.invoke('printers:list'),
   printThermal: (opts) => {

@@ -1821,6 +1821,7 @@
                 </section>
                 <div class="loan-inst-actions">
                     <button type="button" class="loans-btn loans-btn--primary" data-go-register-pay data-loan-id="${loan.id}">Ir a registrar pago</button>
+                    <button type="button" class="loans-btn loans-btn--danger" id="delete-loan-btn" onclick="window.electronAPI.portfolio.deleteLoan('${loan.id}').then(r=>console.log('Delete result', r))">Eliminar préstamo</button>
                 </div>
                 ${payBlock}
             `
