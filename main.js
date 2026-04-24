@@ -97,6 +97,44 @@ function sendUpdateEvent (channel, payload) {
   if (w) w.webContents.send(channel, payload)
 }
 
+function stringifyUpdaterMeta (meta) {
+  try {
+    return JSON.stringify(meta)
+  } catch (_) {
+    return String(meta)
+  }
+}
+
+function logUpdaterEvent (tag, meta, level = 'info') {
+  const label = `[updater:${tag}]`
+  const text = stringifyUpdaterMeta(meta)
+  if (level === 'error') {
+    log.error(label, text)
+    console.error(label, meta)
+    return
+  }
+  log.info(label, text)
+  console.info(label, meta)
+}
+
+function buildUpdateErrorPayload (stage, err) {
+  const message = err?.message ? String(err.message) : String(err || 'Error desconocido')
+  const stack = typeof err?.stack === 'string'
+    ? err.stack.split('\n').slice(0, 8).join('\n')
+    : null
+  return {
+    message,
+    stage: String(stage || 'unknown'),
+    code: err?.code ? String(err.code) : null,
+    cause: err?.cause?.message ? String(err.cause.message) : null,
+    stack,
+    phase: updateRuntimeState.phase,
+    packaged: app.isPackaged,
+    platform: process.platform,
+    at: new Date().toISOString()
+  }
+}
+
 let autoUpdaterConfigured = false
 
 function resolveWindowIcon () {
@@ -189,6 +227,102 @@ async function ensureTenantForCompany (companyName) {
     }
   }
   return null
+}
+
+async function createTenantForSelfSignup (companyName) {
+  const name = String(companyName || '').trim()
+  if (!name) {
+    return { ok: false, error: 'Debes indicar el nombre de tu empresa para crear la cuenta.' }
+  }
+  const baseSlug = slugifyCompany(name) || 'empresa'
+
+  const byName = await insforge.database
+    .from('nexo_tenants')
+    .select('id,name')
+    .eq('name', name)
+    .maybeSingle()
+  if (byName?.data) {
+    return {
+      ok: false,
+      error: 'Esta empresa ya está registrada. Solicita acceso a un administrador de tu empresa.'
+    }
+  }
+
+  const bySlug = await insforge.database
+    .from('nexo_tenants')
+    .select('id,slug')
+    .eq('slug', baseSlug)
+    .maybeSingle()
+  if (bySlug?.data) {
+    return {
+      ok: false,
+      error: 'Esta empresa ya está registrada. Solicita acceso a un administrador de tu empresa.'
+    }
+  }
+
+  for (let i = 0; i < 50; i += 1) {
+    const candidateSlug = i === 0 ? baseSlug : `${baseSlug}-${i + 1}`
+    const { data: inserted, error } = await insforge.database
+      .from('nexo_tenants')
+      .insert([{
+        name,
+        slug: candidateSlug,
+        status: 'active',
+        is_blocked: false
+      }])
+      .select('*')
+      .maybeSingle()
+
+    if (!error && inserted?.id) return { ok: true, tenant: inserted }
+
+    const msg = String(error?.message || '').toLowerCase()
+    if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) continue
+    return { ok: false, error: error?.message || 'No se pudo crear la empresa para esta cuenta.' }
+  }
+
+  return { ok: false, error: 'No se pudo asignar un identificador único para tu empresa.' }
+}
+
+async function getCurrentUserMerged () {
+  const current = await insforge.auth.getCurrentUser()
+  if (current?.error || !current?.data?.user?.id) {
+    return { success: false, error: 'Sesión inválida o expirada' }
+  }
+  await mergeNexoProfile(current.data.user)
+  return { success: true, user: current.data.user }
+}
+
+function isSuperAdminUser (user) {
+  const role = String(user?.profile?.app_role || user?.nexo_profile?.app_role || '').toLowerCase()
+  return role === 'super_admin' || role === 'app_admin'
+}
+
+async function requireSuperAdminGuard () {
+  const current = await getCurrentUserMerged()
+  if (!current.success) return current
+  if (!isSuperAdminUser(current.user)) {
+    return { success: false, error: 'Acceso denegado: requiere rol super_admin' }
+  }
+  return { success: true, user: current.user }
+}
+
+async function assertScopedIdOwnership ({ table, id, tenantId, idColumn = 'id', tenantColumn = 'tenant_id' }) {
+  const scopeId = String(id || '').trim()
+  if (!scopeId || !tenantId) return { success: true }
+  try {
+    const { data, error } = await insforge.database
+      .from(table)
+      .select(`${idColumn},${tenantColumn}`)
+      .eq(idColumn, scopeId)
+      .maybeSingle()
+    if (error) return { success: true }
+    if (data && data[tenantColumn] && String(data[tenantColumn]) !== String(tenantId)) {
+      return { success: false, error: `Conflicto de aislamiento multi-tenant en ${table}.` }
+    }
+    return { success: true }
+  } catch (_) {
+    return { success: true }
+  }
 }
 
 async function ensureTenantMembership ({ tenantId, userId }) {
@@ -395,6 +529,11 @@ function setupAutoUpdater () {
   if (process.platform === 'win32' && !process.env.CSC_LINK && !process.env.WIN_CSC_LINK) {
     autoUpdater.verifyUpdateCodeSignature = false
   }
+  logUpdaterEvent('setup', {
+    packaged: app.isPackaged,
+    platform: process.platform,
+    version: app.getVersion()
+  })
 
   const persisted = loadPersistedUpdateState()
   const currentVersion = normalizeVersion(getAppVersion())
@@ -414,12 +553,17 @@ function setupAutoUpdater () {
   }
 
   autoUpdater.on('checking-for-update', () => {
+    logUpdaterEvent('checking-for-update', { phase: updateRuntimeState.phase })
     if (updateRuntimeState.phase === 'ready') return
     setUpdateState({ phase: 'checking', error: null })
     sendUpdateEvent('update:checking')
   })
 
   autoUpdater.on('update-available', (info) => {
+    logUpdaterEvent('update-available', {
+      version: normalizeVersion(info?.version),
+      releaseDate: info?.releaseDate || null
+    })
     setUpdateState({
       phase: 'available',
       remoteVersion: normalizeVersion(info.version),
@@ -436,6 +580,7 @@ function setupAutoUpdater () {
   })
 
   autoUpdater.on('update-not-available', () => {
+    logUpdaterEvent('update-not-available', { phase: updateRuntimeState.phase })
     if (updateRuntimeState.phase === 'ready') {
       sendUpdateEvent('update:downloaded', {
         version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
@@ -455,6 +600,12 @@ function setupAutoUpdater () {
 
   autoUpdater.on('download-progress', (progress) => {
     const pct = Math.max(0, Math.min(100, Math.round(progress.percent || 0)))
+    logUpdaterEvent('download-progress', {
+      percent: pct,
+      transferred: progress?.transferred || 0,
+      total: progress?.total || 0,
+      bytesPerSecond: progress?.bytesPerSecond || 0
+    })
     setUpdateState({
       phase: 'downloading',
       percent: pct,
@@ -470,6 +621,10 @@ function setupAutoUpdater () {
 
   autoUpdater.on('update-downloaded', (info) => {
     const v = normalizeVersion(info.version)
+    logUpdaterEvent('update-downloaded', {
+      version: v,
+      releaseDate: info?.releaseDate || null
+    })
     setUpdateState({
       phase: 'ready',
       downloadedVersion: v,
@@ -493,20 +648,30 @@ function setupAutoUpdater () {
   })
 
   autoUpdater.on('error', (err) => {
-    const msg = err?.message ? String(err.message) : String(err)
+    const payload = buildUpdateErrorPayload('auto-updater-event', err)
+    logUpdaterEvent('error', payload, 'error')
     setUpdateState({
       phase: updateRuntimeState.phase === 'ready' ? 'ready' : 'idle',
-      error: msg
+      error: payload.message
     })
-    sendUpdateEvent('update:error', msg)
+    sendUpdateEvent('update:error', payload)
   })
 
   ipcMain.on('update:check-for-updates', () => {
     if (!app.isPackaged) {
-      setUpdateState({ phase: 'unsupported', error: 'Actualizaciones disponibles solo en app empaquetada' })
-      sendUpdateEvent('update:error', 'Actualizaciones disponibles solo en app empaquetada')
+      const payload = {
+        message: 'Actualizaciones deshabilitadas: app no empaquetada',
+        stage: 'check-for-updates',
+        phase: updateRuntimeState.phase,
+        packaged: app.isPackaged,
+        platform: process.platform,
+        at: new Date().toISOString()
+      }
+      logUpdaterEvent('check-for-updates-skipped', payload)
+      setUpdateState({ phase: 'unsupported', error: null })
       return
     }
+    logUpdaterEvent('check-for-updates-request', { phase: updateRuntimeState.phase })
     if (updateRuntimeState.phase === 'ready') {
       sendUpdateEvent('update:downloaded', {
         version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
@@ -516,17 +681,27 @@ function setupAutoUpdater () {
       return
     }
     void autoUpdater.checkForUpdates().catch((err) => {
-      const msg = err?.message ? String(err.message) : String(err)
-      setUpdateState({ phase: 'idle', error: msg })
-      sendUpdateEvent('update:error', msg)
+      const payload = buildUpdateErrorPayload('check-for-updates', err)
+      logUpdaterEvent('check-for-updates-failed', payload, 'error')
+      setUpdateState({ phase: 'idle', error: payload.message })
+      sendUpdateEvent('update:error', payload)
     })
   })
 
   ipcMain.on('update:download-update', () => {
     if (!app.isPackaged) {
-      sendUpdateEvent('update:error', 'Actualizaciones disponibles solo en app empaquetada')
+      const payload = {
+        message: 'Descarga de actualización deshabilitada: app no empaquetada',
+        stage: 'download-update',
+        phase: updateRuntimeState.phase,
+        packaged: app.isPackaged,
+        platform: process.platform,
+        at: new Date().toISOString()
+      }
+      logUpdaterEvent('download-update-skipped', payload)
       return
     }
+    logUpdaterEvent('download-update-request', { phase: updateRuntimeState.phase })
     if (updateRuntimeState.phase === 'ready') {
       sendUpdateEvent('update:downloaded', {
         version: updateRuntimeState.downloadedVersion || updateRuntimeState.remoteVersion,
@@ -537,14 +712,19 @@ function setupAutoUpdater () {
     }
     if (updateRuntimeState.phase === 'available' || updateRuntimeState.phase === 'downloading') {
       void autoUpdater.downloadUpdate().catch((err) => {
-        const msg = err?.message ? String(err.message) : String(err)
-        setUpdateState({ phase: 'idle', error: msg })
-        sendUpdateEvent('update:error', msg)
+        const payload = buildUpdateErrorPayload('download-update', err)
+        logUpdaterEvent('download-update-failed', payload, 'error')
+        setUpdateState({ phase: 'idle', error: payload.message })
+        sendUpdateEvent('update:error', payload)
       })
     }
   })
 
   ipcMain.on('update:install-update', () => {
+    logUpdaterEvent('install-update-request', {
+      phase: updateRuntimeState.phase,
+      downloadedVersion: updateRuntimeState.downloadedVersion
+    })
     autoUpdater.quitAndInstall(false, true)
   })
 
@@ -649,6 +829,8 @@ ipcMain.handle('print:thermal', async (_event, opts) => {
 function registerAuthIpc () {
   ipcMain.handle('admin:listCompanies', async () => {
     try {
+      const guard = await requireSuperAdminGuard()
+      if (!guard.success) return guard
       await ensureTenantsFromEmpresaProfiles()
 
       const { data, error } = await insforge.database
@@ -689,6 +871,8 @@ function registerAuthIpc () {
 
   ipcMain.handle('admin:setCompanyBlocked', async (event, { companyId, blocked }) => {
     try {
+      const guard = await requireSuperAdminGuard()
+      if (!guard.success) return guard
       if (!companyId) {
         return { success: false, error: 'companyId es requerido' }
       }
@@ -716,8 +900,128 @@ function registerAuthIpc () {
     }
   })
 
+  ipcMain.handle('admin:deleteCompany', async (event, { companyId }) => {
+    try {
+      const guard = await requireSuperAdminGuard()
+      if (!guard.success) return guard
+      const tenantId = String(companyId || '').trim()
+      if (!tenantId) {
+        return { success: false, error: 'companyId es requerido' }
+      }
+
+      const { data: tenant, error: tenantErr } = await insforge.database
+        .from('nexo_tenants')
+        .select('id,name')
+        .eq('id', tenantId)
+        .maybeSingle()
+      if (tenantErr) {
+        return { success: false, error: tenantErr.message || 'No se pudo validar la empresa a eliminar' }
+      }
+      if (!tenant?.id) {
+        return { success: false, error: 'Empresa no encontrada en nexo_tenants' }
+      }
+
+      const userCandidates = new Set()
+      try {
+        const { data: members } = await insforge.database
+          .from('nexo_tenant_members')
+          .select('user_id')
+          .eq('tenant_id', tenantId)
+        ;(members || []).forEach((m) => {
+          if (m?.user_id) userCandidates.add(String(m.user_id))
+        })
+      } catch (_) {}
+
+      try {
+        const { data: profilesByTenant } = await insforge.database
+          .from('nexo_profiles')
+          .select('user_id')
+          .eq('default_tenant_id', tenantId)
+        ;(profilesByTenant || []).forEach((p) => {
+          if (p?.user_id) userCandidates.add(String(p.user_id))
+        })
+      } catch (_) {}
+
+      try {
+        const { data: profilesByCompany } = await insforge.database
+          .from('nexo_profiles')
+          .select('user_id')
+          .eq('app_role', 'empresa')
+          .eq('company', tenant.name)
+        ;(profilesByCompany || []).forEach((p) => {
+          if (p?.user_id) userCandidates.add(String(p.user_id))
+        })
+      } catch (_) {}
+
+      const { data: deletedRows, error: deleteErr } = await insforge.database
+        .from('nexo_tenants')
+        .delete()
+        .eq('id', tenantId)
+        .select('id')
+      if (deleteErr) {
+        return { success: false, error: deleteErr.message || 'No se pudo eliminar la empresa' }
+      }
+      if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
+        return { success: false, error: 'La empresa no pudo eliminarse' }
+      }
+
+      let deletedProfiles = 0
+      for (const userId of userCandidates) {
+        const stillMember = await insforge.database
+          .from('nexo_tenant_members')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (stillMember?.data?.id) continue
+
+        const profileDelete = await insforge.database
+          .from('nexo_profiles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('app_role', 'empresa')
+          .select('user_id')
+        if (!profileDelete.error && Array.isArray(profileDelete.data) && profileDelete.data.length > 0) {
+          deletedProfiles += profileDelete.data.length
+        }
+      }
+
+      return {
+        success: true,
+        deleted: {
+          tenantId,
+          tenantName: tenant.name || null,
+          companyRows: deletedRows.length,
+          empresaProfiles: deletedProfiles
+        }
+      }
+    } catch (error) {
+      return { success: false, error: error.message || 'No se pudo eliminar la empresa' }
+    }
+  })
+
   ipcMain.handle('auth:signUp', async (event, { email, password, name, company }) => {
   try {
+    const companyName = String(company || '').trim()
+    if (!companyName) {
+      return { success: false, error: 'La empresa es requerida para registrar la cuenta.' }
+    }
+    const existing = await insforge.database
+      .from('nexo_tenants')
+      .select('id')
+      .eq('name', companyName)
+      .maybeSingle()
+    const existingSlug = await insforge.database
+      .from('nexo_tenants')
+      .select('id')
+      .eq('slug', slugifyCompany(companyName) || 'empresa')
+      .maybeSingle()
+    if (existing?.data?.id || existingSlug?.data?.id) {
+      return {
+        success: false,
+        error: 'Esta empresa ya existe. Tu cuenta debe ser habilitada por un administrador de esa empresa.'
+      }
+    }
+
     const { data, error } = await insforge.auth.signUp({
       email,
       password,
@@ -744,15 +1048,20 @@ function registerAuthIpc () {
         fullName: name,
         company
       })
-      if (company && String(company).trim()) {
-        const tenant = await ensureTenantForCompany(company)
-        if (tenant?.id) {
-          await ensureTenantMembership({ tenantId: tenant.id, userId: u.id })
-          await insforge.database
-            .from('nexo_profiles')
-            .update({ default_tenant_id: tenant.id })
-            .eq('user_id', u.id)
+      if (companyName) {
+        const tenantResult = await createTenantForSelfSignup(companyName)
+        if (!tenantResult.ok || !tenantResult.tenant?.id) {
+          return {
+            success: false,
+            error: tenantResult.error || 'No se pudo provisionar el tenant de la nueva empresa.'
+          }
         }
+        const tenant = tenantResult.tenant
+        await ensureTenantMembership({ tenantId: tenant.id, userId: u.id })
+        await insforge.database
+          .from('nexo_profiles')
+          .update({ default_tenant_id: tenant.id })
+          .eq('user_id', u.id)
       }
       await mergeNexoProfile(data.user)
     }
@@ -827,6 +1136,104 @@ ipcMain.handle('auth:updateProfile', async (event, profileData) => {
     return { success: true, data }
   } catch (error) {
     return { success: false, error: error.message || 'Error al actualizar perfil' }
+  }
+})
+
+ipcMain.handle('auth:updateSecuritySettings', async (event, settings) => {
+  try {
+    const timeoutRaw = Number(settings?.session_timeout_min)
+    const timeoutAllowed = new Set([0, 15, 30, 60, 120])
+    const sessionTimeoutMin = timeoutAllowed.has(timeoutRaw) ? timeoutRaw : 30
+    const patch = {
+      session_timeout_min: sessionTimeoutMin,
+      twofa_enabled: false,
+      twofa_status: 'en_desarrollo'
+    }
+    const { data, error } = await insforge.auth.setProfile(patch)
+    if (error) {
+      return { success: false, error: error.message || 'No se pudo guardar configuración de seguridad' }
+    }
+    return { success: true, data, security: patch }
+  } catch (error) {
+    return { success: false, error: error.message || 'No se pudo guardar configuración de seguridad' }
+  }
+})
+
+ipcMain.handle('auth:requestPasswordChange', async (event, { currentPassword }) => {
+  try {
+    const current = await insforge.auth.getCurrentUser()
+    if (current?.error || !current?.data?.user?.email) {
+      return { success: false, error: 'No hay una sesión activa para cambiar la contraseña' }
+    }
+    const email = String(current.data.user.email)
+    const pwd = String(currentPassword || '')
+    if (!pwd) {
+      return { success: false, error: 'Debes indicar tu contraseña actual' }
+    }
+
+    const reauth = await insforge.auth.signInWithPassword({ email, password: pwd })
+    if (reauth?.error) {
+      return { success: false, error: 'La contraseña actual no es válida' }
+    }
+
+    let resetMethod = 'code'
+    try {
+      const cfg = await insforge.auth.getPublicAuthConfig()
+      const candidate = String(cfg?.data?.resetPasswordMethod || '').toLowerCase()
+      if (candidate === 'link' || candidate === 'code') resetMethod = candidate
+    } catch (_) {}
+
+    const sendReq = { email }
+    if (resetMethod === 'link') {
+      sendReq.redirectTo = 'file://' + path.join(__dirname, 'index.html')
+    }
+    const sent = await insforge.auth.sendResetPasswordEmail(sendReq)
+    if (sent?.error) {
+      return { success: false, error: sent.error.message || 'No se pudo iniciar el cambio de contraseña' }
+    }
+
+    return {
+      success: true,
+      flow: resetMethod,
+      message: resetMethod === 'link'
+        ? 'Se envió un enlace a tu correo para completar el cambio de contraseña.'
+        : 'Se envió un código a tu correo para completar el cambio de contraseña.'
+    }
+  } catch (error) {
+    return { success: false, error: error.message || 'No se pudo iniciar el cambio de contraseña' }
+  }
+})
+
+ipcMain.handle('auth:confirmPasswordChange', async (event, { code, newPassword }) => {
+  try {
+    const otpCode = String(code || '').trim()
+    const nextPassword = String(newPassword || '')
+    if (!otpCode) return { success: false, error: 'Debes introducir el código enviado por correo' }
+    if (nextPassword.length < 8) {
+      return { success: false, error: 'La nueva contraseña debe tener al menos 8 caracteres' }
+    }
+    const current = await insforge.auth.getCurrentUser()
+    if (current?.error || !current?.data?.user?.email) {
+      return { success: false, error: 'No hay una sesión activa para completar el cambio de contraseña' }
+    }
+    const email = String(current.data.user.email)
+
+    const exchanged = await insforge.auth.exchangeResetPasswordToken({ email, code: otpCode })
+    if (exchanged?.error || !exchanged?.data?.token) {
+      return { success: false, error: exchanged?.error?.message || 'Código inválido o expirado' }
+    }
+
+    const reset = await insforge.auth.resetPassword({
+      newPassword: nextPassword,
+      otp: String(exchanged.data.token)
+    })
+    if (reset?.error) {
+      return { success: false, error: reset.error.message || 'No se pudo actualizar la contraseña' }
+    }
+
+    return { success: true, data: reset.data }
+  } catch (error) {
+    return { success: false, error: error.message || 'No se pudo completar el cambio de contraseña' }
   }
 })
 }
@@ -965,6 +1372,8 @@ function registerPortfolioIpc () {
           principal: Number(loan.principal),
           term_months: Number(loan.term_months),
           interest_rate_pct: loan.interest_rate_pct != null ? Number(loan.interest_rate_pct) : null,
+          late_fee_percent: loan.late_fee_percent != null ? Number(loan.late_fee_percent) : Number(settingsRow.late_fee_percent),
+          grace_days: loan.grace_days != null ? Number(loan.grace_days) : Number(settingsRow.grace_days),
           interest_mode: loan.interest_mode,
           payment_frequency: loan.payment_frequency,
           start_date: loan.start_date,
@@ -1069,6 +1478,14 @@ function registerPortfolioIpc () {
         email: client.email || null,
         created_at: client.created_at || new Date().toISOString()
       }
+      const clientOwnership = await assertScopedIdOwnership({
+        table: 'nexo_clients',
+        id: clientRow.id,
+        tenantId
+      })
+      if (!clientOwnership.success) {
+        return { success: false, error: clientOwnership.error }
+      }
       const { error: cIns } = await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
       if (cIns) {
         return { success: false, error: cIns.message || 'No se pudo guardar el cliente' }
@@ -1087,12 +1504,22 @@ function registerPortfolioIpc () {
         principal: Number(loanFields.principal) || 0,
         term_months: Number(loanFields.term_months) || 12,
         interest_rate_pct: loanFields.interest_rate_pct != null ? Number(loanFields.interest_rate_pct) : null,
+        late_fee_percent: loanFields.late_fee_percent != null ? Number(loanFields.late_fee_percent) : null,
+        grace_days: loanFields.grace_days != null ? Number(loanFields.grace_days) : null,
         interest_mode: loanFields.interest_mode || 'annual',
         payment_frequency: loanFields.payment_frequency || 'monthly',
         start_date: loanFields.start_date || null,
         created_at: loanFields.created_at || new Date().toISOString(),
         contract_signer: loanFields.contract_signer || '',
         documents: Array.isArray(loanFields.documents) ? loanFields.documents : []
+      }
+      const loanOwnership = await assertScopedIdOwnership({
+        table: 'nexo_loans',
+        id: loanRow.id,
+        tenantId
+      })
+      if (!loanOwnership.success) {
+        return { success: false, error: loanOwnership.error }
       }
 
       const { error: lIns } = await insforge.database.from('nexo_loans').insert([loanRow])
@@ -1168,106 +1595,215 @@ function registerPortfolioIpc () {
         breakdown: payment.breakdown || {},
         created_at: payment.created_at || new Date().toISOString()
       }
+      const paymentOwnership = await assertScopedIdOwnership({
+        table: 'nexo_payments',
+        id: payRow.id,
+        tenantId
+      })
+      if (!paymentOwnership.success) {
+        return { success: false, error: paymentOwnership.error }
+      }
       const { error: pErr } = await insforge.database.from('nexo_payments').insert([payRow])
       if (pErr) {
         return { success: false, error: pErr.message || 'No se pudo registrar el pago' }
       }
+
+      const liquidated = payload?.liquidated === true
+      if (liquidated) {
+        await insforge.database
+          .from('nexo_loan_installments')
+          .delete()
+          .eq('loan_id', loanId)
+          .gt('n', n)
+      }
+
       return { success: true }
     } catch (err) {
       return { success: false, error: err.message || 'Error al aplicar pago' }
     }
   })
 
-  ipcMain.handle('portfolio:importLegacyState', async (event, state) => {
+  // Delete loan only if no payments exist
+  ipcMain.handle('portfolio:deleteLoan', async (event, loanId) => {
     try {
-      if (!state || typeof state !== 'object') {
-        return { success: false, error: 'Estado inválido' }
-      }
       const t = await getPortfolioTenantId()
       if (t.error) {
         return { success: false, error: t.error }
       }
       const tenantId = t.tenantId
-
-      if (state.settings && typeof state.settings === 'object') {
-        await insforge.database.from('nexo_portfolio_settings').upsert([{
-          ...portfolioDefaultSettingsRow(tenantId),
-          ...state.settings,
-          tenant_id: tenantId,
-          updated_at: new Date().toISOString()
-        }], { onConflict: 'tenant_id' })
+      const id = String(loanId || '')
+      if (!id) {
+        return { success: false, error: 'Id de préstamo no provisto' }
       }
 
-      for (const c of state.clients || []) {
-        const clientRow = {
-          id: String(c.id),
-          tenant_id: tenantId,
-          name: String(c.name || ''),
-          document_type: c.document_type || null,
-          document_number: c.document_number || null,
-          phone: c.phone || null,
-          address: c.address || null,
-          email: c.email || null,
-          created_at: c.created_at || new Date().toISOString()
-        }
-        await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
+      // Verify loan exists
+      const { data: loanCheck } = await insforge.database
+        .from('nexo_loans')
+        .select('id')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .maybeSingle()
+      if (!loanCheck) {
+        return { success: false, error: 'Préstamo no encontrado' }
       }
 
-      for (const loan of state.loans || []) {
-        const installments = loan.installments || []
-        const { installments: _x, ...lf } = loan
-        const loanRow = {
-          id: String(lf.id),
-          tenant_id: tenantId,
-          client_id: String(lf.client_id),
-          reference: lf.reference || null,
-          client_name: String(lf.client_name || ''),
-          product: lf.product || 'hipotecario',
-          purpose: lf.purpose || '',
-          principal: Number(lf.principal) || 0,
-          term_months: Number(lf.term_months) || 12,
-          interest_rate_pct: lf.interest_rate_pct != null ? Number(lf.interest_rate_pct) : null,
-          interest_mode: lf.interest_mode || 'annual',
-          payment_frequency: lf.payment_frequency || 'monthly',
-          start_date: lf.start_date || null,
-          created_at: lf.created_at || new Date().toISOString(),
-          contract_signer: lf.contract_signer || '',
-          documents: Array.isArray(lf.documents) ? lf.documents : []
-        }
-        await insforge.database.from('nexo_loans').upsert([loanRow], { onConflict: 'id' })
-        await insforge.database.from('nexo_loan_installments').delete().eq('loan_id', loanRow.id)
-        const instPayload = installments.map((i) => ({
-          loan_id: loanRow.id,
-          n: Number(i.n),
-          due_date: i.due_date,
-          principal_target: Number(i.principal_target) || 0,
-          paid_interest: Number(i.paid_interest) || 0,
-          paid_principal: Number(i.paid_principal) || 0,
-          paid_late_fee: Number(i.paid_late_fee) || 0
-        }))
-        if (instPayload.length) {
-          await insforge.database.from('nexo_loan_installments').insert(instPayload)
-        }
+      // Check for any payments linked to this loan
+      const { data: payments, error: pErr } = await insforge.database
+        .from('nexo_payments')
+        .select('id')
+        .eq('loan_id', id)
+        .eq('tenant_id', tenantId)
+
+      if (pErr) {
+        return { success: false, error: pErr.message || 'Error al verificar pagos' }
+      }
+      if (payments && payments.length > 0) {
+        return { success: false, error: 'No se puede eliminar: existen pagos registrados' }
       }
 
-      for (const p of state.payments || []) {
-        const payRow = {
-          id: String(p.id),
-          tenant_id: tenantId,
-          loan_id: String(p.loan_id),
-          installment_n: Number(p.installment_n),
-          amount: Number(p.amount) || 0,
-          breakdown: p.breakdown || {},
-          created_at: p.created_at || new Date().toISOString()
-        }
-        await insforge.database.from('nexo_payments').upsert([payRow], { onConflict: 'id' })
+      // No payments; proceed to delete installments then loan
+      const { error: delInstErr } = await insforge.database
+        .from('nexo_loan_installments')
+        .delete()
+        .eq('loan_id', id)
+
+      if (delInstErr) {
+        return { success: false, error: delInstErr.message || 'Error al eliminar cuotas' }
+      }
+
+      const { error: delLoanErr } = await insforge.database
+        .from('nexo_loans')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+
+      if (delLoanErr) {
+        return { success: false, error: delLoanErr.message || 'Error al eliminar préstamo' }
       }
 
       return { success: true }
     } catch (err) {
-      return { success: false, error: err.message || 'Error al importar' }
+      return { success: false, error: err.message || 'Error al eliminar préstamo' }
     }
   })
+
+ipcMain.handle('portfolio:importLegacyState', async (event, state) => {
+      try {
+        if (!state || typeof state !== 'object') {
+          return { success: false, error: 'Estado inválido' }
+        }
+
+        const t = await getPortfolioTenantId()
+        if (t.error) {
+          return { success: false, error: t.error }
+        }
+        const tenantId = t.tenantId
+
+        if (state.settings && typeof state.settings === 'object') {
+          await insforge.database.from('nexo_portfolio_settings').upsert([{ 
+            ...portfolioDefaultSettingsRow(tenantId),
+            ...state.settings,
+            tenant_id: tenantId,
+            updated_at: new Date().toISOString()
+          }], { onConflict: 'tenant_id' })
+        }
+
+        for (const c of state.clients || []) {
+          const clientRow = {
+            id: String(c.id),
+            tenant_id: tenantId,
+            name: String(c.name || ''),
+            document_type: c.document_type || null,
+            document_number: c.document_number || null,
+            phone: c.phone || null,
+            address: c.address || null,
+            email: c.email || null,
+            created_at: c.created_at || new Date().toISOString()
+          }
+          const clientOwnership = await assertScopedIdOwnership({
+            table: 'nexo_clients',
+            id: clientRow.id,
+            tenantId
+          })
+          if (!clientOwnership.success) {
+            return { success: false, error: clientOwnership.error }
+          }
+          await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
+        }
+
+        for (const loan of state.loans || []) {
+          const installments = loan.installments || []
+          const { installments: _x, ...lf } = loan
+          const loanRow = {
+            id: String(lf.id),
+            tenant_id: tenantId,
+            client_id: String(lf.client_id),
+            reference: lf.reference || null,
+            client_name: String(lf.client_name || ''),
+            product: lf.product || 'hipotecario',
+            purpose: lf.purpose || '',
+            principal: Number(lf.principal) || 0,
+            term_months: Number(lf.term_months) || 12,
+            interest_rate_pct: lf.interest_rate_pct != null ? Number(lf.interest_rate_pct) : null,
+            late_fee_percent: lf.late_fee_percent != null ? Number(lf.late_fee_percent) : null,
+            grace_days: lf.grace_days != null ? Number(lf.grace_days) : null,
+            interest_mode: lf.interest_mode || 'annual',
+            payment_frequency: lf.payment_frequency || 'monthly',
+            start_date: lf.start_date || null,
+            created_at: lf.created_at || new Date().toISOString(),
+            contract_signer: lf.contract_signer || '',
+            documents: Array.isArray(lf.documents) ? lf.documents : []
+          }
+          const loanOwnership = await assertScopedIdOwnership({
+            table: 'nexo_loans',
+            id: loanRow.id,
+            tenantId
+          })
+          if (!loanOwnership.success) {
+            return { success: false, error: loanOwnership.error }
+          }
+          await insforge.database.from('nexo_loans').upsert([loanRow], { onConflict: 'id' })
+          await insforge.database.from('nexo_loan_installments').delete().eq('loan_id', loanRow.id)
+          const instPayload = installments.map((i) => ({
+            loan_id: loanRow.id,
+            n: Number(i.n),
+            due_date: i.due_date,
+            principal_target: Number(i.principal_target) || 0,
+            paid_interest: Number(i.paid_interest) || 0,
+            paid_principal: Number(i.paid_principal) || 0,
+            paid_late_fee: Number(i.paid_late_fee) || 0
+          }))
+          if (instPayload.length) {
+            await insforge.database.from('nexo_loan_installments').insert(instPayload)
+          }
+        }
+
+        for (const p of state.payments || []) {
+          const payRow = {
+            id: String(p.id),
+            tenant_id: tenantId,
+            loan_id: String(p.loan_id),
+            installment_n: Number(p.installment_n),
+            amount: Number(p.amount) || 0,
+            breakdown: p.breakdown || {},
+            created_at: p.created_at || new Date().toISOString()
+          }
+          const paymentOwnership = await assertScopedIdOwnership({
+            table: 'nexo_payments',
+            id: payRow.id,
+            tenantId
+          })
+          if (!paymentOwnership.success) {
+            return { success: false, error: paymentOwnership.error }
+          }
+          await insforge.database.from('nexo_payments').upsert([payRow], { onConflict: 'id' })
+        }
+
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: err.message || 'Error al importar' }
+      }
+    })
 }
 
 async function bootstrap () {

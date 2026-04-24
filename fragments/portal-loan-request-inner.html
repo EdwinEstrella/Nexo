@@ -64,13 +64,13 @@
                     </div>
 
                     <div class="lr-field">
-                        <label class="lr-label" for="lr-email">Correo electrónico <span class="lr-req" aria-hidden="true">*</span></label>
-                        <input type="email" id="lr-email" name="email" class="lr-input" required autocomplete="email" placeholder="correo@ejemplo.com">
+                        <label class="lr-label" for="lr-email">Correo electrónico (opcional)</label>
+                        <input type="email" id="lr-email" name="email" class="lr-input" autocomplete="email" placeholder="correo@ejemplo.com">
                     </div>
 
                     <div class="lr-field">
                         <label class="lr-label" for="lr-telefono">Teléfono <span class="lr-req" aria-hidden="true">*</span></label>
-                        <input type="tel" id="lr-telefono" name="telefono" class="lr-input" required autocomplete="tel" placeholder="+1 300 000 0000">
+                        <input type="tel" id="lr-telefono" name="telefono" class="lr-input" required autocomplete="tel" placeholder="+1 (809) 300-0000">
                     </div>
 
                     <div class="lr-field">
@@ -114,8 +114,8 @@
                     </div>
 
                     <div class="lr-field">
-                        <label class="lr-label" for="lr-proposito">Finalidad del crédito <span class="lr-req" aria-hidden="true">*</span></label>
-                        <select id="lr-proposito" name="proposito" class="lr-select" required>
+                        <label class="lr-label" for="lr-proposito">Finalidad del crédito (opcional)</label>
+                        <select id="lr-proposito" name="proposito" class="lr-select">
                             <option value="">Seleccionar…</option>
                             <option value="vivienda">Adquisición o mejora de vivienda</option>
                             <option value="liquidez">Liquidez / capital de trabajo</option>
@@ -144,7 +144,17 @@
                     </div>
 
                     <div class="lr-field">
-                        <label class="lr-label" for="lr-plazo">Plazo (meses) <span class="lr-req" aria-hidden="true">*</span></label>
+                        <label class="lr-label" for="lr-late-fee-percent">Mora diaria (%)</label>
+                        <input type="number" id="lr-late-fee-percent" name="late_fee_percent" class="lr-input" min="0" step="0.01" value="1">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-grace-days">Días de gracia</label>
+                        <input type="number" id="lr-grace-days" name="grace_days" class="lr-input" min="0" step="1" value="2">
+                    </div>
+
+                    <div class="lr-field">
+                        <label class="lr-label" for="lr-plazo">Periodos a proyectar (referencia) <span class="lr-req" aria-hidden="true">*</span></label>
                         <select id="lr-plazo" name="plazo_meses" class="lr-select" required>
                             <option value="12">12</option>
                             <option value="24">24</option>
@@ -179,6 +189,7 @@
                         <label class="lr-label" for="lr-payment-frequency">Frecuencia de pago</label>
                         <select id="lr-payment-frequency" name="payment_frequency" class="lr-select">
                             <option value="monthly" selected>Mensual</option>
+                            <option value="biweekly">Quincenal</option>
                             <option value="weekly">Semanal</option>
                         </select>
                     </div>
@@ -204,30 +215,25 @@
                 <p class="lr-card__desc">Proyección en vivo según el monto, plazo, tasa y frecuencia de pago del paso 2 (mismo criterio de cuotas que usará la cartera al crear el préstamo).</p>
             </div>
             <div class="lr-card__body">
-                <p class="lr-profit-intro">Indica un monto válido en el paso 2 para ver números. El interés se calcula por periodo sobre saldo insoluto; el capital se reparte en cuotas iguales por periodo.</p>
+                <p class="lr-profit-intro">El modelo utilizado es de interés sobre saldo insoluto (capital abierto). El interés se recalculará según los abonos extraordinarios a capital.</p>
                 <div class="lr-profit-grid" role="list">
                     <article class="lr-profit-kpi" role="listitem">
-                        <p class="lr-profit-kpi__label">Interés total estimado</p>
-                        <p class="lr-profit-kpi__value" id="lr-profit-interest">—</p>
-                        <p class="lr-profit-kpi__meta">Suma de intereses si paga en fecha</p>
-                    </article>
-                    <article class="lr-profit-kpi" role="listitem">
-                        <p class="lr-profit-kpi__label">Total estimado a cobrar</p>
-                        <p class="lr-profit-kpi__value" id="lr-profit-total">—</p>
-                        <p class="lr-profit-kpi__meta">Capital + intereses del cronograma</p>
-                    </article>
-                    <article class="lr-profit-kpi" role="listitem">
-                        <p class="lr-profit-kpi__label">Primera cuota orientativa</p>
+                        <p class="lr-profit-kpi__label">Interés Periódico Estimado</p>
                         <p class="lr-profit-kpi__value" id="lr-profit-first">—</p>
-                        <p class="lr-profit-kpi__meta">Interés del 1.er periodo + capital del periodo</p>
+                        <p class="lr-profit-kpi__meta">Monto exigible de interés al inicio</p>
                     </article>
                     <article class="lr-profit-kpi" role="listitem">
-                        <p class="lr-profit-kpi__label">Rendimiento / plazo</p>
+                        <p class="lr-profit-kpi__label">Total proyectado (si no abona capital extra)</p>
+                        <p class="lr-profit-kpi__value" id="lr-profit-total">—</p>
+                        <p class="lr-profit-kpi__meta">Suma de intereses referenciales</p>
+                    </article>
+                    <article class="lr-profit-kpi" role="listitem">
+                        <p class="lr-profit-kpi__label">Deuda Total Inmediata</p>
                         <p class="lr-profit-kpi__value" id="lr-profit-yield">—</p>
-                        <p class="lr-profit-kpi__meta"><span id="lr-profit-periods">—</span> pagos · margen sobre capital prestado</p>
+                        <p class="lr-profit-kpi__meta">Capital + Interés del P1</p>
                     </article>
                 </div>
-                <p class="lr-profit-footnote" role="note">No incluye moras, comisiones ni impuestos. Es una referencia interna; revisa política de crédito y tasas vigentes antes de formalizar.</p>
+                <p class="lr-profit-footnote" role="note">Los valores mostrados son una proyección considerando que el cliente solo pague los intereses periódicamente hasta el final.</p>
             </div>
         </section>
 

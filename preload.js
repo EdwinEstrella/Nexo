@@ -27,18 +27,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     signIn: (email, password) => ipcRenderer.invoke('auth:signIn', { email, password }),
     signOut: () => ipcRenderer.invoke('auth:signOut'),
     getCurrentUser: () => ipcRenderer.invoke('auth:getCurrentUser'),
-    updateProfile: (profileData) => ipcRenderer.invoke('auth:updateProfile', profileData)
+    updateProfile: (profileData) => ipcRenderer.invoke('auth:updateProfile', profileData),
+    requestPasswordChange: (currentPassword) =>
+      ipcRenderer.invoke('auth:requestPasswordChange', { currentPassword }),
+    confirmPasswordChange: (code, newPassword) =>
+      ipcRenderer.invoke('auth:confirmPasswordChange', { code, newPassword }),
+    updateSecuritySettings: (settings) =>
+      ipcRenderer.invoke('auth:updateSecuritySettings', settings)
   },
   admin: {
     listCompanies: () => ipcRenderer.invoke('admin:listCompanies'),
-    setCompanyBlocked: (companyId, blocked) => ipcRenderer.invoke('admin:setCompanyBlocked', { companyId, blocked })
+    setCompanyBlocked: (companyId, blocked) => ipcRenderer.invoke('admin:setCompanyBlocked', { companyId, blocked }),
+    deleteCompany: (companyId) => ipcRenderer.invoke('admin:deleteCompany', { companyId })
   },
   portfolio: {
     getState: () => ipcRenderer.invoke('portfolio:getState'),
     saveSettings: (partial) => ipcRenderer.invoke('portfolio:saveSettings', partial),
     createLoan: (payload) => ipcRenderer.invoke('portfolio:createLoan', payload),
     applyPayment: (payload) => ipcRenderer.invoke('portfolio:applyPayment', payload),
-    importLegacyState: (state) => ipcRenderer.invoke('portfolio:importLegacyState', state)
+    importLegacyState: (state) => ipcRenderer.invoke('portfolio:importLegacyState', state),
+    deleteLoan: (loanId) => ipcRenderer.invoke('portfolio:deleteLoan', loanId)
   },
   listPrinters: () => ipcRenderer.invoke('printers:list'),
   printThermal: (opts) => {
@@ -64,7 +72,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     bind('update:not-available', 'onUpdateNotAvailable')
     bind('update:download-progress', 'onDownloadProgress')
     bind('update:downloaded', 'onUpdateDownloaded')
-    bind('update:error', 'onUpdateError', (x) => String(x || 'Error desconocido'))
+    bind('update:error', 'onUpdateError', (x) => {
+      if (x && typeof x === 'object') return x
+      return { message: String(x || 'Error desconocido') }
+    })
     return () => {
       subs.forEach((unsub) => {
         try { unsub() } catch (_) {}
