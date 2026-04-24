@@ -7,6 +7,25 @@ const log = require('electron-log')
 
 const UPDATE_STATE_FILE = 'updater-state.json'
 
+const CONFIG_FILE = path.join(__dirname, 'config', 'config.json')
+
+function readConfigVersion () {
+  try {
+    const raw = fs.readFileSync(CONFIG_FILE, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && parsed.version) {
+      return String(parsed.version).trim()
+    }
+  } catch (_) {}
+  return null
+}
+
+function getAppVersion () {
+  const configured = readConfigVersion()
+  if (configured) return configured
+  return app.getVersion()
+}
+
 function normalizeVersion (value) {
   return String(value || '').trim().replace(/^v/i, '')
 }
@@ -378,7 +397,7 @@ function setupAutoUpdater () {
   }
 
   const persisted = loadPersistedUpdateState()
-  const currentVersion = normalizeVersion(app.getVersion())
+  const currentVersion = normalizeVersion(getAppVersion())
   const cachedDownloaded = normalizeVersion(persisted.downloadedVersion)
   if (cachedDownloaded && cachedDownloaded !== currentVersion) {
     setUpdateState({
@@ -532,6 +551,10 @@ function setupAutoUpdater () {
   ipcMain.handle('update:get-state', async () => {
     return { ...updateRuntimeState }
   })
+
+  ipcMain.handle('app:get-version', async () => {
+    return getAppVersion()
+  })
 }
 
 // Window controls handlers
@@ -577,7 +600,7 @@ ipcMain.handle('print:thermal', async (_event, opts) => {
   }
   return new Promise((resolve) => {
     const printWin = new BrowserWindow({
-      width: 400,
+      width: 220,
       height: 720,
       show: false,
       webPreferences: {
@@ -602,7 +625,9 @@ ipcMain.handle('print:thermal', async (_event, opts) => {
           {
             silent,
             printBackground: true,
-            deviceName: opts.deviceName || undefined
+            deviceName: opts.deviceName || undefined,
+            pageSize: { width: 58000, height: 200000 },
+            margins: { marginType: 'custom', top: 0, bottom: 0, left: 0, right: 0 }
           },
           (success, failureReason) => {
             clearTimeout(timer)

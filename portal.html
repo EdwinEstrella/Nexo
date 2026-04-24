@@ -400,6 +400,20 @@
         </div>
     </dialog>
 
+    <dialog id="payment-detail-dialog" class="loan-installments-dialog payment-detail-dialog" aria-labelledby="payment-detail-dialog-title">
+        <div class="loan-installments-dialog__panel" role="document">
+            <header class="loan-installments-dialog__head">
+                <div class="loan-installments-dialog__head-text">
+                    <h2 id="payment-detail-dialog-title" class="loan-installments-dialog__title">Detalle del pago</h2>
+                </div>
+                <button type="button" class="loan-installments-dialog__close" id="payment-detail-dialog-close" aria-label="Cerrar">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>
+                </button>
+            </header>
+            <div id="payment-detail-dialog-body" class="loan-installments-dialog__body"></div>
+        </div>
+    </dialog>
+
     <aside id="app-update-card" class="app-update-card" aria-live="polite" aria-label="Actualizaciones de la aplicación">
         <div class="app-update-card__title" id="app-update-title">Actualización disponible</div>
         <div class="app-update-card__meta" id="app-update-meta"></div>
@@ -1280,6 +1294,19 @@
         function hydrateSettingsView () {
             const root = document.getElementById('portal-main')
             if (!root || !root.querySelector('.settings-canvas')) return
+
+            const versionEl = root.querySelector('#settings-app-version')
+            if (versionEl) {
+                const ver = window.electronAPI?.getVersion()
+                if (ver && typeof ver.then === 'function') {
+                    ver.then((v) => { if (versionEl) versionEl.textContent = v || 'Desconocida' }).catch(() => { if (versionEl) versionEl.textContent = 'Error' })
+                } else if (ver) {
+                    versionEl.textContent = ver
+                } else {
+                    versionEl.textContent = 'No disponible'
+                }
+            }
+
             const prefs = readProfilePrefs()
             const org = readOrgPrefs()
             const setVal = (sel, v) => {
@@ -1737,6 +1764,133 @@
             dlg.addEventListener('click', (e) => {
                 if (e.target === dlg) closeClientHistoryModal()
             })
+        }
+
+        let openPaymentActionsMenuBtn = null
+        function openPaymentActionsMenu (btn, paymentId) {
+            console.log('[payments] openPaymentActionsMenu called — btn:', btn, 'paymentId:', paymentId)
+            if (openPaymentActionsMenuBtn && openPaymentActionsMenuBtn !== btn) {
+                closePaymentActionsMenu()
+            }
+            openPaymentActionsMenuBtn = btn
+            console.log('[payments] btn.parentElement:', btn.parentElement)
+            const existing = btn.parentElement.querySelector('.analytics-payments-dropdown')
+            console.log('[payments] existing dropdown:', existing)
+            if (existing) { closePaymentActionsMenu(); return }
+            const dd = document.createElement('div')
+            dd.className = 'analytics-payments-dropdown'
+            dd.innerHTML = `
+                <button type="button" data-payment-action="view" data-payment-id="${paymentId}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Ver detalle
+                </button>
+                <button type="button" data-payment-action="print" data-payment-id="${paymentId}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Imprimir recibo
+                </button>`
+            console.log('[payments] appending dropdown to', btn.parentElement)
+            btn.parentElement.appendChild(dd)
+            console.log('[payments] dropdown appended, children:', btn.parentElement.children)
+            dd.querySelectorAll('button').forEach((actionBtn) => {
+                actionBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    const action = actionBtn.getAttribute('data-payment-action')
+                    const pId = actionBtn.getAttribute('data-payment-id')
+                    console.log('[payments] dropdown action clicked:', action, 'pId:', pId)
+                    closePaymentActionsMenu()
+                    if (action === 'view') openPaymentViewDialog(pId)
+                    else if (action === 'print') printPaymentReceipt(pId)
+                })
+            })
+            setTimeout(() => {
+                document.addEventListener('click', closePaymentActionsMenu, { once: true })
+            }, 0)
+        }
+
+        function closePaymentActionsMenu () {
+            console.log('[payments] closePaymentActionsMenu called')
+            if (openPaymentActionsMenuBtn) {
+                openPaymentActionsMenuBtn._menuOpen = false
+                const dd = openPaymentActionsMenuBtn.parentElement?.querySelector('.analytics-payments-dropdown')
+                if (dd) dd.remove()
+                openPaymentActionsMenuBtn = null
+            }
+        }
+
+        function openPaymentViewDialog (paymentId) {
+            console.log('[payments] openPaymentViewDialog called, paymentId:', paymentId)
+            const state = getLoanState()
+            const payment = state.payments.find((p) => p.id === paymentId)
+            if (!payment) return
+            const loan = state.loans.find((l) => l.id === payment.loan_id)
+            const client = loan ? state.clients.find((c) => c.id === loan.client_id) : null
+            const br = payment.breakdown || {}
+            const dlg = document.getElementById('payment-detail-dialog')
+            const body = document.getElementById('payment-detail-dialog-body')
+            if (!dlg || !body) return
+            body.innerHTML = `
+                <div class="loan-inst-hero">
+                    <div class="loan-inst-hero__main">
+                        <div class="loan-inst-hero__label">Pago registrado</div>
+                        <div class="loan-inst-hero__ref">${client ? client.name : 'Cliente'}</div>
+                        <div class="loan-inst-hero__product">${loan ? displayLoanRef(loan) : '—'} · Cuota #${payment.installment_n}</div>
+                    </div>
+                </div>
+                <section class="loan-inst-section">
+                    <h3 class="loan-inst-section__title">Detalle del pago</h3>
+                    <div class="loan-inst-table-scroll">
+                        <table class="loan-inst-table">
+                            <tbody>
+                                <tr><td>Fecha y hora</td><td>${new Date(payment.created_at).toLocaleString('es-DO')}</td></tr>
+                                <tr><td>Monto total</td><td class="text-right" style="font-weight:700">${fmtMoney(payment.amount)}</td></tr>
+                                <tr><td>Capital (principal)</td><td class="text-right">${fmtMoney(br.principal || 0)}</td></tr>
+                                <tr><td>Interés</td><td class="text-right">${fmtMoney(br.interest || 0)}</td></tr>
+                                <tr><td>Mora</td><td class="text-right">${fmtMoney(br.late_fee || 0)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>`
+            if (typeof dlg.showModal === 'function') dlg.showModal()
+            else dlg.setAttribute('open', '')
+        }
+
+        async function printPaymentReceipt (paymentId) {
+            console.log('[payments] printPaymentReceipt called, paymentId:', paymentId)
+            const state = getLoanState()
+            const payment = state.payments.find((p) => p.id === paymentId)
+            if (!payment) return
+            const loan = state.loans.find((l) => l.id === payment.loan_id)
+            if (!loan) return
+            const NT = globalThis.NexoThermalInvoice
+            if (!NT) { alert('Módulo de factura térmica no disponible.'); return }
+            const root = document.getElementById('portal-main')
+            const org = collectOrgForThermalPreview(root || document)
+            const thermal = NT.getThermalInvoiceSettings()
+            const html = NT.buildThermalInvoiceHtml(org, thermal, {
+                client_name: loan.client_name,
+                loan_reference: displayLoanRef(loan),
+                installment_n: payment.installment_n,
+                amount: payment.amount,
+                breakdown: payment.breakdown || {},
+                payment_method: 'Portal Nexo',
+                created_at: payment.created_at
+            })
+            await printNexoThermalHtml(html)
+        }
+
+        function closePaymentDetailDialog () {
+            const dlg = document.getElementById('payment-detail-dialog')
+            if (!dlg) return
+            if (typeof dlg.close === 'function' && dlg.open) dlg.close()
+            else dlg.removeAttribute('open')
+        }
+
+        function wirePaymentDetailDialog () {
+            const dlg = document.getElementById('payment-detail-dialog')
+            if (!dlg || dlg.dataset.nexoWired === '1') return
+            dlg.dataset.nexoWired = '1'
+            dlg.querySelector('#payment-detail-dialog-close')?.addEventListener('click', () => closePaymentDetailDialog())
+            dlg.addEventListener('click', (e) => { if (e.target === dlg) closePaymentDetailDialog() })
         }
 
         function getHeaderPaymentDueRows () {
@@ -2312,6 +2466,62 @@
             const labMount = root.querySelector('#analytics-origination-labels')
             if (labMount) labMount.innerHTML = labels.map((t) => `<span>${t}</span>`).join('')
 
+            const paymentsBody = root.querySelector('#analytics-payments-body')
+            const paymentsEmpty = root.querySelector('#analytics-payments-empty')
+            const paymentsCountEl = root.querySelector('#analytics-payments-count')
+            if (paymentsBody && paymentsEmpty) {
+                const sortedPayments = [...state.payments].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+                if (sortedPayments.length === 0) {
+                    paymentsBody.innerHTML = ''
+                    paymentsEmpty.hidden = false
+                } else {
+                    paymentsEmpty.hidden = true
+                    paymentsBody.innerHTML = sortedPayments.map((p, i) => {
+                        const loan = state.loans.find((l) => l.id === p.loan_id)
+                        const client = loan ? state.clients.find((c) => c.id === loan.client_id) : null
+                        const initialsStr = client ? initials(client.name) : '??'
+                        const colorClass = ['a', 'b', 'c', 'd'][i % 4]
+                        return `<tr>
+                            <td>
+                                <div class="analytics-pay-customer">
+                                    <div class="analytics-pay-avatar analytics-pay-avatar--${colorClass}">${initialsStr}</div>
+                                    <div>
+                                        <div class="analytics-pay-customer-name">${client ? client.name : 'Cliente desconocido'}</div>
+                                        <div class="analytics-pay-customer-id">${loan ? displayLoanRef(loan) : '—'}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="analytics-pay-loan">${loan ? displayLoanRef(loan) : '—'}</td>
+                            <td class="analytics-pay-date">${new Date(p.created_at).toLocaleDateString('es-DO')}</td>
+                            <td class="text-right"><span class="analytics-pay-amount">${fmtMoney(p.amount)}</span></td>
+                            <td class="analytics-pay-row-actions">
+                                <button type="button" class="analytics-pay-menu-btn" data-payment-id="${p.id}" aria-label="Ver opciones del pago">
+                                    <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>
+                                </button>
+                            </td>
+                        </tr>`
+                    }).join('')
+                }
+                if (paymentsCountEl) paymentsCountEl.textContent = String(sortedPayments.length)
+
+                root.querySelectorAll('.analytics-pay-menu-btn').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (btn._menuOpen) return
+                        const paymentId = btn.getAttribute('data-payment-id')
+                        console.log('[payments] click en 3puntos — paymentId:', paymentId)
+                        console.log('[payments] btn:', btn)
+                        console.log('[payments] btn.parentElement:', btn.parentElement)
+                        if (paymentId) {
+                            console.log('[payments] invocando openPaymentActionsMenu')
+                            btn._menuOpen = true
+                            openPaymentActionsMenu(btn, paymentId)
+                        }
+                    })
+                })
+            }
+
             const openLoans = summaries.filter((x) => x.sum.pending > 0.009)
             let expA = 0
             let expB = 0
@@ -2622,6 +2832,13 @@
                     a.download = 'nexo-config-export.json'
                     a.click()
                     URL.revokeObjectURL(a.href)
+                    return
+                }
+                const payMenuBtn = e.target.closest('.analytics-pay-menu-btn')
+                if (payMenuBtn) {
+                    e.preventDefault()
+                    const paymentId = payMenuBtn.getAttribute('data-payment-id')
+                    if (paymentId) openPaymentActionsMenu(payMenuBtn, paymentId)
                     return
                 }
                 const rpt = e.target.closest('[data-report-export],[data-export-report]')
@@ -3093,6 +3310,7 @@
             const initialView = getInitialPortalView()
             wirePortalSearch()
             wireClientHistoryDialog()
+            wirePaymentDetailDialog()
             wireHeaderNotifications()
             refreshHeaderNotificationBadge()
             wireAppUpdaterActions()

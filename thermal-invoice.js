@@ -47,16 +47,16 @@
 
   function thermalStyles58mm () {
     return `
-    @page { size: 58mm auto; margin: 1.5mm; }
-    * { box-sizing: border-box; }
+    @page { size: 58mm auto; margin: 0mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body {
       font-family: Consolas, "Courier New", Courier, monospace;
       font-size: 11px;
       font-weight: 600;
       line-height: 1.35;
-      width: 52mm;
-      max-width: 52mm;
+      width: 58mm;
+      max-width: 58mm;
       margin: 0 auto;
       padding: 2mm 1mm;
       color: #000;

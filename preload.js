@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
   getVersions: () => process.versions,
+  getVersion: () => ipcRenderer.invoke('app:get-version'),
   onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized)),
 
   // Authentication - expone funciones de autenticación de forma segura

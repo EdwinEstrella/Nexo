@@ -83,6 +83,28 @@
                 </section>
             </div>
 
+            <section class="analytics-payments-list" aria-labelledby="payments-list-title">
+                <div class="analytics-payments-list__head">
+                    <h2 class="analytics-payments-list__title" id="payments-list-title">Historial de pagos</h2>
+                    <span class="analytics-payments-list__count" id="analytics-payments-count">0</span>
+                </div>
+                <div class="analytics-payments-table-scroll">
+                    <table class="analytics-payments-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Cliente</th>
+                                <th scope="col">Préstamo</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col" class="text-right">Monto</th>
+                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-payments-body"></tbody>
+                    </table>
+                </div>
+                <div id="analytics-payments-empty" class="analytics-payments-empty" hidden>Sin pagos registrados aún.</div>
+            </section>
+
             <div class="analytics-bottom">
                 <section class="analytics-reports" aria-labelledby="reports-title">
                     <div class="analytics-reports__head">
@@ -132,19 +154,5 @@
                         </button>
                     </div>
                 </section>
-                <aside class="analytics-cta" aria-labelledby="cta-title">
-                    <div class="analytics-cta__deco" aria-hidden="true"></div>
-                    <div>
-                        <svg class="analytics-cta__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                            <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z"/>
-                        </svg>
-                        <h2 id="cta-title">¿Necesitas más detalle?</h2>
-                        <p style="margin-top:12px">Genera insights a medida con el motor Nexo Intelligence a partir de más de 50 puntos de datos.</p>
-                    </div>
-                    <button type="button" class="analytics-cta__btn">
-                        Constructor de informes personalizado
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
-                    </button>
-                </aside>
             </div>
         </main>
