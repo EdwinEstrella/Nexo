@@ -1473,14 +1473,21 @@
             if (!root || !root.querySelector('.settings-canvas')) return
 
             const versionEl = root.querySelector('#settings-app-version')
-            if (versionEl) {
+            const navVersionEl = root.querySelector('#settings-nav-app-version')
+            if (versionEl || navVersionEl) {
                 const ver = window.electronAPI?.getVersion()
                 if (ver && typeof ver.then === 'function') {
-                    ver.then((v) => { if (versionEl) versionEl.textContent = v || 'Desconocida' }).catch(() => { if (versionEl) versionEl.textContent = 'Error' })
+                    ver.then((v) => { 
+                        if (versionEl) versionEl.textContent = v || 'Desconocida' 
+                        if (navVersionEl) navVersionEl.textContent = v ? 'v' + v : ''
+                    }).catch(() => { 
+                        if (versionEl) versionEl.textContent = 'Error' 
+                    })
                 } else if (ver) {
-                    versionEl.textContent = ver
+                    if (versionEl) versionEl.textContent = ver
+                    if (navVersionEl) navVersionEl.textContent = 'v' + ver
                 } else {
-                    versionEl.textContent = 'No disponible'
+                    if (versionEl) versionEl.textContent = 'No disponible'
                 }
             }
 
@@ -1718,18 +1725,44 @@
                 `
             }).join('')
 
-            const loanPayments = [...state.payments].filter((p) => p.loan_id === loan.id).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-            const payBlock = loanPayments.length
+            const loanPaymentsOldestFirst = [...state.payments].filter((p) => p.loan_id === loan.id).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+            let currentPrincipal = Number(loan.principal) || 0;
+            const paymentsWithRemaining = loanPaymentsOldestFirst.map(p => {
+                const pCap = Number(p.breakdown?.principal) || 0;
+                currentPrincipal = Math.max(0, currentPrincipal - pCap);
+                return { ...p, remaining_principal: currentPrincipal };
+            }).reverse();
+
+            const payBlock = paymentsWithRemaining.length
                 ? `<section class="loan-inst-section" aria-label="Pagos registrados en este préstamo">
                     <h3 class="loan-inst-section__title">Pagos registrados</h3>
-                    <ul class="loan-inst-pay-list">
-                        ${loanPayments.slice(0, 12).map((p) => `
-                            <li class="loan-inst-pay-item">
-                                <span class="loan-inst-pay-item__amt">${fmtMoney(p.amount)}</span>
-                                <span class="loan-inst-pay-item__meta">Cuota ${p.installment_n} · ${new Date(p.created_at).toLocaleString('es-DO')}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    <div class="loan-inst-table-scroll">
+                        <table class="loan-inst-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Fecha / Cuota</th>
+                                    <th scope="col" class="text-right">Pago Total</th>
+                                    <th scope="col" class="text-right">Interés</th>
+                                    <th scope="col" class="text-right">Mora</th>
+                                    <th scope="col" class="text-right">Abono Cap.</th>
+                                    <th scope="col" class="text-right">Cap. Restante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentsWithRemaining.slice(0, 12).map((p) => {
+                                    const br = p.breakdown || {}
+                                    return `<tr>
+                                        <td>${new Date(p.created_at).toLocaleDateString('es-DO')} (C${p.installment_n})</td>
+                                        <td class="text-right" style="font-weight:600;">${fmtMoney(p.amount)}</td>
+                                        <td class="text-right" style="color:var(--text-secondary);">${fmtMoney(br.interest || 0)}</td>
+                                        <td class="text-right" style="color:var(--text-secondary);">${fmtMoney(br.late_fee || 0)}</td>
+                                        <td class="text-right" style="color:var(--text-secondary);">${fmtMoney(br.principal || 0)}</td>
+                                        <td class="text-right">${fmtMoney(p.remaining_principal)}</td>
+                                    </tr>`
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </section>`
                 : ''
 
@@ -1787,10 +1820,7 @@
                         <div class="loan-inst-kpi__val">${fmtMoney(loan.principal)}</div>
                         <div class="loan-inst-kpi__lab">Capital original</div>
                     </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${sum.countPaid} / ${sum.countTotal}</div>
-                        <div class="loan-inst-kpi__lab">Periodos cobrados</div>
-                    </div>
+
                     <div class="loan-inst-kpi loan-inst-kpi--warn" role="listitem">
                         <div class="loan-inst-kpi__val">${fmtMoney(sum.pending)}</div>
                         <div class="loan-inst-kpi__lab">Deuda vigente</div>
@@ -2255,6 +2285,14 @@
                 const status = hasMoroso ? 'moroso' : (allClosed ? 'finalizado' : 'activo')
                 const badgeCls = status === 'moroso' ? 'clients-badge--pending' : (status === 'finalizado' ? 'clients-badge--review' : 'clients-badge--verified')
                 const segment = loans[0]?.loan?.product || 'hipotecario'
+                
+                let earliestNext = null
+                loans.forEach(x => {
+                    if (x.summary.next && (!earliestNext || x.summary.next.due_date < earliestNext.due_date)) {
+                        earliestNext = x.summary.next
+                    }
+                })
+
                 return `
                     <tr>
                         <td>
@@ -2276,8 +2314,8 @@
                             <div class="clients-loan-meta">Saldo agregado ${fmtMoney(totalBalance)}</div>
                         </td>
                         <td>
-                            ${dateLabel(c.created_at?.slice(0, 10))}
-                            <div class="clients-activity-meta clients-activity-meta--ok">Actualizado por cartera</div>
+                            ${earliestNext ? dateLabel(earliestNext.due_date?.slice(0, 10)) : '—'}
+                            <div class="clients-activity-meta ${earliestNext ? 'clients-activity-meta--warn' : 'clients-activity-meta--ok'}">${earliestNext ? 'Vencimiento' : 'Sin pendientes'}</div>
                         </td>
                         <td><span class="clients-badge ${badgeCls}">${status}</span></td>
                         <td class="clients-row-actions">
@@ -2716,7 +2754,10 @@
                             </td>
                             <td class="analytics-pay-loan">${loan ? displayLoanRef(loan) : '—'}</td>
                             <td class="analytics-pay-date">${new Date(p.created_at).toLocaleDateString('es-DO')}</td>
-                            <td class="text-right"><span class="analytics-pay-amount">${fmtMoney(p.amount)}</span></td>
+                            <td class="text-right"><span class="analytics-pay-subamount" style="color:var(--text-secondary);font-size:0.9em;">${fmtMoney(p.breakdown?.principal || 0)}</span></td>
+                            <td class="text-right"><span class="analytics-pay-subamount" style="color:var(--text-secondary);font-size:0.9em;">${fmtMoney(p.breakdown?.interest || 0)}</span></td>
+                            <td class="text-right"><span class="analytics-pay-subamount" style="color:var(--text-secondary);font-size:0.9em;">${fmtMoney(p.breakdown?.late_fee || 0)}</span></td>
+                            <td class="text-right"><span class="analytics-pay-amount" style="font-weight:600;">${fmtMoney(p.amount)}</span></td>
                             <td class="analytics-pay-row-actions">
                                 <button type="button" class="analytics-pay-menu-btn" data-payment-id="${p.id}" aria-label="Ver opciones del pago">
                                     <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="2" cy="13" r="1.5"/></svg>

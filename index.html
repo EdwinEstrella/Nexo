@@ -588,32 +588,29 @@
                     </button>
                 </form>
 
-                <!-- Divider -->
-                <div class="divider">
-                    <div class="divider-text">
-                        <span>ACCESO INSTITUCIONAL</span>
-                    </div>
-                </div>
 
-                <!-- SSO Button -->
-                <button class="btn-sso" id="sso-login">
-                    <svg width="17" height="15" viewBox="0 0 17 15" fill="none">
-                        <path d="M8.5 1C4.36 1 1 4.36 1 8.5C1 12.64 4.36 16 8.5 16C12.64 16 16 12.64 16 8.5C16 4.36 12.64 1 8.5 1Z" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M8.5 5V12M5 8.5H12" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                    Ingresar con SSO
-                </button>
 
                 <!-- Signup Link -->
                 <p class="signup-link">
                     ¿Nuevo en Nexo? <a id="go-to-register">Solicitar Acceso</a>
                 </p>
+                <div id="app-version" style="text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-tertiary); font-family: 'Inter', sans-serif;"></div>
             </div>
         </div>
     </div>
 
     <script src="components/auth-roles.js"></script>
     <script>
+        // Fetch and display version
+        const versionEl = document.getElementById('app-version')
+        if (versionEl && window.electronAPI) {
+            const ver = window.electronAPI.getVersion()
+            if (ver && typeof ver.then === 'function') {
+                ver.then((v) => { versionEl.textContent = v ? 'v' + v : '' }).catch(() => {})
+            } else if (ver) {
+                versionEl.textContent = 'v' + ver
+            }
+        }
         // Update maximize/restore icon
         const updateMaximizeIcon = (isMaximized) => {
             const maxIcon = document.getElementById('max-icon')
@@ -842,11 +839,7 @@
             window.location.href = 'register.html'
         })
 
-        // SSO button
-        document.getElementById('sso-login').addEventListener('click', () => {
-            console.log('Login con SSO clickeado')
-            // TODO: Implementar login con SSO
-        })
+
 
         // Forgot password link
         document.querySelector('.link').addEventListener('click', () => {

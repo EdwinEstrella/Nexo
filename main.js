@@ -21,8 +21,17 @@ function readConfigVersion () {
 }
 
 function getAppVersion () {
+  try {
+    const pkgPath = path.join(__dirname, 'package.json')
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+      if (pkg && pkg.version) return pkg.version
+    }
+  } catch (_) {}
+  
   const configured = readConfigVersion()
   if (configured) return configured
+  
   return app.getVersion()
 }
 
