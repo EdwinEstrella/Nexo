@@ -1695,7 +1695,7 @@
             return { cls: 'loan-badge--ok', text: 'Pendiente' }
         }
 
-        function renderLoanInstallmentsModalHtml (loan, sum, state) {
+        function renderLoanInstallmentsModalHtml (loan, sum, state, now = new Date()) {
             const client = state.clients.find((c) => c.id === loan.client_id) || {}
             const loanBadge = badgeForLoanStatus(sum.status)
             const pendientes = sum.items.filter((it) => it.status !== 'pagado')
@@ -1703,14 +1703,16 @@
             const rows = sum.items.map((it) => {
                 const b = badgeForInstallmentStatus(it.status)
                 const paid = (Number(it.paid_interest) || 0) + (Number(it.paid_principal) || 0) + (Number(it.paid_late_fee) || 0)
+                const dueDate = new Date(String(it.due_date).slice(0, 10) + 'T12:00:00')
+                const isDue = dueDate <= now
+                const interestDisplay = isDue ? fmtMoney(it.pending_interest) : '—'
                 return `
                     <tr>
-                        <td class="loan-inst-td-num">${it.n}</td>
                         <td>${dateLabel(it.due_date)}</td>
                         <td class="text-right">${fmtMoney(it.total_due)}</td>
                         <td class="text-right">${fmtMoney(paid)}</td>
                         <td class="text-right">${fmtMoney(it.pendingTotal)}</td>
-                        <td class="text-right loan-inst-td-meta">${fmtMoney(it.pending_interest)} / ${fmtMoney(it.pending_principal)}</td>
+                        <td class="text-right loan-inst-td-meta">${interestDisplay} / ${fmtMoney(it.pending_principal)}</td>
                         <td><span class="loan-badge ${b.cls}">${b.text}</span></td>
                     </tr>
                 `
@@ -1783,69 +1785,33 @@
                 <div class="loan-inst-kpi-grid" role="list">
                     <div class="loan-inst-kpi" role="listitem">
                         <div class="loan-inst-kpi__val">${fmtMoney(loan.principal)}</div>
-                        <div class="loan-inst-kpi__lab">Monto original</div>
+                        <div class="loan-inst-kpi__lab">Capital original</div>
                     </div>
                     <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${pagadas.length} / ${sum.totalInstallments}</div>
-                        <div class="loan-inst-kpi__lab">Períodos cobrados</div>
+                        <div class="loan-inst-kpi__val">${sum.countPaid} / ${sum.countTotal}</div>
+                        <div class="loan-inst-kpi__lab">Periodos cobrados</div>
                     </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${pendientes.length}</div>
-                        <div class="loan-inst-kpi__lab">Períodos activos</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
+                    <div class="loan-inst-kpi loan-inst-kpi--warn" role="listitem">
                         <div class="loan-inst-kpi__val">${fmtMoney(sum.pending)}</div>
-                        <div class="loan-inst-kpi__lab">Deuda base vigente</div>
+                        <div class="loan-inst-kpi__lab">Deuda vigente</div>
                     </div>
-                    <div class="loan-inst-kpi" role="listitem">
+                    <div class="loan-inst-kpi loan-inst-kpi--danger" role="listitem">
                         <div class="loan-inst-kpi__val">${fmtMoney(sum.mora)}</div>
-                        <div class="loan-inst-kpi__lab">Mora acumulada</div>
+                        <div class="loan-inst-kpi__lab">Mora (total periodos)</div>
                     </div>
                     <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${fmtMoney(sum.paidTotal)}</div>
-                        <div class="loan-inst-kpi__lab">Recaudación histórica</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${fmtMoney(sum.principalOutstanding)}</div>
-                        <div class="loan-inst-kpi__lab">Capital vivo restante</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${sum.next ? `#${sum.next.n} · ${dateLabel(sum.next.due_date)}` : '—'}</div>
-                        <div class="loan-inst-kpi__lab">Próximo corte</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${Number(loan.interest_rate_pct || 0).toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%</div>
-                        <div class="loan-inst-kpi__lab">Interés personalizado</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${Number(loan.grace_days != null ? loan.grace_days : state.settings.grace_days) || 0} día(s)</div>
-                        <div class="loan-inst-kpi__lab">Días de gracia</div>
-                    </div>
-                    <div class="loan-inst-kpi" role="listitem">
-                        <div class="loan-inst-kpi__val">${Number(loan.late_fee_percent != null ? loan.late_fee_percent : state.settings.late_fee_percent || 0).toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%</div>
-                        <div class="loan-inst-kpi__lab">Mora diaria</div>
+                        <div class="loan-inst-kpi__val" style="text-transform: capitalize;">${
+                            {
+                                monthly: 'Mensual',
+                                weekly: 'Semanal',
+                                biweekly: 'Quincenal',
+                                daily: 'Diario',
+                                yearly: 'Anual'
+                            }[loan.payment_frequency] || loan.payment_frequency || 'Periódico'
+                        }</div>
+                        <div class="loan-inst-kpi__lab">Días de pago</div>
                     </div>
                 </div>
-                <section class="loan-inst-section" aria-label="Cronograma de períodos">
-                    <h3 class="loan-inst-section__title">Cronograma de Tramos</h3>
-                    <p class="loan-inst-section__hint">Flujo de interés y amortización del capital. Cuando el capital se liquida o abona anticipadamente, los tramos subsecuentes se auto-cancelan o reducen el cálculo.</p>
-                    <div class="loan-inst-table-scroll">
-                        <table class="loan-inst-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">Corte</th>
-                                    <th scope="col" class="text-right">Exigible</th>
-                                    <th scope="col" class="text-right">Cobrado</th>
-                                    <th scope="col" class="text-right">Balance de Período</th>
-                                    <th scope="col" class="text-right">Int. pend. / Cap. pend.</th>
-                                    <th scope="col">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                </section>
                 <div class="loan-inst-actions">
                     <button type="button" class="loans-btn loans-btn--primary" data-go-register-pay data-loan-id="${loan.id}">Ir a registrar pago</button>
                     <button type="button" class="loans-btn loans-btn--danger" id="delete-loan-btn" onclick="window.electronAPI.portfolio.deleteLoan('${loan.id}').then(r=>console.log('Delete result', r))">Eliminar préstamo</button>
@@ -1869,14 +1835,15 @@
                 document.title = PORTAL_TITLES['loan-detail'] || PORTAL_TITLES.loans
                 return
             }
-            const sum = summarizeLoan(loan, state, new Date())
+            const now = new Date()
+            const sum = summarizeLoan(loan, state, now)
             if (titleEl) titleEl.textContent = loan.client_name
             if (subEl) {
                 const graceDays = Number(loan.grace_days != null ? loan.grace_days : state.settings.grace_days) || 0
                 const lateFeePercent = Number(loan.late_fee_percent != null ? loan.late_fee_percent : state.settings.late_fee_percent) || 0
                 subEl.textContent = `${displayLoanRef(loan)} · ${loan.product || 'hipotecario'} · ${fmtMoney(loan.principal)} · ${loan.interest_rate_pct ?? '—'}% anual · gracia ${graceDays} día(s) · mora ${lateFeePercent}% diario · ${loan.term_months} meses`
             }
-            mount.innerHTML = renderLoanInstallmentsModalHtml(loan, sum, state)
+            mount.innerHTML = renderLoanInstallmentsModalHtml(loan, sum, state, now)
             document.title = `${loan.client_name} — ${displayLoanRef(loan)} · Lending Ledger`
         }
 
@@ -2962,10 +2929,12 @@
             const waiveMora = root.querySelector('#preg-waive-mora')?.checked || false
 
             const infoBlock = root.querySelector('#preg-info-block')
+            const calculatorBlock = root.querySelector('#preg-calculator-block')
             const breakdownBlock = root.querySelector('#preg-breakdown-block')
 
             if (!loanId || !instN) {
                 if (infoBlock) infoBlock.style.display = 'none'
+                if (calculatorBlock) calculatorBlock.style.display = 'none'
                 if (breakdownBlock) breakdownBlock.style.display = 'none'
                 return
             }
@@ -2978,6 +2947,7 @@
             const current = summary.items.find((i) => Number(i.n) === instN)
             if (!current) {
                 if (infoBlock) infoBlock.style.display = 'none'
+                if (calculatorBlock) calculatorBlock.style.display = 'none'
                 if (breakdownBlock) breakdownBlock.style.display = 'none'
                 return
             }
@@ -2988,12 +2958,63 @@
                 const infoMora = root.querySelector('#preg-pending-mora')
                 const infoInterest = root.querySelector('#preg-pending-interest')
                 const infoPrincipal = root.querySelector('#preg-pending-principal')
-                const infoTotalPending = root.querySelector('#preg-total-pending')
 
-                if (infoMora) infoMora.textContent = `RD$${fmtMoney(current.pending_late_fee)} de Mora`
-                if (infoInterest) infoInterest.textContent = `RD$${fmtMoney(current.pending_interest)} de Interés`
+                if (infoMora) infoMora.textContent = `RD$${fmtMoney(current.pending_late_fee)}`
+                if (infoInterest) infoInterest.textContent = `RD$${fmtMoney(current.pending_interest)}`
                 if (infoPrincipal) infoPrincipal.textContent = `RD$${fmtMoney(summary.principalOutstanding)}`
-                if (infoTotalPending) infoTotalPending.textContent = `Mínimo: RD$${fmtMoney(current.pending_late_fee + current.pending_interest)}`
+            }
+
+            // Mostrar calculadora
+            if (calculatorBlock) {
+                calculatorBlock.style.display = 'block'
+                
+                // Total de la deuda actual (mora + interés + capital)
+                const totalDebtCurrentInstallment = current.pending_late_fee + current.pending_interest
+                
+                // Lo que resta por pagar después de este pago
+                const remainingAfterPayment = Math.max(0, totalDebtCurrentInstallment - amount)
+                const percentageRemaining = totalDebtCurrentInstallment > 0 ? (remainingAfterPayment / totalDebtCurrentInstallment * 100).toFixed(1) : 0
+                
+                // Próxima cuota no pagada (después de la actual)
+                const nextUnpaidInstallment = summary.items.find((i) => i.n > instN && i.status !== 'pagado')
+                const nextDueDate = nextUnpaidInstallment ? dateLabel(nextUnpaidInstallment.due_date) : '—'
+                const nextDaysUntilDue = nextUnpaidInstallment ? (() => {
+                    const now = new Date()
+                    const due = new Date(String(nextUnpaidInstallment.due_date).slice(0, 10) + 'T12:00:00')
+                    const msDay = 1000 * 60 * 60 * 24
+                    const daysDiff = Math.ceil((due - now) / msDay)
+                    return daysDiff > 0 ? `en ${daysDiff} día(s)` : daysDiff === 0 ? 'Hoy' : 'Vencida'
+                })() : '—'
+                
+                // Calcular overpay (dinero que sobra después de pagar mora, interés, capital)
+                let toLateFee = 0
+                let toInterest = 0
+                let toPrincipal = 0
+                let overpay = 0
+                let remaining = amount
+
+                if (!waiveMora && current.pending_late_fee > 0.01) {
+                    toLateFee = Math.min(remaining, current.pending_late_fee)
+                    remaining -= toLateFee
+                }
+
+                if (remaining > 0.01 && current.pending_interest > 0.01) {
+                    toInterest = Math.min(remaining, current.pending_interest)
+                    remaining -= toInterest
+                }
+
+                if (remaining > 0.01) {
+                    toPrincipal = Math.min(remaining, summary.principalOutstanding)
+                    remaining -= toPrincipal
+                }
+                
+                overpay = remaining
+                
+                root.querySelector('#preg-calc-remaining-debt').textContent = `RD$${fmtMoney(remainingAfterPayment)}`
+                root.querySelector('#preg-calc-percentage').textContent = `${percentageRemaining}% de la deuda`
+                root.querySelector('#preg-calc-next-due').textContent = nextDueDate
+                root.querySelector('#preg-calc-next-days').textContent = nextDaysUntilDue
+                root.querySelector('#preg-calc-overpay').textContent = `RD$${fmtMoney(Math.max(0, overpay))}`
             }
 
             // Calcular desglose si hay monto
@@ -3059,7 +3080,6 @@
                                     <div><div class="loan-name">${loan.client_name}</div><div class="loan-ref" title="ID interno: ${loan.id}">${displayLoanRef(loan)}</div></div>
                                 </div>
                             </td>
-                            <td><span class="loan-type">${loan.product || 'hipotecario'}</span></td>
                             <td><div class="loan-amount">${fmtMoney(loan.principal)}</div><div class="loan-pend">Pend: ${fmtMoney(sum.pending)}</div></td>
                             <td>${nextText}</td>
                             <td><span class="loan-badge ${badge.cls}">${badge.text}</span></td>
@@ -3067,7 +3087,7 @@
                         </tr>
                     `
                 }).join('')
-                : '<tr><td colspan="6" class="loans-empty-note">No hay préstamos para este filtro.</td></tr>'
+                : '<tr><td colspan="5" class="loans-empty-note">No hay préstamos para este filtro.</td></tr>'
 
             const totalPrestado = summaries.reduce((s, x) => s + (Number(x.loan.principal) || 0), 0)
             const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)

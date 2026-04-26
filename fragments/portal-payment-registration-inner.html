@@ -48,18 +48,41 @@
 
                     <!-- Información calculada automáticamente -->
                     <div class="loans-payment-field lr-grid__full" id="preg-info-block" style="grid-column: 1 / -1; display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #d5d8e0;">
-                        <h3 style="margin-bottom: 16px; font-weight: 600; color: #000e24; font-size: 18px;">Balance de la Cuenta</h3>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; font-size: 14px;">
-                            <div style="background: #fff0f0; padding: 12px; border-radius: 6px;">
-                                <div style="color: #d32f2f; font-weight: 600; margin-bottom: 4px;">PAGO PARA ESTAR AL DÍA</div>
-                                <div style="color: #000e24; font-weight: 500;" id="preg-pending-mora">RD$0.00 de Mora</div>
-                                <div style="color: #000e24; font-weight: 500;" id="preg-pending-interest">RD$0.00 de Interés</div>
-                                <div style="color: #000e24; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);" id="preg-total-pending">Mínimo: RD$0.00</div>
+                        <h3 style="margin-bottom: 16px; font-weight: 600; color: #000e24; font-size: 18px;">Deuda de la Cuota</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; font-size: 14px;">
+                            <div style="background: #f5f7fb; padding: 16px; border-radius: 6px;">
+                                <div style="color: #6b7891; font-weight: 600; margin-bottom: 8px; font-size: 12px;">CAPITAL ADEUDADO</div>
+                                <div style="color: #000e24; font-weight: 600; font-size: 20px;" id="preg-pending-principal">RD$0.00</div>
                             </div>
-                            <div style="background: #f5f7fb; padding: 12px; border-radius: 6px;">
-                                <div style="color: #6b7891; font-weight: 600; margin-bottom: 4px;">CAPITAL DEL PRÉSTAMO</div>
-                                <div style="color: #000e24; font-weight: 500; font-size: 20px;" id="preg-pending-principal">RD$0.00</div>
-                                <div style="color: #6b7891; font-weight: 400; font-size: 12px; margin-top: 4px;">El saldo remanente que genera interés</div>
+                            <div style="background: #fff0f0; padding: 16px; border-radius: 6px;">
+                                <div style="color: #d32f2f; font-weight: 600; margin-bottom: 8px; font-size: 12px;">MORA</div>
+                                <div style="color: #d32f2f; font-weight: 600; font-size: 20px;" id="preg-pending-mora">RD$0.00</div>
+                            </div>
+                            <div style="background: #e3f2fd; padding: 16px; border-radius: 6px;">
+                                <div style="color: #1976d2; font-weight: 600; margin-bottom: 8px; font-size: 12px;">INTERÉS</div>
+                                <div style="color: #1976d2; font-weight: 600; font-size: 20px;" id="preg-pending-interest">RD$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculadora de pago -->
+                    <div class="loans-payment-field lr-grid__full" id="preg-calculator-block" style="grid-column: 1 / -1; display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%); border-radius: 8px; border: 1px solid #d0d8ec;">
+                        <h3 style="margin-bottom: 16px; font-weight: 600; color: #000e24; font-size: 18px;">Calculadora de Pago</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; font-size: 14px;">
+                            <div style="background: white; padding: 14px; border-radius: 6px; border-left: 4px solid #2196f3;">
+                                <div style="color: #6b7891; font-weight: 500; margin-bottom: 4px; font-size: 11px;">LO QUE RESTA POR PAGAR</div>
+                                <div style="color: #000e24; font-weight: 700; font-size: 18px;" id="preg-calc-remaining-debt">RD$0.00</div>
+                                <div style="color: #1976d2; font-weight: 500; font-size: 11px; margin-top: 6px;" id="preg-calc-percentage">0% de la deuda</div>
+                            </div>
+                            <div style="background: white; padding: 14px; border-radius: 6px; border-left: 4px solid #ff9800;">
+                                <div style="color: #6b7891; font-weight: 500; margin-bottom: 4px; font-size: 11px;">PRÓXIMO PAGO</div>
+                                <div style="color: #f57c00; font-weight: 700; font-size: 18px;" id="preg-calc-next-due">—</div>
+                                <div style="color: #ff9800; font-weight: 500; font-size: 11px; margin-top: 6px;" id="preg-calc-next-days">—</div>
+                            </div>
+                            <div style="background: white; padding: 14px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                                <div style="color: #6b7891; font-weight: 500; margin-bottom: 4px; font-size: 11px;">SI PAGAS DE MÁS</div>
+                                <div style="color: #388e3c; font-weight: 700; font-size: 18px;" id="preg-calc-overpay">RD$0.00</div>
+                                <div style="color: #4caf50; font-weight: 500; font-size: 11px; margin-top: 6px;">Al capital del préstamo</div>
                             </div>
                         </div>
                     </div>
