@@ -113,9 +113,9 @@ class Sidebar {
         const sidebarHTML = `
             <aside class="sidebar sidebar--portal" id="sidebar" data-node-id="1:1281" data-sidebar-variant="portal">
                 <div class="sidebar-portal-head">
-                    <div class="sidebar-portal-brand" style="display:flex; align-items:center; gap:8px;">
+                    <div class="sidebar-portal-brand">
                         <img src="Logo.ico" alt="Nexo Logo" style="width:24px; height:24px; display:block;">
-                        <div class="sidebar-portal-title" style="margin:0;">NEXO</div>
+                        <div class="sidebar-portal-title">NEXO</div>
                     </div>
                 </div>
 

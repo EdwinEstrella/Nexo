@@ -47,8 +47,11 @@
 
 .sidebar-portal-brand {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-25px);
+    gap: 12px;
 }
 
 .sidebar-portal-title {
