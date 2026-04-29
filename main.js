@@ -419,6 +419,87 @@ async function findTenantForUser (user) {
   return null
 }
 
+async function repairTenantContextForUser (user) {
+  if (!user?.id) return null
+
+  let profileRow = null
+  try {
+    const { data } = await insforge.database
+      .from('nexo_profiles')
+      .select('user_id,company,app_role,default_tenant_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    profileRow = data || null
+  } catch (_) {}
+
+  const membershipTenantIds = []
+  try {
+    const { data } = await insforge.database
+      .from('nexo_tenant_members')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .limit(5)
+    ;(data || []).forEach((row) => {
+      if (row?.tenant_id) membershipTenantIds.push(String(row.tenant_id))
+    })
+  } catch (_) {}
+
+  const preferredTenantId = String(profileRow?.default_tenant_id || '').trim()
+  if (preferredTenantId) {
+    const tenant = await getTenantById(preferredTenantId)
+    if (tenant?.id) {
+      await ensureTenantMembership({ tenantId: tenant.id, userId: user.id })
+      return tenant
+    }
+  }
+
+  for (const memberTenantId of membershipTenantIds) {
+    const tenant = await getTenantById(memberTenantId)
+    if (!tenant?.id) continue
+    if (String(profileRow?.default_tenant_id || '') !== String(tenant.id)) {
+      await insforge.database
+        .from('nexo_profiles')
+        .update({ default_tenant_id: tenant.id })
+        .eq('user_id', user.id)
+    }
+    return tenant
+  }
+
+  const profileCompany = String(
+    profileRow?.company ||
+    user?.profile?.company ||
+    user?.nexo_profile?.company ||
+    ''
+  ).trim()
+
+  let tenant = null
+  if (profileCompany) {
+    tenant = await ensureTenantForCompany(profileCompany)
+  }
+  if (!tenant?.id) {
+    tenant = await findTenantForUser({
+      ...user,
+      profile: {
+        ...(user?.profile && typeof user.profile === 'object' ? user.profile : {}),
+        company: profileCompany || user?.profile?.company || null
+      },
+      nexo_profile: {
+        ...(user?.nexo_profile && typeof user.nexo_profile === 'object' ? user.nexo_profile : {}),
+        company: profileCompany || user?.nexo_profile?.company || null
+      }
+    })
+  }
+  if (!tenant?.id) return null
+
+  await ensureTenantMembership({ tenantId: tenant.id, userId: user.id })
+  await insforge.database
+    .from('nexo_profiles')
+    .update({ default_tenant_id: tenant.id })
+    .eq('user_id', user.id)
+
+  return tenant
+}
+
 /**
  * Une public.nexo_profiles al objeto usuario (rol multi-tenant / super admin).
  */
@@ -439,7 +520,10 @@ async function mergeNexoProfile (user) {
     if (data.full_name && !user.profile.name) user.profile.name = data.full_name
     user.nexo_profile = data
 
-    const tenant = await findTenantForUser(user)
+    let tenant = await findTenantForUser(user)
+    if (!tenant) {
+      tenant = await repairTenantContextForUser(user)
+    }
     if (tenant) {
       user.nexo_tenant = tenant
       user.company_blocked = Boolean(
@@ -447,6 +531,9 @@ async function mergeNexoProfile (user) {
         tenant.status === 'blocked' ||
         tenant.status === 'suspended'
       )
+      if (user.nexo_profile && !user.nexo_profile.default_tenant_id) {
+        user.nexo_profile.default_tenant_id = tenant.id
+      }
     } else {
       user.company_blocked = false
     }
@@ -1282,6 +1369,10 @@ async function getPortfolioTenantId () {
     .maybeSingle()
   if (mem?.tenant_id) {
     return { tenantId: mem.tenant_id }
+  }
+  const repairedTenant = await repairTenantContextForUser(data.user)
+  if (repairedTenant?.id) {
+    return { tenantId: repairedTenant.id }
   }
   return { error: 'Tu cuenta no tiene empresa (tenant) asignada. Completa el registro o contacta soporte.' }
 }
