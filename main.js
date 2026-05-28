@@ -39,6 +39,17 @@ function normalizeVersion (value) {
   return String(value || '').trim().replace(/^v/i, '')
 }
 
+function compareSemver (a, b) {
+  const pa = normalizeVersion(a).split('.').map(n => parseInt(n, 10) || 0)
+  const pb = normalizeVersion(b).split('.').map(n => parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const va = pa[i] || 0
+    const vb = pb[i] || 0
+    if (va !== vb) return va > vb ? 1 : -1
+  }
+  return 0
+}
+
 function getUpdateStateFilePath () {
   return path.join(app.getPath('userData'), UPDATE_STATE_FILE)
 }
@@ -547,18 +558,27 @@ function setupAutoUpdater () {
   const persisted = loadPersistedUpdateState()
   const currentVersion = normalizeVersion(getAppVersion())
   const cachedDownloaded = normalizeVersion(persisted.downloadedVersion)
-  if (cachedDownloaded && cachedDownloaded !== currentVersion) {
-    setUpdateState({
-      phase: 'ready',
-      downloadedVersion: cachedDownloaded,
-      remoteVersion: cachedDownloaded,
-      releaseDate: persisted.releaseDate || null,
-      releaseNotes: persisted.releaseNotes || null,
-      percent: 100,
-      error: null
-    })
-  } else if (cachedDownloaded && cachedDownloaded === currentVersion) {
-    clearPersistedUpdateState()
+  if (cachedDownloaded) {
+    const cmp = compareSemver(cachedDownloaded, currentVersion)
+    if (cmp > 0) {
+      setUpdateState({
+        phase: 'ready',
+        downloadedVersion: cachedDownloaded,
+        remoteVersion: cachedDownloaded,
+        releaseDate: persisted.releaseDate || null,
+        releaseNotes: persisted.releaseNotes || null,
+        percent: 100,
+        error: null
+      })
+    } else {
+      clearPersistedUpdateState()
+      setUpdateState({
+        phase: 'idle',
+        remoteVersion: null,
+        percent: 0,
+        error: null
+      })
+    }
   }
 
   autoUpdater.on('checking-for-update', () => {

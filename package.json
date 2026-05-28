@@ -89,6 +89,7 @@
     "to-ico": "^1.1.5"
   },
   "dependencies": {
+    "@insforge/cli": "^0.1.85",
     "@insforge/sdk": "^1.2.4",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3"
