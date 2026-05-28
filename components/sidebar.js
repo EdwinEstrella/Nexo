@@ -26,6 +26,7 @@ class Sidebar {
             { id: 'analytics', label: 'Análisis', icon: this.getAnalyticsIcon() },
             { id: 'clients', label: 'Clientes', icon: this.getClientsIcon() },
             { id: 'loan-request', label: 'Nuevo préstamo', icon: this.getNewLoanIcon() },
+            { id: 'loan-request-historical', label: 'Préstamos viejos', icon: this.getHistoricalLoanIcon() },
             { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon() }
         ]
 
@@ -310,6 +311,17 @@ class Sidebar {
                 <polyline points="14 2 14 8 20 8"/>
                 <line x1="12" y1="18" x2="12" y2="12"/>
                 <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+        `
+    }
+
+    getHistoricalLoanIcon () {
+        return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <circle cx="12" cy="14" r="3"/>
+                <polyline points="12 12 12 14 13 15"/>
             </svg>
         `
     }

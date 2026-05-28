@@ -464,7 +464,22 @@
         }
 
         function portalNavigate (pageId) {
-            void loadPortalView(pageId, { pushState: true })
+            if (pageId === 'loan-request-historical') {
+                const u = new URL(window.location.href)
+                u.searchParams.set('view', 'loan-request')
+                u.searchParams.set('isHistorical', 'true')
+                window.history.pushState({ view: 'loan-request', isHistorical: 'true' }, '', u.toString())
+                void loadPortalView('loan-request', { pushState: false })
+            } else {
+                const u = new URL(window.location.href)
+                if (u.searchParams.has('isHistorical')) {
+                    u.searchParams.delete('isHistorical')
+                    window.history.pushState({ view: pageId }, '', u.toString())
+                    void loadPortalView(pageId, { pushState: false })
+                } else {
+                    void loadPortalView(pageId, { pushState: true })
+                }
+            }
         }
 
         function initialsFromName (name) {
@@ -1168,7 +1183,7 @@
         }
 
         function addPeriodISO (dateISO, index, frequency) {
-            const d = new Date(`${dateISO}T00:00:00`)
+            const d = new Date(String(dateISO || '').slice(0, 10) + 'T00:00:00')
             if (frequency === 'weekly') {
                 d.setDate(d.getDate() + (7 * index))
             } else if (frequency === 'biweekly') {
@@ -1339,7 +1354,7 @@
         }
 
         function evaluateInstallment (inst, loan, policy, remainingPrincipalAtStart, now = new Date()) {
-            const due = new Date(`${inst.due_date}T00:00:00`)
+            const due = new Date(String(inst.due_date || '').slice(0, 10) + 'T00:00:00')
             const periodRate = periodicRateForLoan(loan)
             const interestDue = Math.max(0, Number((remainingPrincipalAtStart * periodRate).toFixed(2)))
             const principalTarget = 0 // El capital no es exigible en cuotas
@@ -1605,7 +1620,7 @@
 
         function dateLabel (iso) {
             if (!iso) return '—'
-            const d = new Date(`${iso}T00:00:00`)
+            const d = new Date(String(iso || '').slice(0, 10) + 'T00:00:00')
             return d.toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })
         }
 
@@ -3290,9 +3305,12 @@
                 if (portalNav && root.contains(portalNav)) {
                     e.preventDefault()
                     const vid = portalNav.getAttribute('data-portal-view')
-                    if (vid && PORTAL_VIEWS.has(vid)) {
+                    if (vid === 'loan-request-historical') {
+                        if (portalSidebar) portalSidebar.setActiveNavOnly('loan-request-historical')
+                        portalNavigate('loan-request-historical')
+                    } else if (vid && PORTAL_VIEWS.has(vid)) {
                         if (portalSidebar) portalSidebar.setActiveNavOnly(vid)
-                        void loadPortalView(vid, { pushState: true })
+                        portalNavigate(vid)
                     }
                     return
                 }
@@ -3669,6 +3687,19 @@
                         size: f.size,
                         type: f.type
                     }))
+                    const isHistorical = payload.is_historical === 'on'
+                    const paidCount = isHistorical ? Math.max(0, Number(payload.historical_paid_count) || 0) : 0
+                    const installments = generateInstallments(loanInput)
+                    if (paidCount > 0) {
+                        const periodRate = periodicRateForLoan(loanInput)
+                        const interestDue = Math.max(0, Number((loanInput.principal * periodRate).toFixed(2)))
+                        for (let i = 0; i < Math.min(paidCount, installments.length); i++) {
+                            installments[i].paid_interest = interestDue
+                            installments[i].paid_principal = 0
+                            installments[i].paid_late_fee = 0
+                        }
+                    }
+
                     const loan = {
                         id: randomId('loan'),
                         reference: nextLoanReference(state),
@@ -3686,7 +3717,7 @@
                         start_date: loanInput.start_date,
                         created_at: new Date().toISOString(),
                         contract_signer: payload.contract_signer || '',
-                        installments: generateInstallments(loanInput),
+                        installments: installments,
                         documents: files
                     }
                     if (!window.electronAPI?.portfolio?.createLoan) {
@@ -4176,7 +4207,29 @@
                     lrForm.addEventListener('input', onProfit)
                     lrForm.addEventListener('change', onProfit)
                     updateLoanProfitPreview()
+
+                    // Toggle visibility of historical paid count field
+                    const isHistCheckbox = lrForm.querySelector('#lr-is-historical')
+                    const histField = lrForm.querySelector('#lr-historical-paid-count-field')
+                    if (isHistCheckbox && histField) {
+                        try {
+                            const urlParams = new URLSearchParams(window.location.search)
+                            if (urlParams.get('isHistorical') === 'true') {
+                                isHistCheckbox.checked = true
+                            }
+                        } catch (_) {}
+                        const toggleHist = () => {
+                            histField.style.display = isHistCheckbox.checked ? 'block' : 'none'
+                            const paidCountInput = lrForm.querySelector('#lr-historical-paid-count')
+                            if (!isHistCheckbox.checked && paidCountInput) {
+                                paidCountInput.value = '0'
+                            }
+                        }
+                        isHistCheckbox.addEventListener('change', toggleHist)
+                        toggleHist()
+                    }
                 }
+
             }
             if (pageId === 'dashboard') renderDashboardView()
             if (pageId === 'clients') renderClientsView()
@@ -4247,7 +4300,15 @@
             }
 
             if (portalSidebar) {
-                const navHighlight = pageId === 'loan-detail' ? 'loans' : pageId
+                let navHighlight = pageId === 'loan-detail' ? 'loans' : pageId
+                if (pageId === 'loan-request') {
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search)
+                        if (urlParams.get('isHistorical') === 'true') {
+                            navHighlight = 'loan-request-historical'
+                        }
+                    } catch (_) {}
+                }
                 portalSidebar.setActiveNavOnly(navHighlight)
             }
             refreshHeaderNotificationBadge()

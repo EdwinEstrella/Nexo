@@ -13,10 +13,16 @@
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                 Registrar pago
             </button>
-            <button type="button" class="loans-btn loans-btn--primary" data-portal-view="loan-request" aria-label="Ir a crear nuevo préstamo">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 0v10M0 5h10" stroke="currentColor" stroke-width="1.5"/></svg>
-                Nuevo préstamo
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: stretch;">
+                <button type="button" class="loans-btn loans-btn--primary" data-portal-view="loan-request" aria-label="Ir a crear nuevo préstamo" style="margin: 0;">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 0v10M0 5h10" stroke="currentColor" stroke-width="1.5"/></svg>
+                    Nuevo préstamo
+                </button>
+                <button type="button" class="loans-btn loans-btn--ghost" data-portal-view="loan-request-historical" aria-label="Ir a crear préstamo viejo" style="border: 1px dashed rgba(133, 248, 196, 0.4); color: #85f8c4; padding: 6px 12px; font-size: 11px; min-height: 28px; display: flex; align-items: center; justify-content: center; gap: 4px; margin: 0; background: transparent;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Préstamo viejo
+                </button>
+            </div>
         </div>
     </div>
 
