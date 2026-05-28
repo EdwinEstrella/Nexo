@@ -32,9 +32,11 @@
                         </select>
                     </div>
 
-                    <div class="loans-payment-field" style="display: none;">
-                        <!-- Mantenemos el campo invisible para que el backend tenga compatibilidad con 'cuota n', se autoasignará en JS -->
-                        <input type="hidden" id="preg-installment-select" name="installment_n" value="">
+                    <div class="loans-payment-field">
+                        <label class="loans-payment-field__label" for="preg-installment-select">Seleccionar cuota (Abono a)</label>
+                        <select id="preg-installment-select" name="installment_n" class="loans-filter-chip loans-filter-chip--select loans-payment-field__control" required>
+                            <option value="">— Seleccionar —</option>
+                        </select>
                     </div>
 
                     <div class="loans-payment-field">

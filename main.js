@@ -1200,6 +1200,7 @@ function registerAuthIpc () {
       if (data?.accessToken) {
         insforge.tokenManager.saveSession({
           accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
           user: data.user
         })
       }
@@ -1227,6 +1228,7 @@ ipcMain.handle('auth:signIn', async (event, { email, password }) => {
       if (data.accessToken) {
         insforge.tokenManager.saveSession({
           accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
           user: data.user
         })
       }
@@ -2107,7 +2109,8 @@ async function bootstrap () {
   insforge = createClient({
     baseUrl: 'https://nexo.azokia.com',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwOTYwMzR9.BWGjlHUNysNu8zQofMIxru4yimpk-Wd2ANZAqC0xXvQ',
-    isServerMode: true
+    isServerMode: true,
+    autoRefreshToken: true
   })
   registerAuthIpc()
   registerPortfolioIpc()

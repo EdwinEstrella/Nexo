@@ -19,6 +19,13 @@
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+        
+        /* Fix for Electron disappearing cursor bug */
+        input:focus, textarea:focus {
+            outline: auto;
+            caret-color: auto;
+        }
+        
         html { height: 100%; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -3009,16 +3016,32 @@
             const root = document.getElementById('portal-main')
             const instSel = root?.querySelector('#preg-installment-select')
             if (!instSel || !loanId) {
-                if (instSel) instSel.value = ''
+                if (instSel) {
+                    instSel.innerHTML = '<option value="">— Seleccionar —</option>'
+                    instSel.value = ''
+                }
                 return
             }
             const state = getLoanState()
             const loan = state.loans.find((l) => l.id === loanId)
             if (!loan) {
+                instSel.innerHTML = '<option value="">— Seleccionar —</option>'
                 instSel.value = ''
                 return
             }
             const summary = summarizeLoan(loan, state)
+            
+            const optionsHtml = summary.items.map((it) => {
+                const dateStr = new Date(String(it.due_date).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })
+                let label = `Cuota #${it.n} - ${dateStr} (Deuda: ${fmtMoney(it.pendingTotal)})`
+                if (it.status === 'pagado') {
+                    label = `Cuota #${it.n} - ${dateStr} (Pagada)`
+                }
+                return `<option value="${it.n}">${label}</option>`
+            }).join('')
+            
+            instSel.innerHTML = '<option value="">— Seleccionar —</option>' + optionsHtml
+
             const unpaid = summary.items.filter((i) => i.status !== 'pagado')
             if (unpaid.length) {
                 instSel.value = String(unpaid[0].n)
@@ -4320,6 +4343,15 @@
         })
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // Fix for Electron disappearing cursor bug
+            window.addEventListener('focus', () => {
+                const activeEl = document.activeElement;
+                if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                    activeEl.blur();
+                    activeEl.focus();
+                }
+            });
+
             // Recuperación de Foco en Entornos Electron
             const ensureInputFocus = window.electronAPI?.ensureInputFocus
             if (ensureInputFocus) {
