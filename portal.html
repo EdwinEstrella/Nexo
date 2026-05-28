@@ -2960,19 +2960,34 @@
         }
 
         // Funciones para vista dedicada de pago (portal-payment-registration-inner.html)
-        function populatePaymentRegistrationLoans () {
+        function populatePaymentRegistrationLoans (query = '') {
             const root = document.getElementById('portal-main')
             const loanSel = root?.querySelector('#preg-loan-select')
             if (!loanSel) return
             const state = getLoanState()
             const now = new Date()
-            const loans = state.loans
+            
+            const normalizedQuery = String(query).trim().toLowerCase()
+            let loans = state.loans
                 .map((l) => ({ loan: l, sum: summarizeLoan(l, state, now) }))
                 .filter(({ sum }) => sum.status !== 'finalizado')
-                .sort((a, b) => (b.sum.pending || 0) - (a.sum.pending || 0))
+
+            if (normalizedQuery) {
+                loans = loans.filter(({ loan }) => {
+                    const ref = String(displayLoanRef(loan)).toLowerCase()
+                    const name = String(loan.client_name || '').toLowerCase()
+                    return ref.includes(normalizedQuery) || name.includes(normalizedQuery)
+                })
+            }
+
+            loans.sort((a, b) => (b.sum.pending || 0) - (a.sum.pending || 0))
+            
             loanSel.innerHTML = loans.length
-                ? loans.map(({ loan, sum }) => `<option value="${loan.id}">${displayLoanRef(loan)} · ${loan.client_name} (Pend: ${fmtMoney(sum.pending)})</option>`).join('')
-                : '<option value="">— No hay préstamos pendientes —</option>'
+                ? '<option value="">— Seleccionar —</option>' + loans.map(({ loan, sum }) => `<option value="${loan.id}">${displayLoanRef(loan)} · ${loan.client_name} (Pend: ${fmtMoney(sum.pending)})</option>`).join('')
+                : '<option value="">— No hay coincidencias —</option>'
+            
+            populatePaymentRegistrationInstallments(loanSel.value)
+            updatePaymentRegistrationPreview()
         }
 
         function populatePaymentRegistrationInstallments (loanId) {
@@ -3643,8 +3658,8 @@
                         principal: parseCurrencyAmount(payload.monto_solicitado || '0'),
                         term_months: Number(payload.plazo_meses) || 12,
                         interest_rate_pct: Number(payload.interes_porcentaje) || 0,
-                        late_fee_percent: Number(payload.late_fee_percent) || Number(state.settings.late_fee_percent) || 0,
-                        grace_days: Math.max(0, Number(payload.grace_days)),
+                        late_fee_percent: (payload.late_fee_percent !== undefined && payload.late_fee_percent !== '') ? Number(payload.late_fee_percent) : (Number(state.settings.late_fee_percent) || 0),
+                        grace_days: (payload.grace_days !== undefined && payload.grace_days !== '') ? Math.max(0, Number(payload.grace_days)) : (Number(state.settings.grace_days) || 0),
                         interest_mode: interestMode,
                         payment_frequency: paymentFrequency,
                         start_date: payload.fecha_inicio || isoToday()
@@ -4184,6 +4199,13 @@
                 const root = document.getElementById('portal-main')
                 if (root) {
                     populatePaymentRegistrationLoans()
+                    const searchInput = root.querySelector('#preg-loan-search')
+                    if (searchInput) {
+                        searchInput.addEventListener('input', () => {
+                            const query = String(searchInput.value || '').trim()
+                            populatePaymentRegistrationLoans(query)
+                        })
+                    }
                     const loanSel = root.querySelector('#preg-loan-select')
                     const instSel = root.querySelector('#preg-installment-select')
                     const amountInput = root.querySelector('#preg-amount-input')

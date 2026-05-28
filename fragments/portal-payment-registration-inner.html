@@ -23,6 +23,9 @@
                 <form id="payment-registration-form" class="loans-payment-form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px;">
                     
                     <div class="loans-payment-field lr-grid__full" style="grid-column: 1 / -1;">
+                        <label class="loans-payment-field__label" for="preg-loan-search">Buscar préstamo (Nombre o Código)</label>
+                        <input type="text" id="preg-loan-search" class="loans-inline-input loans-payment-field__control" placeholder="Escribe el nombre del deudor o el código del préstamo para filtrar la lista..." style="margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+                        
                         <label class="loans-payment-field__label" for="preg-loan-select">Seleccionar préstamo</label>
                         <select id="preg-loan-select" name="loan_id" class="loans-filter-chip loans-filter-chip--select loans-payment-field__control" required>
                             <option value="">— Seleccionar —</option>
