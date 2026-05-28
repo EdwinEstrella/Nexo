@@ -1197,6 +1197,12 @@ function registerAuthIpc () {
           .update({ default_tenant_id: tenant.id })
           .eq('user_id', u.id)
       }
+      if (data?.accessToken) {
+        insforge.tokenManager.saveSession({
+          accessToken: data.accessToken,
+          user: data.user
+        })
+      }
       await mergeNexoProfile(data.user)
     }
 
@@ -1218,6 +1224,12 @@ ipcMain.handle('auth:signIn', async (event, { email, password }) => {
     }
 
     if (data?.user) {
+      if (data.accessToken) {
+        insforge.tokenManager.saveSession({
+          accessToken: data.accessToken,
+          user: data.user
+        })
+      }
       await mergeNexoProfile(data.user)
     }
 
