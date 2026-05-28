@@ -1874,12 +1874,55 @@
                 subEl.textContent = `${displayLoanRef(loan)} · ${loan.product || 'hipotecario'} · ${fmtMoney(loan.principal)} · ${loan.interest_rate_pct ?? '—'}% anual · gracia ${graceDays} día(s) · mora ${lateFeePercent}% diario · ${loan.term_months} meses`
             }
             mount.innerHTML = renderLoanInstallmentsModalHtml(loan, sum, state, now)
+            const deleteBtn = mount.querySelector('#delete-loan-btn')
+            if (deleteBtn) {
+                deleteBtn.onclick = null
+                deleteBtn.setAttribute('data-loan-id', loan.id)
+                const paymentCount = [...state.payments].filter((p) => p.loan_id === loan.id).length
+                if (paymentCount > 0) {
+                    deleteBtn.disabled = true
+                    deleteBtn.title = `No se puede eliminar porque este prestamo ya tiene ${paymentCount} pago(s) registrados`
+                }
+            }
             document.title = `${loan.client_name} — ${displayLoanRef(loan)} · Lending Ledger`
         }
 
         function navigateToLoanDetail (loanId) {
             if (!loanId) return
             void loadPortalView('loan-detail', { pushState: true, loanId })
+        }
+
+        async function handleDeleteLoanAction (loanId) {
+            const id = String(loanId || '').trim()
+            if (!id) return
+            const state = getLoanState()
+            const loan = state.loans.find((row) => row.id === id)
+            if (!loan) {
+                alert('PrÃ©stamo no encontrado en la vista actual.')
+                return
+            }
+            const paymentCount = [...state.payments].filter((p) => p.loan_id === id).length
+            if (paymentCount > 0) {
+                alert(`Este prÃ©stamo no se puede eliminar porque tiene ${paymentCount} pago(s) registrado(s).`)
+                return
+            }
+            if (!window.electronAPI?.portfolio?.deleteLoan) {
+                alert('No se puede eliminar: API de cartera no disponible.')
+                return
+            }
+            if (!confirm(`Â¿Eliminar el prÃ©stamo ${displayLoanRef(loan)} de ${loan.client_name}? Esta acciÃ³n no se puede deshacer.`)) {
+                return
+            }
+            const result = await window.electronAPI.portfolio.deleteLoan(id)
+            if (!result?.success) {
+                alert(result?.error || 'No se pudo eliminar el prÃ©stamo.')
+                return
+            }
+            await refreshLoanPortfolioFromDb()
+            refreshHeaderNotificationBadge()
+            alert('PrÃ©stamo eliminado correctamente.')
+            if (portalSidebar) portalSidebar.setActiveNavOnly('loans')
+            await loadPortalView('loans', { pushState: true })
         }
 
         function renderClientHistoryModalHtml (client, loanRows, payments, state) {
@@ -3328,6 +3371,15 @@
                     e.preventDefault()
                     const lid = loanMenuBtn.getAttribute('data-loan-id')
                     if (lid) navigateToLoanDetail(lid)
+                    return
+                }
+                const deleteLoanBtn = e.target.closest('#delete-loan-btn')
+                if (deleteLoanBtn && root.contains(deleteLoanBtn)) {
+                    e.preventDefault()
+                    const lid = deleteLoanBtn.getAttribute('data-loan-id')
+                        || new URL(window.location.href).searchParams.get('loanId')
+                        || ''
+                    if (lid) void handleDeleteLoanAction(lid)
                     return
                 }
                 const clientHistBtn = e.target.closest('.clients-menu-btn[data-client-id]')
