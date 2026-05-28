@@ -1135,8 +1135,10 @@ function registerAuthIpc () {
 
   ipcMain.handle('auth:signUp', async (event, { email, password, name, company }) => {
   try {
+    log.info(`[Auth:SignUp] Intentando registrar cuenta para email: ${email}`)
     const companyName = String(company || '').trim()
     if (!companyName) {
+      log.warn(`[Auth:SignUp] Rechazado por falta de empresa: ${email}`)
       return { success: false, error: 'La empresa es requerida para registrar la cuenta.' }
     }
     const existing = await insforge.database
@@ -1150,6 +1152,7 @@ function registerAuthIpc () {
       .eq('slug', slugifyCompany(companyName) || 'empresa')
       .maybeSingle()
     if (existing?.data?.id || existingSlug?.data?.id) {
+      log.warn(`[Auth:SignUp] Rechazado porque la empresa ya existe: ${companyName}`)
       return {
         success: false,
         error: 'Esta empresa ya existe. Tu cuenta debe ser habilitada por un administrador de esa empresa.'
@@ -1164,12 +1167,14 @@ function registerAuthIpc () {
     })
 
     if (error) {
+      log.error(`[Auth:SignUp] Error de SDK para ${email}: ${error.message}`)
       return { success: false, error: error.message || 'Error al registrar usuario' }
     }
 
     // Registro público = tenant empresa; fila en nexo_profiles + perfil auth.
     if (data?.user) {
       const u = data.user
+      log.info(`[Auth:SignUp] Usuario base creado, configurando perfiles y tenant... UID: ${u.id}`)
       const patch = { app_role: 'empresa' }
       if (company && String(company).trim()) patch.company = String(company).trim()
       const { error: profileError } = await insforge.auth.setProfile(patch)
@@ -1185,6 +1190,7 @@ function registerAuthIpc () {
       if (companyName) {
         const tenantResult = await createTenantForSelfSignup(companyName)
         if (!tenantResult.ok || !tenantResult.tenant?.id) {
+          log.error(`[Auth:SignUp] Fallo creando tenant para ${email}: ${tenantResult.error}`)
           return {
             success: false,
             error: tenantResult.error || 'No se pudo provisionar el tenant de la nueva empresa.'
@@ -1203,28 +1209,34 @@ function registerAuthIpc () {
           refreshToken: data.refreshToken,
           user: data.user
         })
+        log.info(`[Auth:SignUp] Sesión guardada para ${email}`)
       }
       await mergeNexoProfile(data.user)
     }
 
+    log.info(`[Auth:SignUp] Registro completado exitosamente: ${email}`)
     return { success: true, data }
   } catch (error) {
+    log.error(`[Auth:SignUp] Excepción general para ${email}:`, error)
     return { success: false, error: error.message || 'Error al registrar usuario' }
   }
 })
 
 ipcMain.handle('auth:signIn', async (event, { email, password }) => {
   try {
+    log.info(`[Auth:SignIn] Intentando inicio de sesión: ${email}`)
     const { data, error } = await insforge.auth.signInWithPassword({
       email,
       password
     })
 
     if (error) {
+      log.error(`[Auth:SignIn] Error para ${email}: ${error.message}`)
       return { success: false, error: error.message || 'Credenciales inválidas' }
     }
 
     if (data?.user) {
+      log.info(`[Auth:SignIn] Login de SDK exitoso, fusionando perfiles. UID: ${data.user.id}`)
       if (data.accessToken) {
         insforge.tokenManager.saveSession({
           accessToken: data.accessToken,
@@ -1235,24 +1247,30 @@ ipcMain.handle('auth:signIn', async (event, { email, password }) => {
       await mergeNexoProfile(data.user)
     }
 
+    log.info(`[Auth:SignIn] Inicio de sesión completado: ${email}`)
     return { success: true, data }
   } catch (error) {
+    log.error(`[Auth:SignIn] Excepción general para ${email}:`, error)
     return { success: false, error: error.message || 'Error al iniciar sesión' }
   }
 })
 
 ipcMain.handle('auth:signOut', async () => {
   try {
+    log.info('[Auth:SignOut] Cerrando sesión del usuario actual...')
     cachedTenantUserId = null
     cachedTenantId = null
     const { error } = await insforge.auth.signOut()
 
     if (error) {
+      log.error(`[Auth:SignOut] Error cerrando sesión: ${error.message}`)
       return { success: false, error: error.message || 'Error al cerrar sesión' }
     }
 
+    log.info('[Auth:SignOut] Sesión cerrada exitosamente.')
     return { success: true }
   } catch (error) {
+    log.error('[Auth:SignOut] Excepción cerrando sesión:', error)
     return { success: false, error: error.message || 'Error al cerrar sesión' }
   }
 })
@@ -2105,6 +2123,7 @@ ipcMain.handle('portfolio:importLegacyState', async (event, state) => {
 }
 
 async function bootstrap () {
+  log.info('[System] Iniciando app y configurando InsForge SDK...')
   const { createClient } = await import('@insforge/sdk')
   insforge = createClient({
     baseUrl: 'https://nexo.azokia.com',
@@ -2112,8 +2131,23 @@ async function bootstrap () {
     isServerMode: true,
     autoRefreshToken: true
   })
+
+  log.info('[System] InsForge SDK inicializado (autoRefreshToken: true)')
+  
+  // Monitor de eventos de token y auth
+  insforge.auth.onAuthStateChange((event, session) => {
+    const userIdentifier = session?.user?.email || session?.user?.id || 'desconocido'
+    if (event === 'SIGNED_IN') log.info(`[Auth] Sesión iniciada: ${userIdentifier}`)
+    else if (event === 'SIGNED_OUT') log.info(`[Auth] Sesión cerrada (SIGNED_OUT)`)
+    else if (event === 'TOKEN_REFRESHED') log.info(`[Auth] Token renovado exitosamente para: ${userIdentifier}`)
+    else if (event === 'USER_UPDATED') log.info(`[Auth] Perfil de usuario actualizado: ${userIdentifier}`)
+    else if (event === 'INITIAL_SESSION') log.info(`[Auth] Sesión inicial restaurada para: ${userIdentifier}`)
+    else log.info(`[Auth] Evento de sesión: ${event}`)
+  })
+
   registerAuthIpc()
   registerPortfolioIpc()
+  log.info('[System] Controladores IPC registrados')
 }
 
 bootstrap()
