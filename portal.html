@@ -3158,6 +3158,9 @@
                     const nextText = sum.next ? `${dateLabel(sum.next.due_date)}<div class="loan-pay-meta ${sum.next.status === 'mora' ? 'loan-pay-meta--late' : 'loan-pay-meta--ok'}">${sum.next.status}</div>` : '—'
                     return `
                         <tr>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <input type="checkbox" class="loan-row-checkbox" data-loan-id="${loan.id}" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                            </td>
                             <td>
                                 <div class="loan-cell-user">
                                     <div class="loan-avatar loan-avatar--${['a', 'b', 'c', 'd'][idx % 4]}" aria-hidden="true">${initials(loan.client_name)}</div>
@@ -3171,7 +3174,7 @@
                         </tr>
                     `
                 }).join('')
-                : '<tr><td colspan="5" class="loans-empty-note">No hay préstamos para este filtro.</td></tr>'
+                : '<tr><td colspan="6" class="loans-empty-note">No hay préstamos para este filtro.</td></tr>'
 
             const totalPrestado = summaries.reduce((s, x) => s + (Number(x.loan.principal) || 0), 0)
             const totalCobrado = summaries.reduce((s, x) => s + x.sum.paidTotal, 0)
@@ -3211,6 +3214,28 @@
                 alertsList.innerHTML = alerts.length
                     ? alerts.map((a) => `<div class="loans-act-item"><div class="loans-act-item__dot ${a.type === 'mora' ? 'loans-act-item__dot--doc' : 'loans-act-item__dot--new'}" aria-hidden="true"></div><div class="loans-act-item__body">${a.text}</div></div>`).join('')
                     : '<p class="loans-empty-note">Sin alertas activas por ahora.</p>'
+            }
+        }
+
+        function resetBulkSelection () {
+            const selectAllEl = document.getElementById('select-all-loans')
+            if (selectAllEl) selectAllEl.checked = false
+            document.querySelectorAll('.loan-row-checkbox').forEach((cb) => {
+                cb.checked = false
+            })
+            updateBulkActionsBarState()
+        }
+
+        function updateBulkActionsBarState () {
+            const bar = document.getElementById('bulk-actions-bar')
+            const countEl = document.getElementById('bulk-selected-count')
+            if (!bar || !countEl) return
+            const checked = document.querySelectorAll('.loan-row-checkbox:checked')
+            countEl.textContent = String(checked.length)
+            if (checked.length > 0) {
+                bar.classList.add('is-visible')
+            } else {
+                bar.classList.remove('is-visible')
             }
         }
 
@@ -3382,11 +3407,167 @@
                     if (lid) void handleDeleteLoanAction(lid)
                     return
                 }
-                const clientHistBtn = e.target.closest('.clients-menu-btn[data-client-id]')
-                if (clientHistBtn && root.contains(clientHistBtn)) {
+                const bulkClearBtn = e.target.closest('#bulk-clear-selection-btn')
+                if (bulkClearBtn && root.contains(bulkClearBtn)) {
                     e.preventDefault()
-                    const cid = clientHistBtn.getAttribute('data-client-id')
-                    if (cid) openClientHistoryModal(cid)
+                    resetBulkSelection()
+                    return
+                }
+                const bulkMoraBtn = e.target.closest('#bulk-change-mora-btn')
+                if (bulkMoraBtn && root.contains(bulkMoraBtn)) {
+                    e.preventDefault()
+                    const checked = document.querySelectorAll('.loan-row-checkbox:checked')
+                    if (checked.length === 0) return
+                    
+                    const modal = document.getElementById('bulk-mora-modal')
+                    const countEl = document.getElementById('bulk-mora-modal-count')
+                    const inputEl = document.getElementById('bulk-mora-input')
+                    
+                    if (modal && countEl && inputEl) {
+                        countEl.textContent = String(checked.length)
+                        const state = getLoanState()
+                        inputEl.value = String(Number(state?.settings?.late_fee_percent) || 1.0)
+                        modal.classList.add('is-visible')
+                        window.requestAnimationFrame(() => inputEl.focus())
+                    }
+                    return
+                }
+                const modalCancel = e.target.closest('#bulk-mora-modal-cancel')
+                if (modalCancel && root.contains(modalCancel)) {
+                    e.preventDefault()
+                    const modal = document.getElementById('bulk-mora-modal')
+                    if (modal) modal.classList.remove('is-visible')
+                    return
+                }
+                const modalSubmit = e.target.closest('#bulk-mora-modal-submit')
+                if (modalSubmit && root.contains(modalSubmit)) {
+                    e.preventDefault()
+                    const checked = document.querySelectorAll('.loan-row-checkbox:checked')
+                    if (checked.length === 0) return
+
+                    const inputEl = document.getElementById('bulk-mora-input')
+                    if (!inputEl) return
+
+                    const newMora = Number(inputEl.value)
+                    if (isNaN(newMora) || newMora < 0) {
+                        alert('Por favor ingresa un porcentaje de mora válido y mayor o igual a 0.')
+                        return
+                    }
+
+                    if (!confirm(`¿Confirmas que deseas cambiar la mora diaria al ${newMora}% para los ${checked.length} préstamos seleccionados?`)) {
+                        return
+                    }
+
+                    const loanIds = Array.from(checked).map((cb) => cb.getAttribute('data-loan-id'))
+                    
+                    if (!window.electronAPI?.portfolio?.updateMultipleLoansMora) {
+                        alert('API de actualización masiva no disponible.')
+                        return
+                    }
+
+                    window.electronAPI.portfolio.updateMultipleLoansMora(loanIds, newMora)
+                        .then(async (r) => {
+                            if (r.success) {
+                                const modal = document.getElementById('bulk-mora-modal')
+                                if (modal) modal.classList.remove('is-visible')
+                                alert(`Mora actualizada correctamente para los ${checked.length} préstamos seleccionados.`)
+                                resetBulkSelection()
+                                await refreshLoanPortfolioFromDb()
+                            } else {
+                                alert(r.error || 'Ocurrió un error al actualizar los préstamos.')
+                            }
+                        })
+                        .catch((err) => {
+                            alert(`Error inesperado: ${err.message || err}`)
+                        })
+                    return
+                }
+                const bulkPlazoBtn = e.target.closest('#bulk-change-plazo-btn')
+                if (bulkPlazoBtn && root.contains(bulkPlazoBtn)) {
+                    e.preventDefault()
+                    const checked = document.querySelectorAll('.loan-row-checkbox:checked')
+                    if (checked.length === 0) return
+
+                    const modal = document.getElementById('bulk-plazo-modal')
+                    const countEl = document.getElementById('bulk-plazo-modal-count')
+                    const inputEl = document.getElementById('bulk-plazo-input')
+
+                    if (modal && countEl && inputEl) {
+                        countEl.textContent = String(checked.length)
+                        const state = getLoanState()
+                        const firstCb = checked[0]
+                        const firstLoanId = firstCb.getAttribute('data-loan-id')
+                        const firstLoan = state.loans.find(l => l.id === firstLoanId)
+                        inputEl.value = String(Number(firstLoan?.term_months) || 12)
+                        modal.classList.add('is-visible')
+                        window.requestAnimationFrame(() => inputEl.focus())
+                    }
+                    return
+                }
+                const plazoCancel = e.target.closest('#bulk-plazo-modal-cancel')
+                if (plazoCancel && root.contains(plazoCancel)) {
+                    e.preventDefault()
+                    const modal = document.getElementById('bulk-plazo-modal')
+                    if (modal) modal.classList.remove('is-visible')
+                    return
+                }
+                const plazoSubmit = e.target.closest('#bulk-plazo-modal-submit')
+                if (plazoSubmit && root.contains(plazoSubmit)) {
+                    e.preventDefault()
+                    const checked = document.querySelectorAll('.loan-row-checkbox:checked')
+                    if (checked.length === 0) return
+
+                    const inputEl = document.getElementById('bulk-plazo-input')
+                    if (!inputEl) return
+
+                    const newTerm = Number(inputEl.value)
+                    if (isNaN(newTerm) || newTerm <= 0 || !Number.isInteger(newTerm)) {
+                        alert('Por favor ingresa una cantidad de cuotas válida (entero mayor a 0).')
+                        return
+                    }
+
+                    if (!confirm(`¿Confirmas que deseas cambiar la cantidad de cuotas a ${newTerm} para los ${checked.length} préstamos seleccionados?\nEsto recalculará las cuotas pendientes para cada préstamo.`)) {
+                        return
+                    }
+
+                    const loanIds = Array.from(checked).map((cb) => cb.getAttribute('data-loan-id'))
+                    const state = getLoanState()
+
+                    if (!window.electronAPI?.portfolio?.rebuildLoanInstallments) {
+                        alert('API de reconstrucción de cuotas no disponible.')
+                        return
+                    }
+
+                    const promises = loanIds.map(async (loanId) => {
+                        const loan = state.loans.find((l) => l.id === loanId)
+                        if (!loan) return { success: false, error: `Préstamo ${loanId} no encontrado en memoria.` }
+
+                        const loanInput = {
+                            ...loan,
+                            term_months: newTerm
+                        }
+                        const calculatedInstallments = generateInstallments(loanInput)
+
+                        return window.electronAPI.portfolio.rebuildLoanInstallments(loanId, newTerm, calculatedInstallments)
+                    })
+
+                    Promise.all(promises)
+                        .then(async (results) => {
+                            const errors = results.filter(r => !r.success).map(r => r.error)
+                            if (errors.length > 0) {
+                                alert(`Ocurrieron algunos errores al actualizar los préstamos:\n- ${errors.join('\n- ')}`)
+                                await refreshLoanPortfolioFromDb()
+                            } else {
+                                alert(`Plazo (cantidad de cuotas) actualizado correctamente para los ${checked.length} préstamos seleccionados.`)
+                                resetBulkSelection()
+                                await refreshLoanPortfolioFromDb()
+                            }
+                            const modal = document.getElementById('bulk-plazo-modal')
+                            if (modal) modal.classList.remove('is-visible')
+                        })
+                        .catch((err) => {
+                            alert('Ocurrió un error inesperado al procesar la actualización masiva: ' + (err.message || err))
+                        })
                     return
                 }
             })
@@ -3395,10 +3576,30 @@
                 const t = e.target
                 if (t.id === 'filter-estado' || t.id === 'filter-tipo') {
                     renderLoansView()
+                    resetBulkSelection()
                     return
                 }
                 if (t.id === 'payment-loan-select') {
                     populatePaymentInstallmentSelect(t.value)
+                    return
+                }
+                if (t.id === 'select-all-loans') {
+                    const checked = t.checked
+                    root.querySelectorAll('.loan-row-checkbox').forEach((cb) => {
+                        cb.checked = checked
+                    })
+                    updateBulkActionsBarState()
+                    return
+                }
+                if (t.classList.contains('loan-row-checkbox')) {
+                    updateBulkActionsBarState()
+                    const allCb = root.querySelectorAll('.loan-row-checkbox')
+                    const checkedCb = root.querySelectorAll('.loan-row-checkbox:checked')
+                    const selectAllEl = root.querySelector('#select-all-loans')
+                    if (selectAllEl) {
+                        selectAllEl.checked = allCb.length > 0 && allCb.length === checkedCb.length
+                    }
+                    return
                 }
             })
 

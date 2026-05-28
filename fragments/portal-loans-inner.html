@@ -89,6 +89,7 @@
                     <table class="loans-table">
                         <thead>
                             <tr>
+                                <th scope="col" style="width: 40px; text-align: center; vertical-align: middle;"><input type="checkbox" id="select-all-loans" aria-label="Seleccionar todos los préstamos" style="width: 16px; height: 16px; cursor: pointer; margin: 0;"></th>
                                 <th scope="col">Cliente</th>
                                 <th scope="col">Monto / saldo</th>
                                 <th scope="col">Próximo pago</th>
@@ -120,3 +121,192 @@
         </aside>
     </div>
 </main>
+
+<div id="bulk-actions-bar" class="bulk-actions-bar">
+    <div class="bulk-actions-bar__content">
+        <span class="bulk-actions-bar__text"><span id="bulk-selected-count">0</span> préstamos seleccionados</span>
+        <div class="bulk-actions-bar__actions">
+            <button type="button" class="loans-btn" id="bulk-change-mora-btn" style="background-color: var(--primary-color, #0f172a); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 700; padding: 10px 24px;">Cambiar % de mora</button>
+            <button type="button" class="loans-btn" id="bulk-change-plazo-btn" style="background-color: var(--primary-color, #0f172a); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 700; padding: 10px 24px;">Cambiar cant. de cuotas</button>
+            <button type="button" class="loans-btn" id="bulk-clear-selection-btn" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); color: rgba(255, 255, 255, 0.9); font-weight: 600; padding: 10px 21px;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="bulk-mora-modal" class="bulk-mora-modal">
+    <div class="bulk-mora-modal__card">
+        <h3 class="bulk-mora-modal__title">Actualizar Mora en Grupo</h3>
+        <p class="bulk-mora-modal__desc">Ingresa el nuevo porcentaje de mora diaria que se aplicará a los <span id="bulk-mora-modal-count" style="font-weight: 700;">0</span> préstamos seleccionados.</p>
+        <div class="bulk-mora-modal__field">
+            <label class="bulk-mora-modal__label" for="bulk-mora-input">Mora diaria (%)</label>
+            <input type="number" id="bulk-mora-input" class="bulk-mora-modal__input" min="0" step="0.01" value="1.0" placeholder="Ej. 1.5">
+        </div>
+        <div class="bulk-mora-modal__actions">
+            <button type="button" class="loans-btn" id="bulk-mora-modal-cancel" style="background: transparent; border: 1px solid rgba(0, 0, 0, 0.15); color: #515f74; font-weight: 600; padding: 10px 20px;">Cancelar</button>
+            <button type="button" class="loans-btn" id="bulk-mora-modal-submit" style="background-color: var(--primary-color, #0f172a); border: 1px solid var(--primary-color, #0f172a); color: #fff; font-weight: 700; padding: 10px 24px;">Aplicar cambios</button>
+        </div>
+    </div>
+</div>
+
+<div id="bulk-plazo-modal" class="bulk-mora-modal">
+    <div class="bulk-mora-modal__card">
+        <h3 class="bulk-mora-modal__title">Actualizar Plazo en Grupo</h3>
+        <p class="bulk-mora-modal__desc">Ingresa la nueva cantidad de cuotas (plazo en meses) que se aplicará a los <span id="bulk-plazo-modal-count" style="font-weight: 700;">0</span> préstamos seleccionados.</p>
+        <div class="bulk-mora-modal__field">
+            <label class="bulk-mora-modal__label" for="bulk-plazo-input">Cantidad de cuotas (Meses)</label>
+            <input type="number" id="bulk-plazo-input" class="bulk-mora-modal__input" min="1" step="1" value="12" placeholder="Ej. 12">
+        </div>
+        <div class="bulk-mora-modal__actions">
+            <button type="button" class="loans-btn" id="bulk-plazo-modal-cancel" style="background: transparent; border: 1px solid rgba(0, 0, 0, 0.15); color: #515f74; font-weight: 600; padding: 10px 20px;">Cancelar</button>
+            <button type="button" class="loans-btn" id="bulk-plazo-modal-submit" style="background-color: var(--primary-color, #0f172a); border: 1px solid var(--primary-color, #0f172a); color: #fff; font-weight: 700; padding: 10px 24px;">Aplicar cambios</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.bulk-actions-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+.bulk-actions-bar.is-visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.bulk-actions-bar__content {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+.bulk-actions-bar__text {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.bulk-actions-bar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.bulk-actions-bar__actions .loans-btn {
+    transition: all 0.15s ease;
+}
+.bulk-actions-bar__actions .loans-btn:hover {
+    filter: brightness(1.15);
+}
+#bulk-clear-selection-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Modal de Mora Masiva */
+.bulk-mora-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 14, 36, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.bulk-mora-modal.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.bulk-mora-modal__card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    width: min(440px, 90%);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 14, 36, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transform: scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bulk-mora-modal.is-visible .bulk-mora-modal__card {
+    transform: scale(1);
+}
+.bulk-mora-modal__title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #000e24;
+    margin: 0;
+}
+.bulk-mora-modal__desc {
+    font-size: 13px;
+    color: #515f74;
+    line-height: 1.5;
+    margin: 0;
+}
+.bulk-mora-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bulk-mora-modal__label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7891;
+    font-family: 'Inter', sans-serif;
+}
+.bulk-mora-modal__input {
+    min-height: 40px;
+    border: 1px solid rgba(196, 198, 208, 0.5);
+    border-radius: 4px;
+    padding: 9px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #000e24;
+    width: 100%;
+    box-sizing: border-box;
+}
+.bulk-mora-modal__input:focus {
+    outline: none;
+    border-color: #00234b;
+    box-shadow: 0 0 0 2px rgba(0, 35, 75, 0.12);
+}
+.bulk-mora-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+#bulk-mora-modal-cancel:hover, #bulk-plazo-modal-cancel:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+#bulk-mora-modal-submit:hover, #bulk-plazo-modal-submit:hover {
+    filter: brightness(1.15);
+}
+</style>

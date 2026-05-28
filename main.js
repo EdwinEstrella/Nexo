@@ -180,6 +180,9 @@ let insforge = null
 
 let mainWindow = null
 
+let cachedTenantUserId = null
+let cachedTenantId = null
+
 function slugifyCompany (value) {
   return String(value || '')
     .normalize('NFD')
@@ -1211,6 +1214,8 @@ ipcMain.handle('auth:signIn', async (event, { email, password }) => {
 
 ipcMain.handle('auth:signOut', async () => {
   try {
+    cachedTenantUserId = null
+    cachedTenantId = null
     const { error } = await insforge.auth.signOut()
 
     if (error) {
@@ -1367,34 +1372,63 @@ function portfolioDefaultSettingsRow (tenantId) {
 }
 
 async function getPortfolioTenantId () {
-  const { data, error } = await insforge.auth.getCurrentUser()
-  if (error || !data?.user?.id) {
-    return { error: 'No autenticado' }
+  try {
+    const { data: authData, error: authError } = await insforge.auth.getCurrentUser()
+    if (authError || !authData?.user?.id) {
+      cachedTenantUserId = null
+      cachedTenantId = null
+      return { error: 'No autenticado. Por favor inicia sesión.' }
+    }
+    const uid = String(authData.user.id)
+    if (cachedTenantUserId === uid && cachedTenantId) {
+      return { tenantId: cachedTenantId }
+    }
+
+    const maxAttempts = 4
+    let lastError = null
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 350 * attempt))
+      }
+      try {
+        await mergeNexoProfile(authData.user)
+        const { data: prof, error: profErr } = await insforge.database
+          .from('nexo_profiles')
+          .select('default_tenant_id')
+          .eq('user_id', uid)
+          .maybeSingle()
+        if (!profErr && prof?.default_tenant_id) {
+          cachedTenantUserId = uid
+          cachedTenantId = prof.default_tenant_id
+          return { tenantId: prof.default_tenant_id }
+        }
+        const { data: mem, error: memErr } = await insforge.database
+          .from('nexo_tenant_members')
+          .select('tenant_id')
+          .eq('user_id', uid)
+          .limit(1)
+          .maybeSingle()
+        if (!memErr && mem?.tenant_id) {
+          cachedTenantUserId = uid
+          cachedTenantId = mem.tenant_id
+          return { tenantId: mem.tenant_id }
+        }
+        const repairedTenant = await repairTenantContextForUser(authData.user)
+        if (repairedTenant?.id) {
+          cachedTenantUserId = uid
+          cachedTenantId = repairedTenant.id
+          return { tenantId: repairedTenant.id }
+        }
+        lastError = new Error('No se encontró default_tenant_id ni membresías activas')
+      } catch (err) {
+        lastError = err
+      }
+    }
+    console.warn('[Nexo:getPortfolioTenantId] Falló la resolución del tenant tras reintentos:', lastError?.message || lastError)
+    return { error: 'Tu cuenta no tiene empresa (tenant) asignada. Completa el registro o contacta soporte.' }
+  } catch (globalErr) {
+    return { error: 'Error al verificar sesión: ' + (globalErr?.message || globalErr) }
   }
-  const uid = String(data.user.id)
-  await mergeNexoProfile(data.user)
-  const { data: prof } = await insforge.database
-    .from('nexo_profiles')
-    .select('default_tenant_id')
-    .eq('user_id', uid)
-    .maybeSingle()
-  if (prof?.default_tenant_id) {
-    return { tenantId: prof.default_tenant_id }
-  }
-  const { data: mem } = await insforge.database
-    .from('nexo_tenant_members')
-    .select('tenant_id')
-    .eq('user_id', uid)
-    .limit(1)
-    .maybeSingle()
-  if (mem?.tenant_id) {
-    return { tenantId: mem.tenant_id }
-  }
-  const repairedTenant = await repairTenantContextForUser(data.user)
-  if (repairedTenant?.id) {
-    return { tenantId: repairedTenant.id }
-  }
-  return { error: 'Tu cuenta no tiene empresa (tenant) asignada. Completa el registro o contacta soporte.' }
 }
 
 function registerPortfolioIpc () {
@@ -1804,6 +1838,116 @@ function registerPortfolioIpc () {
       return { success: true }
     } catch (err) {
       return { success: false, error: err.message || 'Error al eliminar préstamo' }
+    }
+  })
+
+  ipcMain.handle('portfolio:updateMultipleLoansMora', async (event, { loanIds, lateFeePercent }) => {
+    try {
+      const t = await getPortfolioTenantId()
+      if (t.error) {
+        return { success: false, error: t.error }
+      }
+      const tenantId = t.tenantId
+      if (!Array.isArray(loanIds) || loanIds.length === 0) {
+        return { success: false, error: 'No se seleccionaron préstamos' }
+      }
+      const newMora = Number(lateFeePercent)
+      if (isNaN(newMora) || newMora < 0) {
+        return { success: false, error: 'Porcentaje de mora inválido' }
+      }
+
+      const { error } = await insforge.database
+        .from('nexo_loans')
+        .update({ late_fee_percent: newMora })
+        .eq('tenant_id', tenantId)
+        .in('id', loanIds)
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al actualizar préstamos' }
+      }
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message || 'Error en la actualización masiva' }
+    }
+  })
+
+  ipcMain.handle('portfolio:rebuildLoanInstallments', async (event, { loanId, termMonths, installments }) => {
+    try {
+      const t = await getPortfolioTenantId()
+      if (t.error) {
+        return { success: false, error: t.error }
+      }
+      const tenantId = t.tenantId
+
+      if (!loanId) {
+        return { success: false, error: 'ID de préstamo no especificado' }
+      }
+      const newTerm = Number(termMonths)
+      if (isNaN(newTerm) || newTerm <= 0) {
+        return { success: false, error: 'Cantidad de cuotas inválida' }
+      }
+      if (!Array.isArray(installments) || installments.length === 0) {
+        return { success: false, error: 'Lista de cuotas inválida o vacía' }
+      }
+
+      // 1. Verificar si hay pagos registrados para este prestamo
+      const { data: payments, error: payErr } = await insforge.database
+        .from('nexo_payments')
+        .select('id')
+        .eq('loan_id', loanId)
+        .limit(1)
+
+      if (payErr) {
+        return { success: false, error: payErr.message || 'Error al validar pagos del préstamo' }
+      }
+
+      if (payments && payments.length > 0) {
+        return { success: false, error: 'No se puede cambiar el plazo: el préstamo tiene cobros registrados.' }
+      }
+
+      // 2. Actualizar term_months en nexo_loans
+      const { error: loanUpdateErr } = await insforge.database
+        .from('nexo_loans')
+        .update({ term_months: newTerm })
+        .eq('id', loanId)
+        .eq('tenant_id', tenantId)
+
+      if (loanUpdateErr) {
+        return { success: false, error: loanUpdateErr.message || 'Error al actualizar el préstamo' }
+      }
+
+      // 3. Eliminar cuotas anteriores
+      const { error: delInstErr } = await insforge.database
+        .from('nexo_loan_installments')
+        .delete()
+        .eq('loan_id', loanId)
+
+      if (delInstErr) {
+        return { success: false, error: delInstErr.message || 'Error al eliminar las cuotas anteriores' }
+      }
+
+      // 4. Insertar las nuevas cuotas calculadas (vienen preparadas por el front)
+      const preparedInstallments = installments.map(inst => ({
+        loan_id: loanId,
+        n: Number(inst.n),
+        due_date: inst.due_date,
+        principal_target: Number(inst.principal_target) || 0,
+        paid_interest: Number(inst.paid_interest) || 0,
+        paid_principal: Number(inst.paid_principal) || 0,
+        paid_late_fee: Number(inst.paid_late_fee) || 0
+      }))
+
+      const { error: insInstErr } = await insforge.database
+        .from('nexo_loan_installments')
+        .insert(preparedInstallments)
+
+      if (insInstErr) {
+        return { success: false, error: insInstErr.message || 'Error al insertar las nuevas cuotas' }
+      }
+
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message || 'Error al reconstruir cuotas' }
     }
   })
 
