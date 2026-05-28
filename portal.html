@@ -3696,6 +3696,7 @@
                     if (defaultFreq) defaultFreq.value = st2.settings.payment_frequency || 'monthly'
                     const defaultMode = form.querySelector('#lr-interest-mode')
                     if (defaultMode) defaultMode.value = st2.settings.interest_mode || 'annual'
+                    void loadPortalView('loans', { pushState: true })
                     return
                 }
                 if (form.id === 'loan-payment-form') {
@@ -4236,6 +4237,40 @@
         })
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // Recuperación de Foco en Entornos Electron
+            const ensureInputFocus = window.electronAPI?.ensureInputFocus
+            if (ensureInputFocus) {
+                let lastRequest = 0
+                const requestFocusRecovery = () => {
+                    const now = Date.now()
+                    if (now - lastRequest < 250) return
+                    lastRequest = now
+                    void ensureInputFocus().catch(() => {})
+                }
+                const isEditableTarget = (target) => {
+                    if (!(target instanceof HTMLElement)) return false
+                    if (target.isContentEditable) return true
+                    const tagName = target.tagName.toLowerCase()
+                    return tagName === 'input' || tagName === 'textarea' || tagName === 'select'
+                }
+                const handleEditableInteraction = (event) => {
+                    if (!isEditableTarget(event.target)) return
+                    requestFocusRecovery()
+                    const target = event.target
+                    window.setTimeout(() => {
+                        if (isEditableTarget(target) && document.activeElement !== target) {
+                            target.focus()
+                        }
+                    }, 0)
+                }
+                window.addEventListener('focus', requestFocusRecovery)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') requestFocusRecovery()
+                })
+                document.addEventListener('focusin', handleEditableInteraction, true)
+                document.addEventListener('pointerdown', handleEditableInteraction, true)
+            }
+
             const initialView = getInitialPortalView()
             wirePortalSearch()
             wireClientHistoryDialog()

@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     rebuildLoanInstallments: (loanId, termMonths, installments) => ipcRenderer.invoke('portfolio:rebuildLoanInstallments', { loanId, termMonths, installments })
   },
   listPrinters: () => ipcRenderer.invoke('printers:list'),
+  ensureInputFocus: () => ipcRenderer.invoke('window:ensure-input-focus'),
   printThermal: (opts) => {
     if (!isPrintThermalPayload(opts)) {
       return Promise.resolve({ ok: false, error: 'Payload de impresión inválido' })

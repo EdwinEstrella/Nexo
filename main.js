@@ -875,6 +875,21 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close()
 })
 
+function focusMainWindowForTextInput() {
+  const win = mainWindow
+  if (!win || win.isDestroyed()) return false
+
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+  win.webContents.focus()
+  return win.isFocused() || win.webContents.isFocused()
+}
+
+ipcMain.handle('window:ensure-input-focus', () => {
+  return focusMainWindowForTextInput()
+})
+
 ipcMain.handle('printers:list', async () => {
   const w = mainWindow || BrowserWindow.getAllWindows()[0]
   if (!w) return []
