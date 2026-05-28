@@ -1390,9 +1390,10 @@ async function getPortfolioTenantId () {
   try {
     const { data: authData, error: authError } = await insforge.auth.getCurrentUser()
     if (authError || !authData?.user?.id) {
+      console.error('[Nexo:getPortfolioTenantId] Error de autenticación:', authError)
       cachedTenantUserId = null
       cachedTenantId = null
-      return { error: 'No autenticado. Por favor inicia sesión.' }
+      return { error: authError?.message || 'No autenticado. Por favor inicia sesión.' }
     }
     const uid = String(authData.user.id)
     if (cachedTenantUserId === uid && cachedTenantId) {
@@ -1657,6 +1658,7 @@ function registerPortfolioIpc () {
       }
       const { error: cIns } = await insforge.database.from('nexo_clients').upsert([clientRow], { onConflict: 'id' })
       if (cIns) {
+        console.error('[Nexo:createLoan] Error cIns al insertar cliente:', cIns)
         return { success: false, error: cIns.message || 'No se pudo guardar el cliente' }
       }
 
@@ -1693,6 +1695,7 @@ function registerPortfolioIpc () {
 
       const { error: lIns } = await insforge.database.from('nexo_loans').insert([loanRow])
       if (lIns) {
+        console.error('[Nexo:createLoan] Error lIns al insertar préstamo:', lIns)
         return { success: false, error: lIns.message || 'No se pudo crear el préstamo' }
       }
 
@@ -1708,11 +1711,13 @@ function registerPortfolioIpc () {
       if (instPayload.length) {
         const { error: iIns } = await insforge.database.from('nexo_loan_installments').insert(instPayload)
         if (iIns) {
+          console.error('[Nexo:createLoan] Error iIns al insertar cuotas:', iIns)
           return { success: false, error: iIns.message || 'No se pudieron crear las cuotas' }
         }
       }
       return { success: true }
     } catch (err) {
+      console.error('[Nexo:createLoan] Excepción en createLoan:', err)
       return { success: false, error: err.message || 'Error al crear préstamo' }
     }
   })
