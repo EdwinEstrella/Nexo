@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="components/sidebar.css">
     <link rel="stylesheet" href="components/app-header.css">
     <link rel="stylesheet" href="components/admin-console.css">
+    <link rel="stylesheet" href="components/app-dialogs.css">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <style>
         * {
@@ -274,72 +275,22 @@
         </main>
     </div>
 
-    <div class="admin-modal" id="admin-modal" hidden aria-hidden="true">
-        <div class="admin-modal__backdrop" data-admin-modal-dismiss="backdrop"></div>
-        <div class="admin-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title" aria-describedby="admin-modal-body">
-            <h3 class="admin-modal__title" id="admin-modal-title">Confirmación</h3>
-            <p class="admin-modal__body" id="admin-modal-body"></p>
-            <div class="admin-modal__actions">
-                <button type="button" class="admin-modal__btn admin-modal__btn--neutral" id="admin-modal-cancel">Cancelar</button>
-                <button type="button" class="admin-modal__btn admin-modal__btn--primary" id="admin-modal-confirm">Aceptar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Scripts -->
     <script src="components/auth-roles.js"></script>
+    <script src="components/app-dialogs.js"></script>
     <script src="components/sidebar.js"></script>
     <script>
-        const AdminModal = (() => {
-            let resolver = null
-            const root = document.getElementById('admin-modal')
-            const titleEl = document.getElementById('admin-modal-title')
-            const bodyEl = document.getElementById('admin-modal-body')
-            const cancelBtn = document.getElementById('admin-modal-cancel')
-            const confirmBtn = document.getElementById('admin-modal-confirm')
-
-            function close (value) {
-                if (!root) return
-                root.hidden = true
-                root.setAttribute('aria-hidden', 'true')
-                if (resolver) {
-                    resolver(value)
-                    resolver = null
-                }
-            }
-
-            if (cancelBtn) cancelBtn.addEventListener('click', () => close(false))
-            if (confirmBtn) confirmBtn.addEventListener('click', () => close(true))
-            if (root) {
-                root.addEventListener('click', (e) => {
-                    const target = e.target
-                    if (target instanceof HTMLElement && target.dataset.adminModalDismiss === 'backdrop') {
-                        close(false)
-                    }
-                })
-            }
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && root && !root.hidden) close(false)
+        const AdminModal = {
+            ['confirm']: (options) => window.NexoDialogs.confirm({
+                tone: 'warning',
+                ...options
+            }),
+            notify: (options) => window.NexoDialogs.notify({
+                tone: options?.tone || 'success',
+                mode: options?.mode || 'toast',
+                ...options
             })
-
-            return {
-                async confirm ({ title, message, confirmText = 'Aceptar', cancelText = 'Cancelar' }) {
-                    if (!root || !titleEl || !bodyEl || !confirmBtn || !cancelBtn) return false
-                    titleEl.textContent = title
-                    bodyEl.textContent = message
-                    confirmBtn.textContent = confirmText
-                    cancelBtn.textContent = cancelText
-                    root.hidden = false
-                    root.setAttribute('aria-hidden', 'false')
-                    confirmBtn.focus()
-                    return await new Promise((resolve) => { resolver = resolve })
-                },
-                async notify ({ title, message, buttonText = 'Entendido' }) {
-                    const ok = await this.confirm({ title, message, confirmText: buttonText, cancelText: 'Cerrar' })
-                    return ok
-                }
-            }
-        })()
+        }
 
         function initialsFromName (name) {
             const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -446,7 +397,9 @@
             if (!window.electronAPI?.admin?.setCompanyBlocked) {
                 await AdminModal.notify({
                     title: 'Acción no disponible',
-                    message: 'El backend aún no expone la acción para bloquear/desbloquear empresas.'
+                    message: 'El backend aún no expone la acción para bloquear/desbloquear empresas.',
+                    tone: 'error',
+                    mode: 'modal'
                 })
                 return
             }
@@ -464,7 +417,9 @@
             if (!result?.success) {
                 await AdminModal.notify({
                     title: 'No se pudo completar',
-                    message: result?.error || 'No se pudo actualizar el estado de la empresa.'
+                    message: result?.error || 'No se pudo actualizar el estado de la empresa.',
+                    tone: 'error',
+                    mode: 'modal'
                 })
                 return
             }
@@ -475,7 +430,9 @@
             if (!window.electronAPI?.admin?.deleteCompany) {
                 await AdminModal.notify({
                     title: 'Acción no disponible',
-                    message: 'El backend aún no expone la acción para eliminar empresas.'
+                    message: 'El backend aún no expone la acción para eliminar empresas.',
+                    tone: 'error',
+                    mode: 'modal'
                 })
                 return
             }
@@ -490,13 +447,17 @@
             if (!result?.success) {
                 await AdminModal.notify({
                     title: 'No se pudo eliminar',
-                    message: result?.error || 'No se pudo eliminar la empresa.'
+                    message: result?.error || 'No se pudo eliminar la empresa.',
+                    tone: 'error',
+                    mode: 'modal'
                 })
                 return
             }
             await AdminModal.notify({
                 title: 'Empresa eliminada',
-                message: 'La empresa y sus datos relacionados fueron eliminados correctamente.'
+                message: 'La empresa y sus datos relacionados fueron eliminados correctamente.',
+                tone: 'success',
+                mode: 'toast'
             })
             await loadCompanies()
         }

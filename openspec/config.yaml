@@ -1,0 +1,63 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Electron 41 desktop app on Node.js; package-managed with npm.
+  UI surface: HTML/CSS/JavaScript pages and fragments, plus Electron main/preload scripts.
+  Packaging: Electron Forge + Electron Builder for Windows, macOS, Linux artifacts.
+  Backend integration: InsForge SDK/CLI present; project metadata points to https://nexo.azokia.com.
+  Architecture: Desktop app with separate main, preload, and renderer concerns.
+  Testing: No explicit test runner or coverage tooling detected in package scripts.
+  Style: Conventional CommonJS modules in config/runtime files; project artifacts are English by default.
+
+strict_tdd: false
+
+testing:
+  detected: "2026-06-12"
+  test_runner:
+    command: ""
+    framework: ""
+  test_layers:
+    unit:
+      available: false
+      tool: "-"
+    integration:
+      available: false
+      tool: "-"
+    e2e:
+      available: false
+      tool: "-"
+  coverage:
+    available: false
+    command: ""
+  quality_tools:
+    linter:
+      available: false
+      command: ""
+    type_checker:
+      available: false
+      command: ""
+    formatter:
+      available: false
+      command: ""
+
+rules:
+  proposal:
+    - Include rollback notes for risky desktop packaging or runtime changes.
+  specs:
+    - Use RFC 2119 keywords and Given/When/Then scenarios.
+  design:
+    - Document renderer/main/preload boundaries and packaging impact.
+  tasks:
+    - Keep steps small and session-sized.
+  apply:
+    - Follow existing Electron/CommonJS project patterns.
+    - Do not overwrite user-authored change artifacts.
+    - Update only bootstrap files unless explicitly continuing a change.
+    - strict_tdd: false
+    - test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Preserve archived changes as an audit trail.

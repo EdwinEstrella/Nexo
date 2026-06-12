@@ -1,6 +1,6 @@
 {
   "name": "nexo",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Nexo - Aplicación de escritorio",
   "author": "Edwin",
   "main": "main.js",
@@ -69,6 +69,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "check:native-dialogs": "node scripts/check-native-dialogs.cjs",
     "build:ico": "node scripts/build-windows-icon.cjs",
     "dist:win": "npm run build:ico && electron-builder --win",
     "release:win": "npm run build:ico && electron-builder --win --publish always"

@@ -235,7 +235,14 @@ class Sidebar {
     }
 
     async signOut () {
-        if (!confirm('¿Cerrar sesión?')) return
+        const confirmed = await window.NexoDialogs.confirm({
+            title: 'Cerrar sesión',
+            message: '¿Cerrar sesión?',
+            confirmText: 'Cerrar sesión',
+            cancelText: 'Cancelar',
+            tone: 'warning'
+        })
+        if (!confirmed) return
         try {
             if (typeof window !== 'undefined' && window.electronAPI?.auth?.signOut) {
                 const r = await window.electronAPI.auth.signOut()
